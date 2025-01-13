@@ -1,0 +1,29 @@
+# WARNING: it is CRITICAL that this file & directory are NOT accessible directly via a web browser!
+# http://nette.org/security-warning
+
+php:
+	date.timezone: Europe/Prague
+
+application:
+#	catchExceptions: yes
+	errorPresenter: Front:Error
+	mapping:
+		Front: App\Modules\UI\*Presenter
+
+tracy:
+	errorTemplate: %appDir%/UI/Error/500.phtml
+
+session:
+	expiration: 14 days
+	autoStart: smart
+	savePath: "%tempDir%/sessions"
+
+extensions:
+	dibi: Dibi\Bridges\Nette\DibiExtension22
+
+services:
+	- App\Router\RouterFactory::createRouter
+	- App\Model\BaseModel(@dibi.connection)
+	- App\Model\CustomersModel
+	- App\Model\ProjectsModel
+	- Btk\Helpers

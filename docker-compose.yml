@@ -1,0 +1,64 @@
+name: NexusMap
+
+services:
+  db:
+    container_name: NexusMapDb
+    image: mariadb:10.5.8
+    env_file:
+      - ./config/mysql.env
+    environment:
+      - MYSQL_ROOT_HOST=%
+      - MYSQL_ROOT_PASSWORD=docker
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./config:/config
+      - ./var/db:/var/lib/mysql
+
+  api:
+    container_name: NexusMapAPI
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    networks:
+      - shared_network
+    volumes:
+      - ./var/projects:/userfiles
+      - ./app:/app
+      - ./tests:/tests
+
+  frontend:
+    container_name: NexusMapFront
+    build:
+      context: ./examples/frontend
+      dockerfile: Dockerfile
+    volumes:
+      - ./examples/frontend/config/php:/usr/local/etc/php
+      - ./examples/frontend:/var/www/html
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    networks:
+      - shared_network
+
+  nginx:
+    container_name: NexusMapProxy
+    image: nginx:latest
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    ports:
+      - "8080:8080"
+    depends_on:
+      - api
+      - frontend
+    networks:
+      - shared_network
+
+networks:
+  shared_network:
+    name: my_shared_network

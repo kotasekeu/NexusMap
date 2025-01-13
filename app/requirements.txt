@@ -1,0 +1,12 @@
+uvicorn[standard]
+fastapi
+mysql-connector-python #nevim proc se ta kravina nechce nainstalovat. zatim je to rucne nainstalovane v kontejneru
+passlib
+pydantic
+pytest
+httpx
+pandas
+numpy
+matplotlib
+scikit-learn
+MiniSom  #prijde smazat
