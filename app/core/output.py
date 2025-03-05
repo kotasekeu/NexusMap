@@ -1,15 +1,26 @@
-def save_clusters(output_path: str, clusters: dict) -> None:
-    """Uloží clustery do souboru clusters.txt."""
-    pass
+import matplotlib.pyplot as plt
+import numpy as np
+import datetime
 
-def generate_log(output_path: str, log_data: str) -> None:
-    """Vytvoří logovací soubor log.txt."""
-    pass
+# def save_clusters(output_path: str, clusters: dict) -> None:
+#     """Uloží clustery do souboru clusters.txt."""
+#     pass
+#
+# def generate_html(output_path: str, clusters: dict, log_data: str) -> None:
+#     """Vytvoří výstupní HTML soubor."""
+#     pass
 
-def generate_map(output_path: str, som_object: object) -> None:
-    """Vygeneruje map.jpg ze SOM dat."""
-    pass
+def generate_heatmap(som, data, output_path: str) -> None:
+    """Generuje heatmapu SOM a ukládá ji jako map.jpg."""
+    plt.figure(figsize=(10, 10))
+    for sample in data:
+        bmu = som.find_bmu(sample)
+        plt.scatter(bmu[0] + np.random.rand() * 0.8, bmu[1] + np.random.rand() * 0.8, c="blue", alpha=0.5)
 
-def generate_html(output_path: str, clusters: dict, log_data: str) -> None:
-    """Vytvoří výstupní HTML soubor."""
-    pass
+    plt.title("SOM Heatmap")
+
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    # Uložení souboru s timestampem v názvu
+    plt.savefig(f"{output_path}map_{timestamp}.jpg")
+    plt.close()

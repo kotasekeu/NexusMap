@@ -27,8 +27,6 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->json 			= json_decode($project_detail->som_settings);
 
 //		$this->getTemplate()->customerDetail = $this->customersModel->getCustomerDetail($project_detail->customer_id);
-//		dump($this->getTemplate()->projectDetail);
-//		die("File:" . __FILE__ . "; Line:" . __LINE__);
 
 	}
 

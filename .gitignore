@@ -46,4 +46,6 @@ examples/frontend/public/userfiles
 
 
 app/core/backup
-app/core/export
+app/core/backup/export
+
+app/log.txt
