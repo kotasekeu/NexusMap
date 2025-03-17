@@ -15,32 +15,40 @@ services:
       - ./config:/config
       - ./var/db:/var/lib/mysql
 
+  data_analysis:
+    container_name: NexusMapDataAnalysis
+    build:
+      context: ./app/data_analysis
+      dockerfile: ../../docker/python/Dockerfile
+    networks:
+      - shared_network
+    volumes:
+      - ./app/data_analysis:/app/data_analysis
+    depends_on:
+      - db
+
   api:
     container_name: NexusMapAPI
     build:
-      context: ./app
-      dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+      context: ./app/api
+      dockerfile: ../../docker/php/Dockerfile
     depends_on:
       - db
     networks:
       - shared_network
     volumes:
       - ./var/projects:/userfiles
-      - ./app:/app
-      - ./tests:/tests
+      - ./config/php:/usr/local/etc/php
+      - ./app/api:/var/www/html
 
   frontend:
     container_name: NexusMapFront
     build:
-      context: ./examples/frontend
-      dockerfile: Dockerfile
+      context: ./app/frontend
+      dockerfile: ../../docker/php/Dockerfile
     volumes:
-      - ./examples/frontend/config/php:/usr/local/etc/php
-      - ./examples/frontend:/var/www/html
-    ports:
-      - "80:80"
+      - ./config/php:/usr/local/etc/php
+      - ./app/frontend:/var/www/html
     depends_on:
       - api
     networks:
@@ -52,7 +60,7 @@ services:
     volumes:
       - ./nginx:/etc/nginx/conf.d
     ports:
-      - "8080:8080"
+      - "80:80"
     depends_on:
       - api
       - frontend
@@ -61,4 +69,4 @@ services:
 
 networks:
   shared_network:
-    name: my_shared_network
+    name: shared_network

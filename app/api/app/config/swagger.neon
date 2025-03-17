@@ -1,0 +1,93 @@
+openapi: 3.0.0
+info:
+    title: API
+    version: 1.0.0
+servers:
+	- url: http://api.nexusmap.l/v1
+paths:
+
+	/login:
+		post:
+			summary: Login and get API token
+			tags: ["Auth"]
+			requestBody:
+				required: true
+				content:
+					application/json:
+						schema:
+							type: object
+							properties:
+								username:
+									type: string
+									example: "tomas"
+								password:
+									type: string
+									example: "vokurka"
+			responses:
+				'200':
+					description: Successfully logged in
+					content:
+						application/json:
+							schema:
+								type: object
+								properties:
+									token:
+										type: string
+										example: "abc123"
+	/users:
+		get:
+			summary: Get list of users.
+			tags: ["Users"]
+			responses:
+				'200':
+					description: List of users
+					content:
+						application/json:
+							schema:
+								$ref: "#/components/schemas/User"
+
+	/users/email:
+		get:
+			summary: Get user by email.
+			tags: ["Users"]
+			parameters:
+				- name: email
+				in: query
+				required: true
+				schema:
+					type: string
+				description: User e-mail address
+			responses:
+				'200':
+					description: User found
+					content:
+						application/json:
+							schema:
+								type: object
+								properties:
+									id:
+										type: integer
+										example: 1
+									name:
+										type: string
+										example: "John Doe"
+				'404':
+					description: User not found
+
+components:
+	schemas:
+		User:
+			type: object
+			properties:
+				id:
+					type: integer
+					example: 1
+				name:
+					type: string
+					example: "John Doe"
+#
+#	securitySchemes:
+#		BearerAuth:
+#			type: http
+#			scheme: bearer
+#			bearerFormat: JWT

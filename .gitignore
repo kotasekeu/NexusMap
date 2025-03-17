@@ -40,12 +40,23 @@ app/config/settings.py
 
 #Nette
 local.neon
-examples/frontend/temp/cache
-examples/frontend/temp/session
-examples/frontend/public/userfiles
+app/frontend/temp/cache
+app/frontend/temp/session
+app/frontend/public/userfiles
+app/frontend/log
 
+app/api/temp/cache
+app/api/temp/session
+app/api/public/userfiles
+app/api/log
+
+#vendor
+app/api/vendor
+app/frontend/vendor
 
 app/core/backup
 app/core/backup/export
 
 app/log.txt
+
+*.key
