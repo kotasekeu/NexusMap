@@ -18,31 +18,48 @@ class ApiClient
 
 	private $guzzle;
 
-	public function __construct(Request $httpRequest, string $apiBaseUrl, string $username, string $password)
+	public function __construct() //Request $httpRequest, string $apiBaseUrl, string $username, string $password
 	{
-		$this->httpRequest = $httpRequest;
-		$this->apiBaseUrl = $apiBaseUrl;
-		$this->username = $username;
-		$this->password = $password;
+//		$this->httpRequest = $httpRequest;
+//		$this->apiBaseUrl = $apiBaseUrl;
+//		$this->username = $username;
+//		$this->password = $password;
 
+	}
+
+//	public static function fromConfig(Request $httpRequest, array $config): ApiClient
+//	{
+//		return new self(
+//			$httpRequest,
+//			$config['apiBaseUrl'],
+//			$config['username'],
+//			$config['password']
+//		);
+//	}
+
+	public function login()
+	{
 		$this->guzzle = new Client([
-			'base_uri' => 'https://ares.gov.cz/',
+			'base_uri' => 'http://api.nexusmap.l/v1/',
 			'timeout'  => 5.0,
 		]);
-	}
 
-	public static function fromConfig(Request $httpRequest, array $config): ApiClient
-	{
-		return new self(
-			$httpRequest,
-			$config['apiBaseUrl'],
-			$config['username'],
-			$config['password']
-		);
-	}
+		try {
+			$response = $this->guzzle->get('users');
+			$q = json_decode($response->getBody()->getContents(), true);
+			dump($q);
+			die("File:" . __FILE__ . "; Line:" . __LINE__);
+		} catch (\Exception $e) {
+			dump($e->getMessage());
+			die("File:" . __FILE__ . "; Line:" . __LINE__);
+		}
 
-	public function login(): void
-	{
+		dump($response);
+		die("File:" . __FILE__ . "; Line:" . __LINE__);
+
+
+		die("File:" . __FILE__ . "; Line:" . __LINE__);
+//		$this->guzzle
 		$response = $this->guzzle->get($this->apiBaseUrl."/users");
 
 		dump($response->getBody());

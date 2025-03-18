@@ -5,7 +5,7 @@ php:
 	date.timezone: Europe/Prague
 
 application:
-	catchExceptions: yes
+#	catchExceptions: yes
 
 	errorPresenter:
 		4xx: Api\Errors\Error4xx   # for Nette\Application\BadRequestException

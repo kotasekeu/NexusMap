@@ -14,7 +14,7 @@ class Bootstrap
 
 		$appDir = dirname(__DIR__ . '/app');
 
-//		$configurator->setDebugMode(true); // enable for your remote IP
+		$configurator->setDebugMode(true); // enable for your remote IP
 
 		$configurator->enableTracy($appDir . '/../log');
 

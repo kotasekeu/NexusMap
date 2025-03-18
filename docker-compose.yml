@@ -11,6 +11,9 @@ services:
       - MYSQL_ROOT_PASSWORD=docker
     ports:
       - "3306:3306"
+    networks:
+      shared_network:
+        ipv4_address: 172.23.0.102
     volumes:
       - ./config:/config
       - ./var/db:/var/lib/mysql
@@ -34,39 +37,40 @@ services:
       dockerfile: ../../docker/php/Dockerfile
     depends_on:
       - db
+    ports:
+      - "8080:80"
     networks:
-      - shared_network
+      shared_network:
+        ipv4_address: 172.23.0.100
     volumes:
       - ./var/projects:/userfiles
       - ./config/php:/usr/local/etc/php
-      - ./app/api:/var/www/html
+      - ./app/api:/var/www
+      - ./app/api/public:/var/www/html
 
   frontend:
     container_name: NexusMapFront
     build:
       context: ./app/frontend
       dockerfile: ../../docker/php/Dockerfile
-    volumes:
-      - ./config/php:/usr/local/etc/php
-      - ./app/frontend:/var/www/html
-    depends_on:
-      - api
-    networks:
-      - shared_network
-
-  nginx:
-    container_name: NexusMapProxy
-    image: nginx:latest
-    volumes:
-      - ./nginx:/etc/nginx/conf.d
     ports:
       - "80:80"
+    volumes:
+      - ./config/php:/usr/local/etc/php
+      - ./app/frontend:/var/www
+      - ./app/frontend/public:/var/www/html
     depends_on:
       - api
-      - frontend
     networks:
-      - shared_network
+      shared_network:
+        ipv4_address: 172.23.0.101
+    extra_hosts:
+      - "api.nexusmap.l:172.23.0.100"
 
 networks:
   shared_network:
+    driver: bridge
     name: shared_network
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16

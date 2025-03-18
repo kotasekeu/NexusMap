@@ -22,7 +22,6 @@ class DefaultPresenter extends BasePresenter
 
 	public function renderDefault()
 	{
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
 		$this->getTemplate()->openApiJsonUrl = $this->link('//Default:swagger'); // URL JSON specifikace
 	}
 

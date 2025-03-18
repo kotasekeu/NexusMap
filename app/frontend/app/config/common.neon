@@ -28,4 +28,4 @@ services:
 	- App\Model\ProjectsModel
 	- Btk\Helpers
 
-	- App\Models\ApiClient::fromConfig(@httpRequest, %api%)
+	- App\Models\ApiClient
