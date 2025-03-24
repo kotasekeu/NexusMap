@@ -23,12 +23,9 @@ class Bootstrap
 
 		$configurator->createRobotLoader()
 			->addDirectory($appDir)
-			->addDirectory($appDir . '/Libs/')
-			->addDirectory($appDir . '/Models/')
 			->register();
 
-		$configurator->addConfig($appDir . '/config/common.neon');
-		$configurator->addConfig($appDir . '/config/local.neon');
+		$configurator->addConfig($appDir . '/config/config.neon');
 
 		return $configurator;
 	}
