@@ -45,9 +45,7 @@ class AuthPresenter extends Presenter
 			'username' => 'tomas',
 			'password' => 'vokurka',
 		];
-//
-//		dump($data);
-//		die("File:" . __FILE__ . "; Line:" . __LINE__);
+
 //		if (!isset($data['username'], $data['password'])) {
 //			$this->error('Invalid request', \Nette\Http\IResponse::S400_BadRequest);
 //		}

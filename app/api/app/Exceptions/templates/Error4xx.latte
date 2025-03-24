@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Chyba {$errorCode}</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: Arial, sans-serif;
+            background-image: url('/images/error-bg.jpg');
+            background-size: cover;
+            background-position: center;
+            color: #fff;
+            text-align: center;
+        }
+        .error-container {
+            background: rgba(0,0,0,0.7);
+            padding: 2rem;
+            border-radius: 10px;
+            max-width: 600px;
+        }
+        h1 {
+            font-size: 4rem;
+            margin: 0 0 1rem;
+        }
+        .message {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .description {
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <h1>Chyba {$errorCode}</h1>
+        
+        <div class="message">
+            {if $errorCode === 400}
+                Špatný požadavek
+            {elseif $errorCode === 401}
+                Neautorizovaný přístup
+            {elseif $errorCode === 403}
+                Přístup zamítnut
+            {elseif $errorCode === 404}
+                Stránka nenalezena
+            {else}
+                Chyba klienta
+            {/if}
+        </div>
+
+        <div class="description">
+            {if $errorCode === 400}
+                Váš požadavek nemohl být zpracován. Prosím zkontrolujte zadané údaje a zkuste to znovu.
+            {elseif $errorCode === 401}
+                Pro přístup k této stránce se musíte přihlásit.
+            {elseif $errorCode === 403}
+                Nemáte oprávnění k přístupu na tuto stránku.
+            {elseif $errorCode === 404}
+                Požadovaná stránka nebyla nalezena. Zkontrolujte prosím URL adresu.
+            {else}
+                {$errorMessage}
+            {/if}
+        </div>
+    </div>
+</body>
+</html>

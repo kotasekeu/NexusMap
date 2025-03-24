@@ -60,3 +60,5 @@ app/core/backup/export
 app/log.txt
 
 *.key
+
+app/frontend/public/template/*

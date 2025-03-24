@@ -45,25 +45,30 @@ class ApiClient
 		]);
 
 		try {
-			$response = $this->guzzle->get('users');
-			$q = json_decode($response->getBody()->getContents(), true);
-			dump($q);
-			die("File:" . __FILE__ . "; Line:" . __LINE__);
+			$response = $this->guzzle->get('login');
+
 		} catch (\Exception $e) {
 			dump($e->getMessage());
 			die("File:" . __FILE__ . "; Line:" . __LINE__);
 		}
 
-		dump($response);
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
+		try {
+			$response = $this->guzzle->get('users');
+		} catch (\Exception $e) {
+			dump($e->getMessage());
+			die("File:" . __FILE__ . "; Line:" . __LINE__);
+		}
+
+//		dump(json_decode($response->getBody()->getContents(), true));
+//		die("File:" . __FILE__ . "; Line:" . __LINE__);
 
 
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
+//		die("File:" . __FILE__ . "; Line:" . __LINE__);
 //		$this->guzzle
 		$response = $this->guzzle->get($this->apiBaseUrl."/users");
 
-		dump($response->getBody());
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
+//		dump($response->getBody());
+//		die("File:" . __FILE__ . "; Line:" . __LINE__);
 
 
 		try {

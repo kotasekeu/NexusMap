@@ -22,9 +22,9 @@ class UsersPresenter extends BasePresenter
 	 */
 	public function actionDefault(): void
 	{
-		if (!$this->user->isLoggedIn()) {
-			$this->error('Unauthorized', \Nette\Http\IResponse::S401_Unauthorized);
-		}
+//		if (!$this->user->isLoggedIn()) {
+//			$this->error('Unauthorized', \Nette\Http\IResponse::S401_Unauthorized);
+//		}
 		$users = [
 			["id" => 1, "name" => "John Doe"],
 			["id" => 2, "name" => "Jane Doe"]
