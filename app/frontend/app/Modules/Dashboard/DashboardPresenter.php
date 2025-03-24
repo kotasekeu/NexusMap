@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace App\Modules;
+namespace App\Modules\Dashboard;
 
 use Nette;
 use App\Common\Presenter\BasePresenter;
@@ -20,10 +20,6 @@ class DashboardPresenter extends BasePresenter
 	public function renderDefault()
     {
 		// $q = $this->dashboardService->fetchUsers();
-
-		// dump($q);
-
-		// die("File:" . __FILE__ . "; Line:" . __LINE__);
     }
 
 }

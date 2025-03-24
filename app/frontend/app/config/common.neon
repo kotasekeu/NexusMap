@@ -11,9 +11,8 @@ application:
 		4xx: App\Common\Errors\Error4xxPresenter
 		5xx: App\Common\Errors\Error5xxPresenter
 
-
 	mapping:
-		*: App\Modules\*\*Presenter
+		*: ['App', '*', '*\*Presenter']
 
 
 session:
