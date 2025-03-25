@@ -10,7 +10,7 @@
 	}
   ],
   "require": {
-	"php": ">= 8.1",
+	"php": ">= 8.4",
 	"nette/application": "^3.2.3",
 	"nette/bootstrap": "^3.2",
 	"nette/caching": "^3.2",
@@ -23,16 +23,28 @@
 	"nette/utils": "^4.0",
 	"latte/latte": "^3.0",
 	"tracy/tracy": "^2.10",
-    "dibi/dibi": "^5.0",
-    "guzzlehttp/guzzle": "^7.9"
+	"dibi/dibi": "^5.0",
+	"guzzlehttp/guzzle": "^7.9"
   },
   "require-dev": {
-	"nette/tester": "^2.5"
+	"nette/tester": "^2.5",
+	"squizlabs/php_codesniffer": "^3.12",
+	"phpstan/phpstan": "^2.1"
   },
   "autoload": {
 	"psr-4": {
 	  "App\\": "app"
 	}
   },
-  "minimum-stability": "stable"
+  "autoload-dev": {
+	"psr-4": {
+	  "Tests\\": "../../tests"
+	}
+  },
+  "minimum-stability": "stable",
+  "config": {
+	"allow-plugins": {
+	  "dealerdirect/phpcodesniffer-composer-installer": true
+	}
+  }
 }

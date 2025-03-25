@@ -15,8 +15,9 @@ final class RouterFactory
 	public static function createRouter(): RouteList
 	{
 		$router = new RouteList;
-//		die("File:" . __FILE__ . "; Line:" . __LINE__);
 
+		
+		$router->addRoute('projekty', 								'Modules:Projects:default');
 
 		$router->addRoute('<presenter>/<action>[/<id>]', [
 			'presenter' => 'Modules:Dashboard',

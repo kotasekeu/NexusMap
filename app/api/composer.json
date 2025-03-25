@@ -1,5 +1,5 @@
 {
-    "name": "kotasekeu/nexusmap",
+"name": "kotasekeu/nexusmapapi",
     "description": "This project offers a data analysis tool using Self-Organizing Maps (SOM) to simplify complex datasets into clear topologies, revealing key patterns for informed decision-making. It includes a user-friendly interface for easy interaction and result visualization, suitable for both technical and non-technical users.",
     "type": "library",
     "license": "MIT",
