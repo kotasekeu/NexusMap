@@ -8,31 +8,15 @@ application:
 #	catchExceptions: yes
 
 	errorPresenter:
-		4xx: Api\Errors\Error4xx   # for Nette\Application\BadRequestException
-		5xx: Api\Errors\Error5xx   # for other exceptions
+		4xx: Api\Common\Exception\Error4xx   # for Nette\Application\BadRequestException
+		5xx: Api\Common\Exception\Error5xx   # for other exceptions
 
 	mapping:
-		Api: Api\Presenters\*Presenter
+#		Api: Api\Presenters\*Presenter
+		*: ['Api', '*', '*\*Presenter']
 
 extensions:
 	dibi: Dibi\Bridges\Nette\DibiExtension22
 
-services:
-	- Api\Router\RouterFactory::createRouter
-
-	oauth2Server:
-		factory: League\OAuth2\Server\AuthorizationServer(
-			@oauth2RepositoryAccessToken,
-			@oauth2RepositoryClient,
-			@oauth2RepositoryScope,
-			@oauth2RepositoryAuthCode,
-			@oauth2CryptKey
-		)
-
-	oauth2RepositoryAccessToken: Api\Security\Repositories\AccessTokenRepository
-	oauth2RepositoryClient: Api\Security\Repositories\ClientRepository
-	oauth2RepositoryScope: Api\Security\Repositories\ScopeRepository
-	oauth2RepositoryAuthCode: Api\Security\Repositories\AuthCodeRepository
-	oauth2CryptKey: League\OAuth2\Server\CryptKey(%oauth_private_key%, null, false)
-
-
+parameters:
+	swaggerFile: %appDir%/config/swagger.neon

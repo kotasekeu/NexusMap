@@ -16,12 +16,11 @@ final class RouterFactory
 	{
 		$router = new RouteList;
 
+//		$router->addRoute('/v1/login', 'Modules:Auth:login');
+		$router->addRoute('/v1/swagger', "Modules:Default:swagger");
 
-		$router->addRoute('/v1/login', 'Api:Auth:login');
-		$router->addRoute('/v1/swagger', "Api:Default:swagger");
 		$router->addRoute('/v1[/<presenter>[/<action>[/<id>]]]', [
-			'module' => 'Api',
-			'presenter' => 'Default',
+			'presenter' => 'Modules:Default',
 			'action' => 'default',
 			'id' => null
 		]);

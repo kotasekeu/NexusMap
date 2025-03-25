@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Api\Errors;
+namespace Api\Common\Exceptions;
 
 use Nette\Application\BadRequestException;
 use Nette\Application\UI\Presenter;

@@ -2,11 +2,11 @@
 
 declare(strict_types = 1);
 
-namespace Api\Modules\Projects\Service;
+namespace Api\Modules\Results\Service;
 
-use Api\Modules\Projects\Entity\BaseService;
+use Api\Common\Service\BaseService;
 
-class Project extends BaseService
+class Result extends BaseService
 {
 
 

@@ -16,7 +16,6 @@ application:
 
 latte:
 	debugger: 'all'
-	locale: cs_CZ
 
 session:
 	expiration: 14 days

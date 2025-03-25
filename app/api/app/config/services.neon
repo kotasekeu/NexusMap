@@ -1,0 +1,22 @@
+services:
+
+	oauth2Server:
+		factory: League\OAuth2\Server\AuthorizationServer(
+			@oauth2RepositoryAccessToken,
+			@oauth2RepositoryClient,
+			@oauth2RepositoryScope,
+			@oauth2RepositoryAuthCode,
+			@oauth2CryptKey
+		)
+
+	oauth2RepositoryAccessToken: Api\Security\Repositories\AccessTokenRepository
+	oauth2RepositoryClient: Api\Security\Repositories\ClientRepository
+	oauth2RepositoryScope: Api\Security\Repositories\ScopeRepository
+	oauth2RepositoryAuthCode: Api\Security\Repositories\AuthCodeRepository
+	oauth2CryptKey: League\OAuth2\Server\CryptKey(%oauth_private_key%, null, false)
+
+	- Api\Common\Router\RouterFactory::createRouter
+	- Api\Modules\Default\DefaultPresenter(%swaggerFile%)
+
+	#Repositories
+	- Api\Modules\Customers\Repository\Customer

@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Api\Modules\Reesults\Facade;
+namespace Api\Modules\Results\Facade;
 
 use Api\Common\Facade\BaseFacade;
 
