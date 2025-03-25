@@ -1,17 +1,19 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
+
+namespace Api\Modules\Customers;
 
 use Api\Common\Presenter\BasePresenter;
 use Api\Modules\Customers\Repository\Customer;
 
 /**
-	 * @Path("/customers")
-	 * @Tag("Customers")
-	 */
+     * @Path("/customers")
+     * @Tag("Customers")
+     */
 class CustomersPresenter extends BasePresenter
 {
-	private $customersRepository;
+    private $customersRepository;
 
     public function __construct(Customer $customersRepository)
     {

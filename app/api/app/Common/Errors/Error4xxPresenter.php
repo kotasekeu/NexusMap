@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Common\Errors;
+namespace Api\Common\Errors;
 
 use App\Model\Exception\Runtime\InvalidStateException;
 use Nette\Application\BadRequestException;

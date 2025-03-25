@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace App\Common\Presenter;
 
@@ -10,7 +10,7 @@ use Contributte;
 
 abstract class BasePresenter extends Presenter
 {
-	public $sessionSection;
+    public $sessionSection;
 
     protected function startup()
     {
@@ -23,10 +23,9 @@ abstract class BasePresenter extends Presenter
         $presenterReflection = new \ReflectionClass($this);
         $presenterDir = dirname($presenterReflection->getFileName());
         $this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
-        
-        // if (!$this->getUser()->isLoggedIn() && $this->getName() !== 'Login:login') {
-        //     $this->redirect('Login:Login:default');
-        // }
-    }
 
+//        if (!$this->getUser()->isLoggedIn() && $this->getName() !== 'Login:login') {
+//            $this->redirect('Login:Login:default');
+//        }
+    }
 }

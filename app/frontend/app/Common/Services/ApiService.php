@@ -1,6 +1,6 @@
 <?php
 
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace App\Common\Services;
 
@@ -9,10 +9,8 @@ use Contributte;
 
 abstract class ApiService extends BaseService
 {
-
-	protected function startup()
-	{
-		parent::startup();
-	}
-
+    protected function startup()
+    {
+        parent::startup();
+    }
 }

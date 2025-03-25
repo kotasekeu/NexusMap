@@ -47,5 +47,9 @@
         "allow-plugins": {
             "dealerdirect/phpcodesniffer-composer-installer": true
         }
+    },
+    "scripts": {
+        "lint": "phpcs --standard=PSR12 app/ > phpcs_output.txt",
+        "analyse": "phpstan analyse app/ --level=max > phpstan_output.txt"
     }
 }

@@ -18,7 +18,7 @@ var/db/
 var/log/
 var/projects/
 #   --- odstranit jenom odklad
-var/_smazat
+var/smazat
 var/empty_module_Api
 #   --- odstranit jenom odklad
 *.log
@@ -66,3 +66,6 @@ app/log.txt
 *.key
 
 app/frontend/public/template/*
+
+phpstan_output.txt
+phpcs_output.txt

@@ -10,21 +10,20 @@ use Nette\Application\Routers\RouteList;
 
 final class RouterFactory
 {
-	use Nette\StaticClass;
+    use Nette\StaticClass;
 
-	public static function createRouter(): RouteList
-	{
-		$router = new RouteList;
+    public static function createRouter(): RouteList
+    {
+        $router = new RouteList();
 
-		
-		$router->addRoute('projekty', 								'Modules:Projects:default');
+        $router->addRoute('projekty', 'Modules:Projects:default');
 
-		$router->addRoute('<presenter>/<action>[/<id>]', [
-			'presenter' => 'Modules:Dashboard',
-			'action' => 'default',
-			'id' => NULL,
-		]);
+        $router->addRoute('<presenter>/<action>[/<id>]', [
+            'presenter' => 'Modules:Dashboard',
+            'action' => 'default',
+            'id' => null
+        ]);
 
-		return $router;
-	}
+        return $router;
+    }
 }

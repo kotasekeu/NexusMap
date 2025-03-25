@@ -10,8 +10,8 @@
 │   │   └── CustomerCronTrait.php   <br>
 │   ├── Forms/                      <br>
 │   │   └── CustomerFormFactory.php <br>
-│   ├── Model/                      <br>
-│   │   └── CustomerModel.php       <br>
+│   ├── Repository/                 <br>
+│   │   └── CustomerRepository.php  <br>
 │   ├── Service/                    <br>
 │   │   └── CustomerService.php     <br>
 │   └── Templates/                  <br>

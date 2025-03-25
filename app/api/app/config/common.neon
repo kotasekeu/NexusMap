@@ -8,11 +8,10 @@ application:
 #	catchExceptions: yes
 
 	errorPresenter:
-		4xx: Api\Common\Exception\Error4xx   # for Nette\Application\BadRequestException
-		5xx: Api\Common\Exception\Error5xx   # for other exceptions
+		4xx: Api\Common\Errors\Error4xxPresenter
+		5xx: Api\Common\Error\Error5xxPresenter
 
 	mapping:
-#		Api: Api\Presenters\*Presenter
 		*: ['Api', '*', '*\*Presenter']
 
 extensions:

@@ -19,4 +19,4 @@ services:
 	- Api\Modules\Default\DefaultPresenter(%swaggerFile%)
 
 	#Repositories
-	- Api\Modules\Customers\Repository\Customer
+	- Api\Modules\Customers\Repository\CustomerRepository

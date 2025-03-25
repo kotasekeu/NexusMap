@@ -1,27 +1,21 @@
 <?php
 
-// declare(strict_types = 1);
+declare(strict_types=1);
 
-// namespace App\Modules\Login;
+namespace App\Modules\Login;
 
-// use App\Common\Presenter\BasePresenter;
+use App\Common\Presenter\BasePresenter;
 
-// class LoginPresenter extends BasePresenter
-// {
-// 	public function __construct()
-// 	{
-		
-// 	}
+class LoginPresenter extends BasePresenter
+{
+    public function renderDefault()
+    {
+    }
 
-// 	public function renderDefault()
-// 	{
-// 	}
-
-// 	public function renderLogin()
-// 	{
-// 		if ($this->getUser()->isLoggedIn()) {
-// 			$this->redirect('Default:default');
-// 		}
-// 	}
-
-// }
+    public function renderLogin()
+    {
+        if ($this->getUser()->isLoggedIn()) {
+            $this->redirect('Default:default');
+        }
+    }
+}
