@@ -2,7 +2,7 @@
 
 declare(strict_types = 1);
 
-namespace Api\Presenters;
+namespace _smazat\Presenters;
 use Nette\Application\UI\Presenter;
 
 class BasePresenter extends Presenter

@@ -2,10 +2,10 @@
 
 declare(strict_types = 1);
 
-namespace Api\Presenters;
+namespace _smazat\Presenters;
 
-use Nette\Neon\Neon;
 use Nette\Application\Responses\JsonResponse;
+use Nette\Neon\Neon;
 
 class DefaultPresenter extends BasePresenter
 {

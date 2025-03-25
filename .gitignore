@@ -17,6 +17,10 @@ var/cache/
 var/db/
 var/log/
 var/projects/
+#   --- odstranit jenom odklad
+var/_smazat
+var/empty_module_Api
+#   --- odstranit jenom odklad
 *.log
 
 # IDE/Editor specific

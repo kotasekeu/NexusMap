@@ -12,12 +12,11 @@
 │   │   └── CustomerFormFactory.php <br>
 │   ├── Model/                      <br>
 │   │   └── CustomerModel.php       <br>
-│   ├── Presenter/                  <br>
-│   │   └── CustomersPresenter.php  <br>
 │   ├── Service/                    <br>
 │   │   └── CustomerService.php     <br>
-│   └── templates/                  <br>
-│       └── detail.latte
+│   └── Templates/                  <br>
+│   │   └── detail.latte            <br>
+│   └ CustomersPresenter.php  <br>
 
 - `Entity/`
   - `Customer.php`: Definuje datovou strukturu pro entity, používáno primárně pro mapování dat z API a databáze.
