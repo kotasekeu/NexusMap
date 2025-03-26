@@ -8,5 +8,5 @@ use Api\Common\Facade\BaseFacade;
 
 class ResultFacade extends BaseFacade
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

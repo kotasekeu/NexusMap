@@ -8,9 +8,9 @@ use Nette\Application\UI\Presenter;
 
 class BasePresenter extends Presenter
 {
-    protected function beforeRender()
-    {
-        parent::beforeRender();
-        $this->terminate();
-    }
+	protected function beforeRender()
+	{
+		parent::beforeRender();
+		$this->terminate();
+	}
 }

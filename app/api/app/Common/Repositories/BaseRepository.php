@@ -6,5 +6,5 @@ namespace Api\Common\Repositories;
 
 class BaseRepository
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

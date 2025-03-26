@@ -8,5 +8,5 @@ use Api\Common\Service\BaseService;
 
 class Customer extends BaseService
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

@@ -11,35 +11,35 @@ use Nette\Application\Responses\JsonResponse;
 
 class OAuthMiddleware
 {
-    private ResourceServer $server;
-    private Request $httpRequest;
-    private User $user;
+	private ResourceServer $server;
+	private Request $httpRequest;
+	private User $user;
 
-    public function __construct(ResourceServer $server, Request $httpRequest, User $user)
-    {
-        $this->server = $server;
-        $this->httpRequest = $httpRequest;
-        $this->user = $user;
-    }
+	public function __construct(ResourceServer $server, Request $httpRequest, User $user)
+	{
+		$this->server = $server;
+		$this->httpRequest = $httpRequest;
+		$this->user = $user;
+	}
 
-    public function process(callable $next)
-    {
-        $token = $this->httpRequest->getHeader('Authorization');
-        if (!$token || !preg_match('/Bearer\s+(\S+)/', $token, $matches)) {
-            return new JsonResponse(['error' => 'Unauthorized']); //, \Nette\Http\IResponse::S401_UNAUTHORIZED
-        }
+	public function process(callable $next)
+	{
+		$token = $this->httpRequest->getHeader('Authorization');
+		if (!$token || !preg_match('/Bearer\s+(\S+)/', $token, $matches)) {
+			return new JsonResponse(['error' => 'Unauthorized']); //, \Nette\Http\IResponse::S401_UNAUTHORIZED
+		}
 
-        try {
-            $request = \Laminas\Diactoros\ServerRequestFactory::fromGlobals();
-            $authRequest = $this->server->validateAuthenticatedRequest($request);
-            $userId = $authRequest->getAttribute('oauth_user_id');
+		try {
+			$request = \Laminas\Diactoros\ServerRequestFactory::fromGlobals();
+			$authRequest = $this->server->validateAuthenticatedRequest($request);
+			$userId = $authRequest->getAttribute('oauth_user_id');
 
-            // Přihlášení uživatele do Nette Security
-            $this->user->login($userId);
+			// Přihlášení uživatele do Nette Security
+			$this->user->login($userId);
 
-            return $next();
-        } catch (\Exception $e) {
-            return new JsonResponse(['error' => 'Invalid token']); //, \Nette\Http\IResponse::S401_UNAUTHORIZED
-        }
-    }
+			return $next();
+		} catch (\Exception $e) {
+			return new JsonResponse(['error' => 'Invalid token']); //, \Nette\Http\IResponse::S401_UNAUTHORIZED
+		}
+	}
 }

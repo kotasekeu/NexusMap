@@ -10,12 +10,12 @@ use Api\Modules\Customers\Repository\CustomerRepository;
 
 class CustomerFacade extends BaseFacade
 {
-    private Customer $customerEntity;
-    private CustomerRepository $customerRepository;
+	private Customer $customerEntity;
+	private CustomerRepository $customerRepository;
 
-    public function __construct(CustomerEntity $customerEntity, CustomerRepository $customerRepository)
-    {
-        $this->customerEntity = $customerEntity;
-        $this->customerRepository = $customerRepository;
-    }
+	public function __construct(CustomerEntity $customerEntity, CustomerRepository $customerRepository)
+	{
+		$this->customerEntity = $customerEntity;
+		$this->customerRepository = $customerRepository;
+	}
 }

@@ -5,20 +5,11 @@
 	<!-- Použití standardů -->
 	<rule ref="PSR12"/>
 
+	<!-- Nastavení použití tabů místo mezer pro odsazení -->
 	<rule ref="Generic.WhiteSpace.ScopeIndent">
 		<properties>
-			<property name="indent" type="integer" value="1"/>
-			<property name="tabIndent" type="boolean" value="true"/>
-		</properties>
-	</rule>
-
-	<!-- Zakáže pravidlo PSR-12, které vynucuje mezery -->
-	<rule ref="PSR12.ControlStructures.ControlStructureSpacing"/>
-	<rule ref="PSR12.ControlStructures.NewlineAfterOpenBrace"/>
-	<rule ref="PSR12.Functions.MethodDeclaration"/>
-	<rule ref="PSR12.WhiteSpace.ScopeIndent">
-		<properties>
-			<property name="tabIndent" type="boolean" value="true"/>
+			<property name="indent" value="1"/>
+			<property name="tabIndent" value="true"/>
 		</properties>
 	</rule>
 

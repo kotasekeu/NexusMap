@@ -8,5 +8,5 @@ use Api\Common\Repositories\BaseRepository;
 
 class ProjectRepository extends BaseRepository
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

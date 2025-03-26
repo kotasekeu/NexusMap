@@ -6,5 +6,5 @@ namespace Api\Common\Service;
 
 class BaseService
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

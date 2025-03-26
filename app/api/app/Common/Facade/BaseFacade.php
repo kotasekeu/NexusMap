@@ -6,73 +6,73 @@ namespace Api\Common\Facade;
 
 class BaseFacade
 {
-    protected int $loggedUserId;
+	protected int $loggedUserId;
 
-    public function setLoggedUserId(int $loggedUserId)
-    {
-        $this->loggedUserId = $loggedUserId;
-    }
+	public function setLoggedUserId(int $loggedUserId)
+	{
+		$this->loggedUserId = $loggedUserId;
+	}
 
-    protected function map($source, $destination)
-    {
-        $sourceReflection = new \ReflectionObject($source);
-        $destinationReflection = new \ReflectionObject($destination);
+	protected function map($source, $destination)
+	{
+		$sourceReflection = new \ReflectionObject($source);
+		$destinationReflection = new \ReflectionObject($destination);
 
-        foreach ($sourceReflection->getProperties() as $sourceProperty) {
-            $sourceProperty->setAccessible(true);
-            $name = $sourceProperty->getName();
-            if ($destinationReflection->hasProperty($name)) {
-                $destinationProperty = $destinationReflection->getProperty($name);
-                $destinationProperty->setAccessible(true);
-                $destinationProperty->setValue($destination, $sourceProperty->getValue($source));
-            }
-        }
-    }
+		foreach ($sourceReflection->getProperties() as $sourceProperty) {
+			$sourceProperty->setAccessible(true);
+			$name = $sourceProperty->getName();
+			if ($destinationReflection->hasProperty($name)) {
+				$destinationProperty = $destinationReflection->getProperty($name);
+				$destinationProperty->setAccessible(true);
+				$destinationProperty->setValue($destination, $sourceProperty->getValue($source));
+			}
+		}
+	}
 
-    protected function processAttributes($row)
-    {
-        return $row;
-    }
+	protected function processAttributes($row)
+	{
+		return $row;
+	}
 
-    public function convertRowsToEntity(?array $rows, $entityClass): array
-    {
-        if ($rows == null) {
-            return [];
-        }
-        $returnData = [];
-        foreach ($rows as $row) {
-            $returnData[] = $this->convertOneRowToEntity($row, $entityClass);
-        }
+	public function convertRowsToEntity(?array $rows, $entityClass): array
+	{
+		if ($rows == null) {
+			return [];
+		}
+		$returnData = [];
+		foreach ($rows as $row) {
+			$returnData[] = $this->convertOneRowToEntity($row, $entityClass);
+		}
 
-        return $returnData;
-    }
+		return $returnData;
+	}
 
-    public function convertOneRowToEntity($row, $entityClass)
-    {
-        $entity = new $entityClass();
-        $this->map($this->processAttributes($row), $entity);
+	public function convertOneRowToEntity($row, $entityClass)
+	{
+		$entity = new $entityClass();
+		$this->map($this->processAttributes($row), $entity);
 
-        return $entity;
-    }
+		return $entity;
+	}
 
-    public static function prepareDataForDbSave($formValues): array
-    {
-        return $formValues;
-    }
+	public static function prepareDataForDbSave($formValues): array
+	{
+		return $formValues;
+	}
 
-    public function toArray($object): array
-    {
-        $array = [];
-        if (is_object($object)) {
-            $array = get_object_vars($object);
-        }
+	public function toArray($object): array
+	{
+		$array = [];
+		if (is_object($object)) {
+			$array = get_object_vars($object);
+		}
 
-        if (is_array($object)) {
-            return array_map(function ($value) {
-                return $this->toArray($value);
-            }, $array);
-        }
+		if (is_array($object)) {
+			return array_map(function ($value) {
+				return $this->toArray($value);
+			}, $array);
+		}
 
-        return $array;
-    }
+		return $array;
+	}
 }

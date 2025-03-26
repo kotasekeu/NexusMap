@@ -8,5 +8,5 @@ use Api\Common\Entity\BaseEntity;
 
 class Project extends BaseEntity
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

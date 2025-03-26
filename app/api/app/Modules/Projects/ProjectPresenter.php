@@ -8,8 +8,8 @@ use Api\Common\Presenter\BasePresenter;
 
 class ProjectsPresenter extends BasePresenter
 {
-    public function __construct()
-    {
-        echo 'd';
-    }
+	public function __construct()
+	{
+		echo 'd';
+	}
 }

@@ -2,20 +2,20 @@
 
 ## Ukázková struktura složky:
 
-├── Customers/                      <br>
-│   ├── Entity/                     <br>
-│   │   └── Customer.php            <br>
-│   ├── Facade/                     <br>
-│   │   ├── CustomerFacade.php      <br>
+├── Customers/					  <br>
+│   ├── Entity/					 <br>
+│   │   └── Customer.php			<br>
+│   ├── Facade/					 <br>
+│   │   ├── CustomerFacade.php	  <br>
 │   │   └── CustomerCronTrait.php   <br>
-│   ├── Forms/                      <br>
+│   ├── Forms/					  <br>
 │   │   └── CustomerFormFactory.php <br>
-│   ├── Repository/                 <br>
+│   ├── Repository/				 <br>
 │   │   └── CustomerRepository.php  <br>
-│   ├── Service/                    <br>
-│   │   └── CustomerService.php     <br>
-│   └── Templates/                  <br>
-│   │   └── detail.latte            <br>
+│   ├── Service/					<br>
+│   │   └── CustomerService.php	 <br>
+│   └── Templates/				  <br>
+│   │   └── detail.latte			<br>
 │   └ CustomersPresenter.php  <br>
 
 - `Entity/`

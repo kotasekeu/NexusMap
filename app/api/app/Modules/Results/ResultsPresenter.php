@@ -8,8 +8,8 @@ use Api\Common\Presenter\BasePresenter;
 
 class ResultsPresenter extends BasePresenter
 {
-    public function __construct()
-    {
-        echo '.';
-    }
+	public function __construct()
+	{
+		echo '.';
+	}
 }
