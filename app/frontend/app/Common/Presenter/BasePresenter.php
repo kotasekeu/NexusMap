@@ -10,22 +10,22 @@ use Contributte;
 
 abstract class BasePresenter extends Presenter
 {
-    public $sessionSection;
+	public $sessionSection;
 
-    protected function startup()
-    {
+	protected function startup()
+	{
 
-        parent::startup();
-    }
+		parent::startup();
+	}
 
-    protected function beforeRender()
-    {
-        $presenterReflection = new \ReflectionClass($this);
-        $presenterDir = dirname($presenterReflection->getFileName());
-        $this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
+	protected function beforeRender()
+	{
+		$presenterReflection = new \ReflectionClass($this);
+		$presenterDir = dirname($presenterReflection->getFileName());
+		$this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
 
-//        if (!$this->getUser()->isLoggedIn() && $this->getName() !== 'Login:login') {
-//            $this->redirect('Login:Login:default');
-//        }
-    }
+//		if (!$this->getUser()->isLoggedIn() && $this->getName() !== 'Login:login') {
+//			$this->redirect('Login:Login:default');
+//		}
+	}
 }

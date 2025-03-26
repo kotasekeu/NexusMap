@@ -10,15 +10,15 @@ use App\Modules\Dashboard\Service\DashboardService;
 
 class DashboardPresenter extends BasePresenter
 {
-    private DashboardService $dashboardService;
+	private DashboardService $dashboardService;
 
-    public function __construct(DashboardService $dashboardService)
-    {
-        $this->dashboardService = $dashboardService;
-    }
+	public function __construct(DashboardService $dashboardService)
+	{
+		$this->dashboardService = $dashboardService;
+	}
 
-    public function renderDefault()
-    {
-        // $q = $this->dashboardService->fetchUsers();
-    }
+	public function renderDefault()
+	{
+		// $q = $this->dashboardService->fetchUsers();
+	}
 }

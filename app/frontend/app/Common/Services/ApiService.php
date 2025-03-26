@@ -9,8 +9,8 @@ use Contributte;
 
 abstract class ApiService extends BaseService
 {
-    protected function startup()
-    {
-        parent::startup();
-    }
+	protected function startup()
+	{
+		parent::startup();
+	}
 }

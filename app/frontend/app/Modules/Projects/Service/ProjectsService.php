@@ -6,5 +6,5 @@ namespace App\Modules\Projects;
 
 class ProjectsService extends BaseSer
 {
-    private int $id; // smazat jen pro phpcs
+	private int $id; // smazat jen pro phpcs
 }

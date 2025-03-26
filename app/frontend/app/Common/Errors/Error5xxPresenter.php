@@ -19,39 +19,39 @@ use Tracy\ILogger;
 
 abstract class Error5xxPresenter
 {
-    /**
-     * @return ForwardResponse|CallbackResponse
-     */
-    public function run(Request $request): AppResponse
-    {
-        $e = $request->getParameter('exception');
+	/**
+	 * @return ForwardResponse|CallbackResponse
+	 */
+	public function run(Request $request): AppResponse
+	{
+		$e = $request->getParameter('exception');
 
-        if ($e instanceof Throwable) {
-            $code = $e->getCode();
-            $level = ($code >= 400 && $code <= 499) ? LogLevel::WARNING : LogLevel::ERROR;
+		if ($e instanceof Throwable) {
+			$code = $e->getCode();
+			$level = ($code >= 400 && $code <= 499) ? LogLevel::WARNING : LogLevel::ERROR;
 
-            Debugger::log(sprintf(
-                'Code %s: %s in %s:%s',
-                $code,
-                $e->getMessage(),
-                $e->getFile(),
-                $e->getLine()
-            ), $level);
+			Debugger::log(sprintf(
+				'Code %s: %s in %s:%s',
+				$code,
+				$e->getMessage(),
+				$e->getFile(),
+				$e->getLine()
+			), $level);
 
-            Debugger::log($e, ILogger::EXCEPTION);
-        }
+			Debugger::log($e, ILogger::EXCEPTION);
+		}
 
-        if ($e instanceof BadRequestException) {
-            [$module, , $sep] = Helpers::splitName($request->getPresenterName());
+		if ($e instanceof BadRequestException) {
+			[$module, , $sep] = Helpers::splitName($request->getPresenterName());
 
-            return new ForwardResponse($request->setPresenterName($module . $sep . 'Error4xx'));
-        }
+			return new ForwardResponse($request->setPresenterName($module . $sep . 'Error4xx'));
+		}
 
-        return new CallbackResponse(function (IRequest $httpRequest, IResponse $httpResponse): void {
-            $header = $httpResponse->getHeader('Content-Type');
-            if ($header !== null && preg_match('#^text/html(?:;|$)#', $header) !== false) {
-                require __DIR__ . '/templates/500.phtml';
-            }
-        });
-    }
+		return new CallbackResponse(function (IRequest $httpRequest, IResponse $httpResponse): void {
+			$header = $httpResponse->getHeader('Content-Type');
+			if ($header !== null && preg_match('#^text/html(?:;|$)#', $header) !== false) {
+				require __DIR__ . '/templates/500.phtml';
+			}
+		});
+	}
 }
