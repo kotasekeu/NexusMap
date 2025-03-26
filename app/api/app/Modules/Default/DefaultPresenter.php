@@ -27,12 +27,12 @@ class DefaultPresenter extends BasePresenter
         $this->getTemplate()->setFile(__DIR__ . "/Templates/default.latte");
     }
 
-    public function renderDefault()
+    public function renderDefault(): void
     {
         $this->getTemplate()->openApiJsonUrl = $this->link('//Default:swagger'); // URL JSON specifikace
     }
 
-    public function actionSwagger()
+    public function actionSwagger(): void
     {
         if (!is_readable($this->swaggerFile)) {
             $this->error('File not found', \Nette\Http\IResponse::S404_NotFound);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Api\Modules\Projects\Service;
 
-use Api\Modules\Projects\Entity\BaseService;
+use Api\Common\Service\BaseService;
 
 class ProjectService extends BaseService
 {

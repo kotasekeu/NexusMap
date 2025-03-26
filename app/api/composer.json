@@ -1,8 +1,9 @@
 {
-"name": "kotasekeu/nexusmapapi",
+    "name": "kotasekeu/nexusmapapi",
     "description": "This project offers a data analysis tool using Self-Organizing Maps (SOM) to simplify complex datasets into clear topologies, revealing key patterns for informed decision-making. It includes a user-friendly interface for easy interaction and result visualization, suitable for both technical and non-technical users.",
     "type": "library",
     "license": "MIT",
+    "version": "0.0.3",
     "authors": [
         {
             "name": "Tomas kotasek",
@@ -49,7 +50,7 @@
         }
     },
     "scripts": {
-        "lint": "phpcs --standard=PSR12 app/ > phpcs_output.txt",
+        "lint": "phpcs --standard=.phpcs.xml > phpcs_output.txt",
         "analyse": "phpstan analyse app/ --level=max > phpstan_output.txt"
     }
 }

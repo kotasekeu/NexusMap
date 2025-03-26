@@ -48,7 +48,7 @@
 		}
 	},
 	"scripts": {
-		"lint": "phpcs --standard=PSR12 app/ > phpcs_output.txt",
+		"lint": "phpcs --standard=.phpcs.xml > phpcs_output.txt",
 		"analyse": "phpstan analyse app/ --level=max > phpstan_output.txt"
 	}
 }
