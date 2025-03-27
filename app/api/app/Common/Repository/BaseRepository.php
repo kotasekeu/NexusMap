@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Api\Common\Repositories;
+namespace Api\Common\Repository;
 
 use Dibi\Connection;
-
+use Dibi\Row;
 abstract class BaseRepository
 {
 	protected Connection		$db;
@@ -34,7 +34,7 @@ abstract class BaseRepository
 	 * @param int $id
 	 * @return array|null
 	 */
-	public function findById(int $id): ?array
+	public function findById(int $id): ?Row
 	{
 		return $this->db->select('*')
 			->from($this->table)
@@ -55,19 +55,6 @@ abstract class BaseRepository
 	}
 
 	/**
-	 * Update existing record by hiding previous record and creating new one
-	 * @param array $data
-	 * @return bool
-	 */
-	public function update(array $data): bool
-	{
-		$this->hidePreviousRecord($data[$this->primaryKey]);
-		
-		return $this->db->insert($this->table, $data)
-			->execute();
-	}
-
-	/**
 	 * Delete record (soft delete)
 	 * @param int $id
 	 * @return bool
@@ -75,19 +62,7 @@ abstract class BaseRepository
 	public function delete(int $id): bool
 	{
 		return $this->db->update($this->table, ['visible' => 0])
-			->where('%n = %i', $this->primaryKey, $id)
-			->execute();
-	}
-
-	/**
-	 * Hide previous record
-	 * @param int $recordId ID of record to hide
-	 * @return bool
-	 */
-	protected function hidePreviousRecord(int $recordId): bool
-	{
-		return $this->db->update($this->table, ['visible' => 0])
-			->where('%n = %i AND visible = 1', $this->primaryKey, $recordId)
+			->where('%n = %i AND visible = 1', $this->primaryKey, $id)
 			->execute();
 	}
 }

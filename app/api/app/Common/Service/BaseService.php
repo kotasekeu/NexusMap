@@ -5,31 +5,30 @@ declare(strict_types=1);
 namespace Api\Common\Service;
 
 use Api\Common\Exception\UnauthorizedException;
+use Api\Common\Service\AuthServiceTrait;
 
 abstract class BaseService
 {
-	protected int $loggedUserId;
-	private AuthService $authService;
+	// use AuthServiceTrait;
+	protected int $loggedUserId;	
 
-	public function __construct(AuthService $authService)
+	/**
+	 * Get repository instance
+	 * @return BaseRepository
+	 */
+	protected function getRepository(): BaseRepository
 	{
-		$this->authService = $authService;
+		return $this->repository;
 	}
 
 	/**
-	 * @throws UnauthorizedException
+	 * Validate and prepare data before saving
+	 * This method should be overridden in child classes if needed
+	 * @param array $data
+	 * @return array
 	 */
-	protected function validateToken(): void
+	protected function validateAndPrepareData(array $data): array
 	{
-		$token = $this->authService->getCurrentToken();
-		if (!$token || !$this->authService->isTokenValid($token)) {
-			throw new UnauthorizedException('Invalid or missing token');
-		}
-		$this->loggedUserId = $this->authService->getUserIdFromToken($token);
-	}
-
-	public function setLoggedUserId(int $loggedUserId): void
-	{
-		$this->loggedUserId = $loggedUserId;
+		return $data;
 	}
 }

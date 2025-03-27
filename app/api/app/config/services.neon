@@ -18,6 +18,7 @@ services:
 	- Api\Common\Router\RouterFactory::createRouter
 	- Api\Modules\Default\DefaultPresenter(%swaggerFile%)
 
+
 	#Repositories
 	- Api\Modules\Customers\Repository\CustomerRepository
 
@@ -26,3 +27,4 @@ services:
 
 	#Services
 	- Api\Modules\Customers\Service\CustomerService
+	

@@ -38,9 +38,7 @@ trait CrudTrait
      * @Response(404, "Record not found")
      */
     public function actionDetail(int $id): void
-    {
-        $this->validateToken();
-        
+    {       
         $item = $this->facade->findById($id);
         if (!$item) {
             $this->sendError('Record not found', 404);
@@ -61,10 +59,8 @@ trait CrudTrait
 	 */
 	public function actionCreate(): void
 	{
-		$this->validateToken();
-
 		try {
-			$data = $this->getRequestBody();
+			$data = $this->getRequestBody(); // změnit na ziskani dat z POST requestu #TODO
 			$item = $this->getFacade()->create($data);
 			$this->sendJson($item->toArray(), 201);
 		} catch (\Exception $e) {

@@ -7,18 +7,17 @@ namespace Api\Modules\Customers\Service;
 use Api\Common\Service\BaseService;
 use Api\Modules\Customers\Entity\Customer;
 use Api\Modules\Customers\Repository\CustomerRepository;
-use Api\Common\Service\AuthService;
+use Api\Common\Service\BaseCrudServiceTrait;
 
 class CustomerService extends BaseService
 {
-	private int $id; // smazat jen pro phpcs
+	use BaseCrudServiceTrait;
+
 	private CustomerRepository $repository;
 
 	public function __construct(
-		AuthService $authService,
 		CustomerRepository $repository
 	) {
-		parent::__construct($authService);
 		$this->repository = $repository;
 	}
 
@@ -52,17 +51,5 @@ class CustomerService extends BaseService
 		if (strlen($password) < 8) {
 			throw new \InvalidArgumentException('Password must be at least 8 characters long');
 		}
-	}
-
-	public function findAll(): array
-	{
-		$this->validateToken();
-		return $this->repository->findAll();
-	}
-
-	public function findById(int $id): ?array
-	{
-		$this->validateToken();
-		return $this->repository->findById($id);
 	}
 }

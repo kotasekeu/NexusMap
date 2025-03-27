@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Api\Modules\Customers\Repository;
 
-use Api\Common\Repositories\BaseRepository;
+use Api\Common\Repository\BaseRepository;
 use Dibi\Connection;
 
 class CustomerRepository extends BaseRepository
