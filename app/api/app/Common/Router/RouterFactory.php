@@ -16,6 +16,10 @@ final class RouterFactory
 		$router = new RouteList();
 
 //		$router->addRoute('/v1/login', 'Modules:Auth:login');
+
+		$router->addRoute('/v1/customers',									"Modules:Customers:default");
+		$router->addRoute('/v1/customers/<id>',									"Modules:Customers:detail");
+
 		$router->addRoute('/v1/swagger',									"Modules:Default:swagger");
 
 		$router->addRoute('/v1[/<presenter>[/<action>[/<id>]]]', [

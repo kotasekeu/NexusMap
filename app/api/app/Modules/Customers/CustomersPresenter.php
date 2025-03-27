@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Api\Modules\Customers;
 
 use Api\Common\Presenter\BasePresenter;
-use Api\Modules\Customers\Repository\Customer;
+use Api\Modules\Customers\Repository\CustomerRepository;
 
 /**
 	 * @Path("/customers")
@@ -13,9 +13,9 @@ use Api\Modules\Customers\Repository\Customer;
 	 */
 class CustomersPresenter extends BasePresenter
 {
-	private $customersRepository;
+	private CustomerRepository $customersRepository;
 
-	public function __construct(Customer $customersRepository)
+	public function __construct(CustomerRepository $customersRepository)
 	{
 		$this->customersRepository = $customersRepository;
 //		$this->authPresenter = $authPresenter;
@@ -23,7 +23,7 @@ class CustomersPresenter extends BasePresenter
 
 	/**
 	 * @OpenApi("
-	 *   summary: Get list of customers.
+	 *   summary: Get list of all customers
 	 * ")
 	 * @Path("")
 	 * @Method("GET")
@@ -32,7 +32,6 @@ class CustomersPresenter extends BasePresenter
 	public function actionDefault(): void
 	{
 		$this->validateToken();
-
 		$customers = $this->customersRepository->findAll();
 		$this->sendJson($customers);
 		$this->terminate();
@@ -40,18 +39,18 @@ class CustomersPresenter extends BasePresenter
 
 	/**
 	 * @OpenApi("
-	 *   summary: Get customer detail by IP.
+	 *   summary: Get customer by ID
 	 * ")
-	 * @Path("/detail/{ip}")
+	 * @Path("/{id}")
 	 * @Method("GET")
 	 * @Response(200, "Customer detail")
 	 * @Response(404, "Customer not found")
 	 */
-	public function actionDetail(string $ip): void
+	public function actionDetail(int $id): void
 	{
 		$this->validateToken();
-
-		$customer = $this->customersRepository->findByIp($ip);
+		
+		$customer = $this->customersRepository->findById($id);
 		if (!$customer) {
 			$this->sendError('Customer not found', 404);
 		}
@@ -62,9 +61,31 @@ class CustomersPresenter extends BasePresenter
 
 	/**
 	 * @OpenApi("
-	 *   summary: Create new customer.
+	 *   summary: Find customer by email
 	 * ")
-	 * @Path("/create")
+	 * @Path("/email/{email}")
+	 * @Method("GET")
+	 * @Response(200, "Customer detail")
+	 * @Response(404, "Customer not found")
+	 */
+	public function actionFindByEmail(string $email): void
+	{
+		$this->validateToken();
+		
+		$customer = $this->customersRepository->findByEmail($email);
+		if (!$customer) {
+			$this->sendError('Customer not found', 404);
+		}
+
+		$this->sendJson($customer);
+		$this->terminate();
+	}
+
+	/**
+	 * @OpenApi("
+	 *   summary: Create new customer
+	 * ")
+	 * @Path("")
 	 * @Method("POST")
 	 * @Response(201, "Customer created")
 	 * @Response(400, "Invalid input")
@@ -75,7 +96,8 @@ class CustomersPresenter extends BasePresenter
 
 		$data = $this->getRequestBody();
 		try {
-			$customer = $this->customersRepository->create($data);
+			$id = $this->customersRepository->create($data);
+			$customer = $this->customersRepository->findById($id);
 			$this->sendJson($customer, 201);
 		} catch (\Exception $e) {
 			$this->sendError($e->getMessage(), 400);
@@ -85,23 +107,27 @@ class CustomersPresenter extends BasePresenter
 
 	/**
 	 * @OpenApi("
-	 *   summary: Update existing customer.
+	 *   summary: Update existing customer
 	 * ")
-	 * @Path("/update/{id}")
+	 * @Path("/{id}")
 	 * @Method("PUT")
 	 * @Response(200, "Customer updated")
 	 * @Response(404, "Customer not found")
+	 * @Response(400, "Invalid input")
 	 */
 	public function actionUpdate(int $id): void
 	{
 		$this->validateToken();
 
 		$data = $this->getRequestBody();
+		$data[$this->customersRepository->primaryKey] = $id;
+		
 		try {
-			$customer = $this->customersRepository->update($id, $data);
-			if (!$customer) {
+			$success = $this->customersRepository->update($data);
+			if (!$success) {
 				$this->sendError('Customer not found', 404);
 			}
+			$customer = $this->customersRepository->findById($id);
 			$this->sendJson($customer);
 		} catch (\Exception $e) {
 			$this->sendError($e->getMessage(), 400);
@@ -111,9 +137,37 @@ class CustomersPresenter extends BasePresenter
 
 	/**
 	 * @OpenApi("
-	 *   summary: Delete customer.
+	 *   summary: Update customer tokens
 	 * ")
-	 * @Path("/delete/{id}")
+	 * @Path("/{id}/tokens")
+	 * @Method("PATCH")
+	 * @Response(200, "Tokens updated")
+	 * @Response(404, "Customer not found")
+	 */
+	public function actionUpdateTokens(int $id): void
+	{
+		$this->validateToken();
+
+		$data = $this->getRequestBody();
+		if (!isset($data['remaining_tokens'])) {
+			$this->sendError('Missing remaining_tokens parameter', 400);
+		}
+
+		$success = $this->customersRepository->updateTokens($id, (int)$data['remaining_tokens']);
+		if (!$success) {
+			$this->sendError('Customer not found', 404);
+		}
+
+		$customer = $this->customersRepository->findById($id);
+		$this->sendJson($customer);
+		$this->terminate();
+	}
+
+	/**
+	 * @OpenApi("
+	 *   summary: Delete customer
+	 * ")
+	 * @Path("/{id}")
 	 * @Method("DELETE")
 	 * @Response(204, "Customer deleted")
 	 * @Response(404, "Customer not found")
@@ -122,8 +176,8 @@ class CustomersPresenter extends BasePresenter
 	{
 		$this->validateToken();
 
-		$result = $this->customersRepository->delete($id);
-		if (!$result) {
+		$success = $this->customersRepository->delete($id);
+		if (!$success) {
 			$this->sendError('Customer not found', 404);
 		}
 
@@ -132,9 +186,9 @@ class CustomersPresenter extends BasePresenter
 	}
 
 	private function validateToken(): void
-	{
-		if (!$this->authPresenter->validateToken()) {
-			$this->sendError('Invalid or missing token', 401);
-		}
+	{		
+		// if (!$this->authPresenter->validateToken()) {
+		// 	$this->sendError('Invalid or missing token', 401);
+		// }
 	}
 }

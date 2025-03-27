@@ -1,0 +1,30 @@
+{block title}Detail zákazníka{/block}
+
+{block header}
+	Detail zákazníka
+{/block}
+
+{block content}
+	<div class="card">
+		<div class="card-header">
+			Informace o zákazníkovi
+		</div>
+		<div class="card-body">
+			<p><strong>Zákazník:</strong> {$customer->name}</p>
+			<p><strong>Firma:</strong> {$customer->company}</p>
+			<p><strong>Počet tokenů měsíčně:</strong> {$customer->monthly_tokens}</p>
+			<p><strong>Počet zbývajících tokenů:</strong> {$customer->remaining_tokens}</p>
+		</div>
+	</div>
+
+	<div class="mt-4">
+		<h2>Projekty</h2>
+		{foreach $projects as $project}
+			<p>
+				<a href="#" n:href="Projects:detail, project_id => $project->project_id" class="btn btn-primary">
+					{$project->name}
+				</a>
+			</p>
+		{/foreach}
+	</div>
+{/block}

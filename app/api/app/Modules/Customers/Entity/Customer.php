@@ -6,26 +6,68 @@ namespace Api\Modules\Customers\Entity;
 
 use Api\Common\Entity\BaseEntity;
 
+/**
+ * Entity representing a customer
+ */
 class Customer extends BaseEntity
 {
-	/** @var int */
-	private int $rowId;
+    /**
+     * Unique row identifier
+     * @var int
+     */
+    private int $rowId;
 
-	/** @var int */
-	private int $customerId;
+    /**
+     * Customer identifier
+     * @var int  
+     */
+    private int $customerId;
 
-	/** @var string */
-	private string $name;
+    /**
+     * Customer's name
+     * @var string
+     */
+    private string $name;
 
-	/** @var string|null */
-	private ?string $company;
+    /**
+     * Customer's email address
+     * @var string
+     */
+    private string $email;
 
-	/** @var int */
-	private int $monthlyTokens;
+    /**
+     * Customer's password
+     * @var string
+     */
+    private string $password;
 
-	/** @var int */
-	private int $remainingTokens;
+    /**
+     * Customer's company name
+     * @var string|null
+     */
+    private ?string $company;
 
-	/** @var bool */
-	private bool $visible;
+    /**
+     * Number of tokens allocated monthly
+     * @var int
+     */
+    private int $monthlyTokens;
+
+    /**
+     * Number of tokens remaining
+     * @var int
+     */
+    private int $remainingTokens;
+
+    /**
+     * Customer type identifier
+     * @var int
+     */
+    private int $typeId;
+
+    /**
+     * Customer type entity
+     * @var CustomerType
+     */
+    private CustomerType $customerType;
 }

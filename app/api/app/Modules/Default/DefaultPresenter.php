@@ -10,25 +10,26 @@ use Nette\Neon\Neon;
 
 class DefaultPresenter extends BasePresenter
 {
-	private string $swaggerFile;
+	private string $swaggerFile;	
 
 	public function __construct(string $swaggerFile)
 	{
 		$this->swaggerFile = $swaggerFile;
 	}
 
-//	public function beforeRender()
-//	{
-//
-//	}
+	protected function beforeRender()
+	{
+		// Overriding beforeRender from BasePresenter because we don't want terminate()
+		// This landing page is the only one using a template, other API endpoints don't
+	}
 
 	public function actionDefault(): void
-	{
+	{		
 		$this->getTemplate()->setFile(__DIR__ . "/Templates/default.latte");
 	}
 
 	public function renderDefault(): void
-	{
+	{		
 		$this->getTemplate()->openApiJsonUrl = $this->link('//Default:swagger'); // URL JSON specifikace
 	}
 

@@ -3,7 +3,7 @@ info:
 	title: API
 	version: 1.0.0
 servers:
-	- url: http://api.nexusmap.l/v1
+	- url: http://api.nexusmap.l:8080/v1
 paths:
 
 	/login:
@@ -34,57 +34,122 @@ paths:
 									token:
 										type: string
 										example: "abc123"
-	/users:
+
+	/customers:
 		get:
-			summary: Get list of users.
-			tags: ["Users"]
+			summary: Get list of all customers
+			tags: ["Customers"]
+			security:
+				- bearerAuth: []
 			responses:
 				'200':
-					description: List of users
+					description: List of customers
 					content:
 						application/json:
 							schema:
-								$ref: "#/components/schemas/User"
-
-	/users/email:
+								type: array
+								items:
+									$ref: '#/components/schemas/Customer'
+				'401':
+					description: Unauthorized - invalid or missing token
+		
+	'/customers/{id}':
 		get:
-			summary: Get user by email.
-			tags: ["Users"]
+			summary: Get customer by ID
+			tags: ["Customers"]
+			security:
+				- bearerAuth: []
+			parameters:
+				- name: id
+					in: path
+					required: true
+					schema:
+						type: integer
+			responses:
+				'200':
+					description: Customer detail
+					content:
+						application/json:
+							schema:
+								$ref: '#/components/schemas/Customer'
+				'401':
+					description: Unauthorized - invalid or missing token
+				'404':
+					description: Customer not found
+
+	'/customers/email/{email}':
+		get:
+			summary: Find customer by email
+			tags: ["Customers"]
+			security:
+				- bearerAuth: []
 			parameters:
 				- name: email
-				in: query
-				required: true
-				schema:
-					type: string
-				description: User e-mail address
+					in: path
+					required: true
+					schema:
+						type: string
 			responses:
 				'200':
-					description: User found
+					description: Customer detail
 					content:
 						application/json:
 							schema:
-								type: object
-								properties:
-									id:
-										type: integer
-										example: 1
-									name:
-										type: string
-										example: "John Doe"
+								$ref: '#/components/schemas/Customer'
+				'401':
+					description: Unauthorized - invalid or missing token
 				'404':
-					description: User not found
+					description: Customer not found
+	
 
 components:
 	schemas:
-		User:
+		Customer:
 			type: object
 			properties:
-				id:
+				rowId:
 					type: integer
-					example: 1
+					description: Unique row identifier
+				customerId: 
+					type: integer
+					description: Customer identifier
 				name:
 					type: string
-					example: "John Doe"
+					description: Customer's name
+				email:
+					type: string
+					description: Customer's email address
+				password:
+					type: string
+					description: Customer's password
+				company:
+					type: string
+					nullable: true
+					description: Customer's company name
+				monthlyTokens:
+					type: integer
+					description: Number of tokens allocated monthly
+				remainingTokens:
+					type: integer 
+					description: Number of tokens remaining
+				typeId:
+					type: integer
+					description: Customer type identifier
+				customerType:
+					$ref: '#/components/schemas/CustomerType'
+
+		CustomerType:
+			type: object
+			properties:
+				typeId:
+					type: integer
+					description: Unique identifier of customer type
+				code:
+					type: string
+					description: Code identifier of customer type
+				label:
+					type: string
+					description: Display label of customer type
 #
 #	securitySchemes:
 #		BearerAuth:

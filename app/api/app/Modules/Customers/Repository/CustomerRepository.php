@@ -9,66 +9,37 @@ use Dibi\Connection;
 
 class CustomerRepository extends BaseRepository
 {
-	private Connection $db;
+	protected string $table 		= 'customers';
+	protected string $primaryKey 	= 'customer_id';
 
-	public function __construct(Connection $connection)
+	public function __construct(Connection $connection) 
 	{
-		$this->db = $connection;
+		parent::__construct($connection);
 	}
 
-	public function findAll(): array
+	/**
+	 * Find customer by email
+	 * @param string $email
+	 * @return array|null
+	 */
+	public function findByEmail(string $email): ?array
 	{
 		return $this->db->select('*')
-			->from('customers')
-			->where('visible = 1')
-			->fetchAll();
-	}
-
-	public function findById(int $id): ?array
-	{
-		return $this->db->select('*')
-			->from('customers')
-			->where('id = %i', $id)
+			->from($this->table)
+			->where('email = %s AND visible = 1', $email)
 			->fetch();
 	}
 
-	public function create(array $data): array
+	/**
+	 * Update customer tokens
+	 * @param int $customerId
+	 * @param int $remainingTokens
+	 * @return bool
+	 */
+	public function updateTokens(int $customerId, int $remainingTokens): bool
 	{
-		$this->db->insert('customers', $data)
+		return $this->db->update($this->table, ['remaining_tokens' => $remainingTokens])
+			->where('customer_id = %i AND visible = 1', $customerId)
 			->execute();
-		$id = $this->db->getInsertId();
-		return $this->findById($id);
-	}
-
-	public function update(int $id, array $data): ?array
-	{
-		$this->db->update('customers', $data)
-			->where('id = %i', $id)
-			->execute();
-		return $this->findById($id);
-	}
-
-	public function delete(int $id): bool
-	{
-		try {
-			$this->db->delete('customers')
-				->where('id = %i', $id)
-				->execute();
-			return true;
-		} catch (\Exception $e) {
-			return false;
-		}
-	}
-
-	public function updateTokens(int $id, int $tokens): bool
-	{
-		try {
-			$this->db->update('customers', ['remaining_tokens' => $tokens])
-				->where('id = %i', $id)
-				->execute();
-			return true;
-		} catch (\Exception $e) {
-			return false;
-		}
 	}
 }
