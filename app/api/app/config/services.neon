@@ -20,3 +20,9 @@ services:
 
 	#Repositories
 	- Api\Modules\Customers\Repository\CustomerRepository
+
+	#Facades
+	- Api\Modules\Customers\Facade\CustomerFacade
+
+	#Services
+	- Api\Modules\Customers\Service\CustomerService

@@ -5,12 +5,9 @@ declare(strict_types=1);
 namespace Api\Common\Presenter;
 
 use Nette\Application\UI\Presenter;
+use Api\Common\Entity\BaseEntity;
 
-class BasePresenter extends Presenter
+abstract class BasePresenter extends Presenter
 {
-	protected function beforeRender()
-	{
-		parent::beforeRender();
-		$this->terminate();
-	}
+	
 }
