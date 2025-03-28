@@ -50,7 +50,7 @@ trait BaseCrudServiceTrait
 	 */
 	public function findById(int $id): ?Row 
 	{
-		// $this->validateToken();
+		$this->validateToken();
 		return $this->repository->findById($id);
 	}
 
@@ -76,5 +76,11 @@ trait BaseCrudServiceTrait
 	{
 		$this->validateToken();
 		return $this->repository->delete($id);
+	}
+
+	private function validateToken(): void
+	{
+		// $this->validateToken();
+		// TODO: implementovat validaci tokenu
 	}
 }

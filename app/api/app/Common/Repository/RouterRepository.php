@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Api\Common\Repository;
 
-use Dibi\Connection;
+use Dibi\Row;
 
 /**
  * Repository for managing router configuration and routes
@@ -19,14 +19,6 @@ class RouterRepository extends BaseRepository
 
 	/** @var array<int,string> Cached modules list */
 	private array $modules = [];
-
-	/**
-	 * RouterRepository constructor
-	 */
-	public function __construct(Connection $connection)
-	{
-		parent::__construct($connection);
-	}
 
 	/**
 	 * Gets all configured routes from database

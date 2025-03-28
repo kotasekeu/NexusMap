@@ -57,9 +57,9 @@ abstract class BaseRepository
 	/**
 	 * Delete record (soft delete)
 	 * @param int $id
-	 * @return bool
+	 * @return mixed
 	 */
-	public function delete(int $id): bool
+	public function delete(int $id): mixed
 	{
 		return $this->db->update($this->table, ['visible' => 0])
 			->where('%n = %i AND visible = 1', $this->primaryKey, $id)

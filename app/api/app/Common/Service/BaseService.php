@@ -12,23 +12,62 @@ abstract class BaseService
 	// use AuthServiceTrait;
 	protected int $loggedUserId;	
 
-	/**
-	 * Get repository instance
-	 * @return BaseRepository
-	 */
-	protected function getRepository(): BaseRepository
+	
+	protected function map($source, $destination)
 	{
-		return $this->repository;
+		$sourceReflection = new \ReflectionObject($source);
+		$destinationReflection = new \ReflectionObject($destination);
+
+		foreach ($sourceReflection->getProperties() as $sourceProperty) {
+			$sourceProperty->setAccessible(true);
+			$name = $sourceProperty->getName();
+			if ($destinationReflection->hasProperty($name)) {
+				$destinationProperty = $destinationReflection->getProperty($name);
+				$destinationProperty->setAccessible(true);
+				$destinationProperty->setValue($destination, $sourceProperty->getValue($source));
+			}
+		}
 	}
 
-	/**
-	 * Validate and prepare data before saving
-	 * This method should be overridden in child classes if needed
-	 * @param array $data
-	 * @return array
-	 */
-	protected function validateAndPrepareData(array $data): array
+	public function convertRowsToEntity(?array $rows, $entityClass): array
 	{
-		return $data;
+		if ($rows == null) {
+			return [];
+		}
+		$returnData = [];
+		foreach ($rows as $row) {
+			$returnData[] = $this->convertOneRowToEntity($row, $entityClass);
+		}
+
+		return $returnData;
+	}
+
+	public function convertOneRowToEntity($row, $entityClass)
+	{
+		$entity = new $entityClass();
+		$this->map($row, $entity);
+
+		return $entity;
+	}
+
+	public static function prepareDataForDbSave($formValues): array
+	{
+		return $formValues;
+	}
+
+	public function toArray($object): array
+	{
+		$array = [];
+		if (is_object($object)) {
+			$array = get_object_vars($object);
+		}
+
+		if (is_array($object)) {
+			return array_map(function ($value) {
+				return $this->toArray($value);
+			}, $array);
+		}
+
+		return $array;
 	}
 }

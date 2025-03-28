@@ -1,16 +1,18 @@
 <?php
 
-namespace Api\Security\Repositories;
+namespace Api\Common\Security;
 
-use League\OAuth2\Server\Entities\ClientEntityInterface;
-use League\OAuth2\Server\Entities\ScopeEntityInterface;
-use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
-use League\OAuth2\Server\Entities\TokenInterface;
-use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
-use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
-use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
-use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
+// doplnit #TODO
 
+// use League\OAuth2\Server\Entities\ClientEntityInterface;
+// use League\OAuth2\Server\Entities\ScopeEntityInterface;
+// use League\OAuth2\Server\Entities\AuthCodeEntityInterface;
+// use League\OAuth2\Server\Entities\TokenInterface;
+// use League\OAuth2\Server\Repositories\AccessTokenRepositoryInterface;
+// use League\OAuth2\Server\Repositories\ClientRepositoryInterface;
+// use League\OAuth2\Server\Repositories\ScopeRepositoryInterface;
+// use League\OAuth2\Server\Repositories\AuthCodeRepositoryInterface;
+//
 //class AccessTokenRepository implements AccessTokenRepositoryInterface
 //{
 //	public function persistNewAccessToken(TokenInterface $accessToken)
