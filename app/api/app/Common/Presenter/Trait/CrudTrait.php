@@ -38,13 +38,13 @@ trait CrudTrait
      * @Response(404, "Record not found")
      */
     public function actionDetail(int $id): void
-    {       
-        $item = $this->facade->findById($id);
+    {               
+        $item = $this->facade->findById($id);        
         if (!$item) {
             $this->sendError('Record not found', 404);
         }
 
-        $this->sendJson($item);
+        $this->sendJson($item->toArray());
         $this->terminate();
     }
 

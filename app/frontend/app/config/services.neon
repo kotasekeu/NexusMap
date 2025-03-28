@@ -2,9 +2,3 @@ services:
 	- App\Common\Router\RouterFactory::createRouter
 
 	- App\Modules\Dashboard\Service\DashboardService
-
-#	- App\Model\CustomersModel
-#	- App\Model\ProjectsModel
-#	- Btk\Helpers
-#
-#	- App\Models\ApiClient

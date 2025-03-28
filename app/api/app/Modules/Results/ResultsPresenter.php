@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Results;
+namespace Api\Modules\Results;
 
 use Api\Common\Presenter\BasePresenter;
 

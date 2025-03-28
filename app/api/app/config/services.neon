@@ -15,7 +15,12 @@ services:
 #	oauth2RepositoryAuthCode: Api\Security\Repositories\AuthCodeRepository
 #	oauth2CryptKey: League\OAuth2\Server\CryptKey(%oauth_private_key%, null, false)
 
+	#Common
 	- Api\Common\Router\RouterFactory::createRouter
+	- Api\Common\Repository\RouterRepository
+	- Api\Common\Service\RouterService
+
+
 	- Api\Modules\Default\DefaultPresenter(%swaggerFile%)
 
 

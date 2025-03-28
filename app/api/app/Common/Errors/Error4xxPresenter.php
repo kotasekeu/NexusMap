@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Api\Common\Errors;
 
-use App\Model\Exception\Runtime\InvalidStateException;
 use Nette\Application\BadRequestException;
 use Nette\Application\Request;
 use Nette\Application\UI\ComponentReflection;

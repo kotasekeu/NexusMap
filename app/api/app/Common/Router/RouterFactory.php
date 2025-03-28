@@ -6,21 +6,21 @@ namespace Api\Common\Router;
 
 use Nette;
 use Nette\Application\Routers\RouteList;
+use Api\Common\Service\RouterService;
 
 final class RouterFactory
 {
 	use Nette\StaticClass;
 
-	public static function createRouter(): RouteList
+	public static function createRouter(RouterService $routerService): RouteList
 	{
 		$router = new RouteList();
 
-//		$router->addRoute('/v1/login', 'Modules:Auth:login');
+		$routes = $routerService->getAllRoutes();
 
-		$router->addRoute('/v1/customers',									"Modules:Customers:default");
-		$router->addRoute('/v1/customers/<id>',									"Modules:Customers:detail");
-
-		$router->addRoute('/v1/swagger',									"Modules:Default:swagger");
+		foreach ($routes as $key => $item) {
+			$router->addRoute($key, $item);
+		}
 
 		$router->addRoute('/v1[/<presenter>[/<action>[/<id>]]]', [
 			'presenter' => 'Modules:Default',
