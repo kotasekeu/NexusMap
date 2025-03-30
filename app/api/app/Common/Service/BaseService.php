@@ -9,10 +9,6 @@ use Api\Common\Service\AuthServiceTrait;
 
 abstract class BaseService
 {
-	// use AuthServiceTrait;
-	protected int $loggedUserId;	
-
-	
 	protected function map($source, $destination)
 	{
 		$sourceReflection = new \ReflectionObject($source);

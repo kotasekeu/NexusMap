@@ -8,45 +8,45 @@ use Api\Common\Exception\UnauthorizedException;
 
 trait CrudTrait
 {
-    /**
-     * @OpenApi("
-     *   summary: Get list of all records
-     * ")
-     * @Path("")
-     * @Method("GET")
-     * @Response(200, "List of records")
-     * @Response(401, "Unauthorized")
-     */
-    public function actionDefault(): void
-    {
-        try {
-            $items = $this->facade->findAll();
-            $this->sendJson($items);
-        } catch (UnauthorizedException $e) {
-            $this->sendError($e->getMessage(), 401);
-        }
-        $this->terminate();
-    }
+	/**
+	 * @OpenApi("
+	 *   summary: Get list of all records
+	 * ")
+	 * @Path("")
+	 * @Method("GET")
+	 * @Response(200, "List of records")
+	 * @Response(401, "Unauthorized")
+	 */
+	public function actionDefault(): void
+	{
+		try {
+			$items = $this->facade->getFilteredList(); //#FIXME add filter
+			$this->sendJson($items);
+		} catch (UnauthorizedException $e) {
+			$this->sendError($e->getMessage(), 401);
+		}
+		$this->terminate();
+	}
 
-    /**
-     * @OpenApi("
-     *   summary: Get record by ID
-     * ")
-     * @Path("/{id}")
-     * @Method("GET")
-     * @Response(200, "Record detail")
-     * @Response(404, "Record not found")
-     */
-    public function actionDetail(int $id): void
-    {               
-        $item = $this->facade->findById($id);        
-        if (!$item) {
-            $this->sendError('Record not found', 404);
-        }
+	/**
+	 * @OpenApi("
+	 *   summary: Get record by ID
+	 * ")
+	 * @Path("/{id}")
+	 * @Method("GET")
+	 * @Response(200, "Record detail")
+	 * @Response(404, "Record not found")
+	 */
+	public function actionDetail(int $id): void
+	{
+		$item = $this->facade->findById($id);
+		if (!$item) {
+			$this->sendError('Record not found', 404);
+		}
 
-        $this->sendJson($item->toArray());
-        $this->terminate();
-    }
+		$this->sendJson($item->toArray());
+		$this->terminate();
+	}
 
 	/**
 	 * @OpenApi("

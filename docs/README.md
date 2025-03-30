@@ -60,3 +60,6 @@ Sloupce, které je nutné ošetřit NaN hodnotami a na jakou hodnotu
 
 vizualizovat clustery na mapě, po najetí zobrazit popupbox a info, link na detail daného clusteru, zvýraznit clustery s extrémy
 optimalizace rychlosti
+
+
+Z root  - phpdoc run -d app/api/app -t docs/api

@@ -4,48 +4,88 @@ declare(strict_types=1);
 
 namespace Api\Common\Facade;
 
-use Api\Common\Exception\UnauthorizedException;
+use Api\Common\Facade\Trait\BaseFacadeCrudTrait;
+use App\Common\Service\BaseCrudService;
+use App\Common\Exception\ValidationException;
 
+/**
+ * Base facade class providing common functionality for all facades
+ */
 abstract class BaseFacade
 {
-	protected int $loggedUserId;
-	private AuthService $authService;  // service pro práci s JWT tokenem
+	/** @var BaseCrudService Service instance for CRUD operations */
+	protected BaseCrudService $baseCrudService;
 
-	public function __construct(AuthService $authService)
+	use BaseFacadeCrudTrait;
+
+	/**
+	 * Create success response with data
+	 * @param mixed $data Response data
+	 * @return array Response array with success status and data
+	 */
+	protected function createSuccessResponse($data): array
 	{
-		$this->authService = $authService;
+		return [
+			'status' => 'success',
+			'data' => $data
+		];
 	}
 
 	/**
-	 * @throws UnauthorizedException
+	 * Create error response with message and code
+	 * @param string $message Error message
+	 * @param int $code Error code
+	 * @return array Response array with error status, code and message
 	 */
-	protected function validateToken(): void
+	protected function createErrorResponse(string $message, int $code = 400): array
 	{
-		$token = $this->authService->getCurrentToken();
-		if (!$token || !$this->authService->isTokenValid($token)) {
-			throw new UnauthorizedException('Invalid or missing token');
+		return [
+			'status' => 'error',
+			'error' => [
+				'code' => $code,
+				'message' => $message
+			]
+		];
+	}
+
+	/**
+	 * Create empty success response
+	 * @return array Response array with success status and null data
+	 */
+	protected function createEmptyResponse(): array
+	{
+		return [
+			'status' => 'success',
+			'data' => null
+		];
+	}
+
+	/**
+	 * Validate that required fields are present in data array
+	 * @param array $data Data to validate
+	 * @param array $fields Required field names
+	 * @throws ValidationException When required fields are missing
+	 */
+	protected function validateRequiredFields(array $data, array $fields): void
+	{
+		$missing = [];
+		foreach ($fields as $field) {
+			if (!isset($data[$field])) {
+				$missing[] = $field;
+			}
 		}
-		$this->loggedUserId = $this->authService->getUserIdFromToken($token);
+		
+		if (!empty($missing)) {
+			throw new ValidationException('Missing required fields: ' . implode(', ', $missing));
+		}
 	}
 
-	public function setLoggedUserId(int $loggedUserId)
+	/**
+	 * Validate input data - implementation in specific facades
+	 * @param array $data Data to validate
+	 */
+	protected function validateInputData(array $data): void
 	{
-		$this->loggedUserId = $loggedUserId;
+		// Implementation in specific facades
 	}
-
-
-	// /**
-	//  * Všechny public metody facade by měly volat validateToken
-	//  */
-	// public function findAll(): array
-	// {
-	// 	$this->validateToken();
-	// 	// implementace
-	// }
-
-	// public function findById(int $id): ?object
-	// {
-	// 	$this->validateToken();
-	// 	// implementace
-	// }
 }

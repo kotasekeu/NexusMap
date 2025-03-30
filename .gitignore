@@ -69,3 +69,6 @@ app/frontend/public/template/*
 
 phpstan_output.txt
 phpcs_output.txt
+
+.phpdoc
+docs/api/*

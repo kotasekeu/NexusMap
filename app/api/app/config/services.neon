@@ -20,9 +20,13 @@ services:
 	- Api\Common\Repository\RouterRepository
 	- Api\Common\Service\RouterService
 
+	# #Middleware	
+	# - App\Common\Middleware\BasicAuthMiddleware
+	# - App\Common\Middleware\JsonMiddleware
+	# - App\Common\Service\JWTService(%configDir%)
+	# - App\Common\Middleware\JWTAuthMiddleware
 
 	- Api\Modules\Default\DefaultPresenter(%swaggerFile%)
-
 
 	#Repositories
 	- Api\Modules\Customers\Repository\CustomerRepository
