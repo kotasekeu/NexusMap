@@ -21,7 +21,7 @@ abstract class BaseRepository
 	 * Find all active records
 	 * @return array
 	 */
-	public function findAll(): array
+	public function getFilteredList(): array
 	{
 		return $this->db->select('*')
 			->from($this->table)
@@ -34,7 +34,7 @@ abstract class BaseRepository
 	 * @param int $id
 	 * @return array|null
 	 */
-	public function findById(int $id): ?Row
+	public function getOneById(int $id): ?Row
 	{
 		return $this->db->select('*')
 			->from($this->table)

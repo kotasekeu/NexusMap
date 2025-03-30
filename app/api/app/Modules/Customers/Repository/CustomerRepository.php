@@ -6,6 +6,7 @@ namespace Api\Modules\Customers\Repository;
 
 use Api\Common\Repository\BaseRepository;
 use Dibi\Connection;
+use Dibi\Row;
 
 class CustomerRepository extends BaseRepository
 {
@@ -22,7 +23,7 @@ class CustomerRepository extends BaseRepository
 	 * @param string $email
 	 * @return array|null
 	 */
-	public function findByEmail(string $email): ?array
+	public function findByEmail(string $email): ?Row
 	{
 		return $this->db->select('*')
 			->from($this->table)
@@ -30,16 +31,16 @@ class CustomerRepository extends BaseRepository
 			->fetch();
 	}
 
-	/**
-	 * Update customer tokens
-	 * @param int $customerId
-	 * @param int $remainingTokens
-	 * @return bool
-	 */
-	public function updateTokens(int $customerId, int $remainingTokens): bool
-	{
-		return $this->db->update($this->table, ['remaining_tokens' => $remainingTokens])
-			->where('customer_id = %i AND visible = 1', $customerId)
-			->execute();
-	}
+//	/**
+//	 * Update customer tokens
+//	 * @param int $customerId
+//	 * @param int $remainingTokens
+//	 * @return bool
+//	 */
+//	public function updateTokens(int $customerId, int $remainingTokens): mixed
+//	{
+//		return $this->db->update($this->table, ['remaining_tokens' => $remainingTokens])
+//			->where('customer_id = %i AND visible = 1', $customerId)
+//			->execute();
+//	}
 }

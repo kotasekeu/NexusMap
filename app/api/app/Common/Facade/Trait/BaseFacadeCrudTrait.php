@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Api\Common\Facade\Trait;
 
+use Api\Modules\Customers\Entity\Customer;
+
 /**
  * Base trait for CRUD operations in facades
  */
@@ -14,11 +16,11 @@ trait BaseFacadeCrudTrait
      * @param int $id Record ID
      * @return array Response with found record
      */
-	public function getOneById(int $id): array
+	public function getOneById(int $id): ?Customer
 	{
-		return $this->createSuccessResponse(
-			$this->baseCrudService->getOneById($id)
-		);
+//		return $this->createSuccessResponse(
+		return $this->service->getOneById($id);
+//		);
 	}
 
     /**
@@ -29,7 +31,7 @@ trait BaseFacadeCrudTrait
 	public function getFilteredList(array $filters = []): array
 	{
 		return $this->createSuccessResponse(
-			$this->baseCrudService->getFilteredList($filters)
+			$this->service->getFilteredList($filters)
 		);
 	}
 
@@ -42,7 +44,7 @@ trait BaseFacadeCrudTrait
 	{
 		$this->validateInputData($data);
 		return $this->createSuccessResponse(
-			$this->baseCrudService->create($data)
+			$this->service->create($data)
 		);
 	}
 
@@ -55,7 +57,7 @@ trait BaseFacadeCrudTrait
 	{
 		$this->validateInputData($data);
 		return $this->createSuccessResponse(
-			$this->baseCrudService->update($data)
+			$this->service->update($data)
 		);
 	}
 
@@ -66,7 +68,7 @@ trait BaseFacadeCrudTrait
      */
 	public function delete(int $id): array
 	{
-		$this->baseCrudService->delete($id);
+		$this->service->delete($id);
 		return $this->createEmptyResponse();
 	}
 }

@@ -6,25 +6,25 @@ namespace Api\Common\Presenter\Trait;
 
 use Api\Common\Exception\UnauthorizedException;
 
-trait CrudTrait
+trait CrudPresenterTrait
 {
 	/**
 	 * @OpenApi("
 	 *   summary: Get list of all records
 	 * ")
 	 * @Path("")
-	 * @Method("GET")
+	 * @Method("POST")
 	 * @Response(200, "List of records")
 	 * @Response(401, "Unauthorized")
 	 */
 	public function actionDefault(): void
 	{
-		try {
+//		try {
 			$items = $this->facade->getFilteredList(); //#FIXME add filter
 			$this->sendJson($items);
-		} catch (UnauthorizedException $e) {
-			$this->sendError($e->getMessage(), 401);
-		}
+//		} catch (UnauthorizedException $e) {
+//			$this->sendError($e->getMessage(), 401);
+//		}
 		$this->terminate();
 	}
 
@@ -39,7 +39,7 @@ trait CrudTrait
 	 */
 	public function actionDetail(int $id): void
 	{
-		$item = $this->facade->findById($id);
+		$item = $this->facade->getOneById($id);
 		if (!$item) {
 			$this->sendError('Record not found', 404);
 		}

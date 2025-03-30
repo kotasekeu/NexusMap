@@ -55,6 +55,7 @@ abstract class BaseService
 	{
 		$array = [];
 		if (is_object($object)) {
+
 			$array = get_object_vars($object);
 		}
 

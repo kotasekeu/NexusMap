@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Api\Modules\Customers;
 
 use Api\Common\Presenter\BasePresenter;
-use Api\Common\Presenter\Trait\CrudTrait;
+use Api\Common\Presenter\Trait\CrudPresenterTrait;
 use Api\Modules\Customers\Facade\CustomerFacade;
 
 	/**
@@ -14,7 +14,7 @@ use Api\Modules\Customers\Facade\CustomerFacade;
 	 */
 class CustomersPresenter extends BasePresenter
 {
-	use CrudTrait;
+	use CrudPresenterTrait;
 
 	private CustomerFacade $facade;
 
@@ -34,14 +34,15 @@ class CustomersPresenter extends BasePresenter
 	 */
 	public function actionFindByEmail(string $email): void
 	{
-		$this->validateToken();
-		
 		$customer = $this->facade->findByEmail($email);
 		if (!$customer) {
-			$this->sendError('Customer not found', 404);
+			$this->facade->createErrorResponse('Customer not found', 404);
 		}
 
-		$this->sendJson($customer->toArray());
+		$this->sendJson(
+			$this->facade->createSuccessResponse($customer)
+		);
+
 		$this->terminate();
 	}
 
@@ -54,21 +55,20 @@ class CustomersPresenter extends BasePresenter
 	 * @Response(200, "Tokens updated")
 	 * @Response(404, "Customer not found")
 	 */
-	public function actionUpdateTokens(int $id): void
+	public function actionUpdateTokens(int $id, int $tokens): void
 	{
-		$this->validateToken();
+		$customer = $this->facade->getOneById($id);
 
-		$data = $this->getRequestBody();
-		if (!isset($data['remaining_tokens'])) {
-			$this->sendError('Missing remaining_tokens parameter', 400);
-		}
-
-		$customer = $this->facade->updateTokens($id, (int)$data['remaining_tokens']);
 		if (!$customer) {
-			$this->sendError('Customer not found', 404);
+			$this->facade->createErrorResponse('Customer not found', 404);
 		}
 
-		$this->sendJson($customer->toArray());
+		$customer = $this->facade->updateTokens($customer, $tokens);
+
+		$this->sendJson(
+			$this->facade->createSuccessResponse($customer)
+		);
+
 		$this->terminate();
 	}
 }

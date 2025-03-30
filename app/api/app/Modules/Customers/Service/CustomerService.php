@@ -8,48 +8,62 @@ use Api\Common\Service\BaseService;
 use Api\Modules\Customers\Entity\Customer;
 use Api\Modules\Customers\Repository\CustomerRepository;
 use Api\Common\Service\BaseCrudServiceTrait;
+use Dibi\Row;
 
 class CustomerService extends BaseService
 {
 	use BaseCrudServiceTrait;
 
+	private string $entity;
 	private CustomerRepository $repository;
 
 	public function __construct(
 		CustomerRepository $repository
 	) {
 		$this->repository = $repository;
+		$this->entity = Customer::class;
 	}
 
-	/**
-	 * Validate and prepare data before saving
-	 */
-	public function validateAndPrepareData(array $data): array
+	public function findByEmail(string $email): ?Customer
 	{
-		if (isset($data['email'])) {
-			$this->validateEmail($data['email']);
-			$data['email'] = strtolower($data['email']);
-		}
-		
-		if (isset($data['password'])) {
-			$this->validatePassword($data['password']);
-			$data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
-		}
-
-		return $data;
+		$data = $this->repository->findByEmail($email);
+		return $data ? $this->convertOneRowToEntity($data, $this->entity) : null;
 	}
 
-	private function validateEmail(string $email): void
+	public function updateTokens(int $customer_id, int $tokens): void
 	{
-		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-			throw new \InvalidArgumentException('Invalid email format');
-		}
+		$this->repository->updateTokens($customer_id, $tokens);
 	}
-
-	private function validatePassword(string $password): void
-	{
-		if (strlen($password) < 8) {
-			throw new \InvalidArgumentException('Password must be at least 8 characters long');
-		}
-	}
+// #TODO
+//	/**
+//	 * Validate and prepare data before saving
+//	 */
+//	public function validateAndPrepareData(array $data): array
+//	{
+//		if (isset($data['email'])) {
+//			$this->validateEmail($data['email']);
+//			$data['email'] = strtolower($data['email']);
+//		}
+//
+//		if (isset($data['password'])) {
+//			$this->validatePassword($data['password']);
+//			$data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+//		}
+//
+//		return $data;
+//	}
+//
+//	private function validateEmail(string $email): void
+//	{
+//		if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+//			throw new \InvalidArgumentException('Invalid email format');
+//		}
+//	}
+//
+//	private function validatePassword(string $password): void
+//	{
+//		if (strlen($password) < 8) {
+//			throw new \InvalidArgumentException('Password must be at least 8 characters long');
+//		}
+//	}
 }

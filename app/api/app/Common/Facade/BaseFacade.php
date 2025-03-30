@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Api\Common\Facade;
 
-use Api\Common\Facade\Trait\BaseFacadeCrudTrait;
-use App\Common\Service\BaseCrudService;
 use App\Common\Exception\ValidationException;
 
 /**
@@ -13,21 +11,16 @@ use App\Common\Exception\ValidationException;
  */
 abstract class BaseFacade
 {
-	/** @var BaseCrudService Service instance for CRUD operations */
-	protected BaseCrudService $baseCrudService;
-
-	use BaseFacadeCrudTrait;
-
 	/**
 	 * Create success response with data
 	 * @param mixed $data Response data
 	 * @return array Response array with success status and data
 	 */
-	protected function createSuccessResponse($data): array
+	public function createSuccessResponse($data): array
 	{
 		return [
 			'status' => 'success',
-			'data' => $data
+			'data' => $this->toArray($data)
 		];
 	}
 
@@ -37,7 +30,7 @@ abstract class BaseFacade
 	 * @param int $code Error code
 	 * @return array Response array with error status, code and message
 	 */
-	protected function createErrorResponse(string $message, int $code = 400): array
+	public function createErrorResponse(string $message, int $code = 400): array
 	{
 		return [
 			'status' => 'error',
@@ -52,7 +45,7 @@ abstract class BaseFacade
 	 * Create empty success response
 	 * @return array Response array with success status and null data
 	 */
-	protected function createEmptyResponse(): array
+	public function createEmptyResponse(): array
 	{
 		return [
 			'status' => 'success',
@@ -84,8 +77,19 @@ abstract class BaseFacade
 	 * Validate input data - implementation in specific facades
 	 * @param array $data Data to validate
 	 */
-	protected function validateInputData(array $data): void
+	public function validateInputData(array $data): void
 	{
 		// Implementation in specific facades
 	}
+
+	/**
+	 * Convert data to array
+	 * @param mixed $data Data to convert
+	 * @return array Converted data
+	 */
+	public function toArray(mixed $data): array
+	{
+		return $this->service->toArray($data);
+	}
+
 }

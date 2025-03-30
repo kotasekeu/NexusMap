@@ -36,10 +36,9 @@ trait BaseCrudServiceTrait
 	 * @throws UnauthorizedException
 	 * @return array
 	 */
-	protected function findAll(): array
+	protected function getFilteredList(array $filter): array
 	{
-		$this->validateToken();
-		return $this->repository->findAll();
+		return $this->repository->getFilteredList($filter);
 	}
 
 	/**
@@ -48,10 +47,10 @@ trait BaseCrudServiceTrait
 	 * @throws UnauthorizedException
 	 * @return array|null
 	 */
-	public function findById(int $id): ?Row 
+	public function getOneById(int $id): mixed
 	{
-		$this->validateToken();
-		return $this->repository->findById($id);
+		//$this->validateToken(); #TODO
+		return $this->convertOneRowToEntity($this->repository->getOneById($id), $this->entity);
 	}
 
 	/**
@@ -62,8 +61,8 @@ trait BaseCrudServiceTrait
 	 */
 	protected function create(array $data): int
 	{
-		$this->validateToken();
-		return $this->repository->create($data);
+//		$this->validateToken(); #TODO
+ 		return $this->repository->create($data);
 	}
 
 	/**
@@ -74,13 +73,13 @@ trait BaseCrudServiceTrait
 	 */
 	protected function delete(int $id): bool
 	{
-		$this->validateToken();
+//		$this->validateToken(); #TODO
 		return $this->repository->delete($id);
 	}
 
 	private function validateToken(): void
 	{
-		// $this->validateToken();
+		// $this->validateToken(); #TODO
 		// TODO: implementovat validaci tokenu
 	}
 }
