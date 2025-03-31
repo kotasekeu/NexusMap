@@ -13,11 +13,6 @@ class CustomerRepository extends BaseRepository
 	protected string $table 		= 'customers';
 	protected string $primaryKey 	= 'customer_id';
 
-	public function __construct(Connection $connection) 
-	{
-		parent::__construct($connection);
-	}
-
 	/**
 	 * Find customer by email
 	 * @param string $email

@@ -30,9 +30,7 @@ trait BaseFacadeCrudTrait
      */
 	public function getFilteredList(array $filters = []): array
 	{
-		return $this->createSuccessResponse(
-			$this->service->getFilteredList($filters)
-		);
+		return $this->service->getFilteredList($filters);
 	}
 
     /**

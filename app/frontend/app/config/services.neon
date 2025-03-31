@@ -2,3 +2,5 @@ services:
 	- App\Common\Router\RouterFactory::createRouter
 
 	- App\Modules\Dashboard\Service\DashboardService
+
+	- App\Services\ProjectsApiClient

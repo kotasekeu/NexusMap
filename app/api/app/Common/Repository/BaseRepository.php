@@ -21,7 +21,7 @@ abstract class BaseRepository
 	 * Find all active records
 	 * @return array
 	 */
-	public function getFilteredList(): array
+	public function getFilteredList(?array $filters): array
 	{
 		return $this->db->select('*')
 			->from($this->table)

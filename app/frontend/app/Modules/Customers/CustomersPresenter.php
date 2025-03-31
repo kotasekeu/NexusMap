@@ -4,7 +4,9 @@ declare(strict_types = 1);
 
 namespace App\Modules\Customers;
 
-class CustomersPresenter extends BasePresenter
+use App\Common\Services\BaseService;
+
+class CustomersPresenter extends BaseService
 {
 	public function __construct()
 	{

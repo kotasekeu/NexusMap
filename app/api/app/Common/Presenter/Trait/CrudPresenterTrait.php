@@ -19,12 +19,12 @@ trait CrudPresenterTrait
 	 */
 	public function actionDefault(): void
 	{
-//		try {
+		try {
 			$items = $this->facade->getFilteredList(); //#FIXME add filter
 			$this->sendJson($items);
-//		} catch (UnauthorizedException $e) {
-//			$this->sendError($e->getMessage(), 401);
-//		}
+		} catch (UnauthorizedException $e) {
+			$this->sendError($e->getMessage(), 401);
+		}
 		$this->terminate();
 	}
 

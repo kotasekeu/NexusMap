@@ -8,7 +8,7 @@ use Dibi\Row;
 
 trait BaseCrudServiceTrait
 {
-    	/**
+	/**
 	 * Update existing record by hiding previous record and creating new one.
 	 * We use delete() to hide the previous record and create() to insert new version
 	 * to maintain history of changes. Transaction ensures we don't lose data if create fails.
@@ -36,9 +36,9 @@ trait BaseCrudServiceTrait
 	 * @throws UnauthorizedException
 	 * @return array
 	 */
-	protected function getFilteredList(array $filter): array
+	public function getFilteredList(array $filters): ?array
 	{
-		return $this->repository->getFilteredList($filter);
+		return $this->repository->getFilteredList($filters);
 	}
 
 	/**
@@ -59,7 +59,7 @@ trait BaseCrudServiceTrait
 	 * @throws UnauthorizedException
 	 * @return int Inserted ID
 	 */
-	protected function create(array $data): int
+	public function create(array $data): int
 	{
 //		$this->validateToken(); #TODO
  		return $this->repository->create($data);
@@ -71,7 +71,7 @@ trait BaseCrudServiceTrait
 	 * @throws UnauthorizedException
 	 * @return bool
 	 */
-	protected function delete(int $id): bool
+	public function delete(int $id): bool
 	{
 //		$this->validateToken(); #TODO
 		return $this->repository->delete($id);

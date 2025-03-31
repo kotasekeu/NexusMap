@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace Api\Modules\Projects\Repository;
 
-use Api\Common\Repositories\BaseRepository;
+use Api\Common\Repository\BaseRepository;
 
 class ProjectRepository extends BaseRepository
 {
-	private int $id; // smazat jen pro phpcs
+	protected string $table 		= 'projects';
+	protected string $primaryKey 	= 'project_id';
+
 }

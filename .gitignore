@@ -45,12 +45,12 @@ app/config/settings.py
 #Nette
 local.neon
 app/frontend/temp/cache
-app/frontend/temp/session
+app/frontend/temp/sessions
 app/frontend/public/userfiles
 app/frontend/log
 
 app/api/temp/cache
-app/api/temp/session
+app/api/temp/sessions
 app/api/public/userfiles
 app/api/log
 
