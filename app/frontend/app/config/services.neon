@@ -1,6 +1,16 @@
 services:
+	#common
 	- App\Common\Router\RouterFactory::createRouter
+
+	- App\Common\Services\ApiService
+	- App\Common\Services\RouterService
+
+	- App\Common\Repository\RouterRepository
+
+	- App\Common\Factory\FormFactory
+
+
 
 	- App\Modules\Dashboard\Service\DashboardService
 
-	- App\Services\ProjectsApiClient
+	- App\Modules\Login\Forms\LoginFormFactory

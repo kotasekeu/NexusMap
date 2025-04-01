@@ -6,10 +6,9 @@ namespace App\Common\Services;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
-use Nette\Caching\Cache;
 use Contributte;
 
-abstract class ApiService extends BaseService
+class ApiService extends BaseService
 {
 	private const API_URL = 'http://api.nexusmap.l/v1'; // #TODO
 	private Client $httpClient;

@@ -24,8 +24,9 @@ abstract class BasePresenter extends Presenter
 		$presenterDir = dirname($presenterReflection->getFileName());
 		$this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
 
-//		if (!$this->getUser()->isLoggedIn() && $this->getName() !== 'Login:login') {
-//			$this->redirect('Login:Login:default');
-//		}
+		if (!$this->getUser()->isLoggedIn() && $this->getPresenter()->getName() !== 'Modules:Login'
+			&& $this->getPresenter()->getAction() !== 'default') {
+			$this->redirect('Login:default');
+		}
 	}
 }
