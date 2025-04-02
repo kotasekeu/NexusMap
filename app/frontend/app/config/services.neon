@@ -2,15 +2,15 @@ services:
 	#common
 	- App\Common\Router\RouterFactory::createRouter
 
-	- App\Common\Services\ApiService
+	- App\Common\Services\ApiService(%api.apiBaseUrl%)
 	- App\Common\Services\RouterService
 
 	- App\Common\Repository\RouterRepository
 
 	- App\Common\Factory\FormFactory
 
-
-
 	- App\Modules\Dashboard\Service\DashboardService
 
 	- App\Modules\Login\Forms\LoginFormFactory
+	- App\Modules\Projects\LoginService
+	- App\Modules\Login\Repository\LoginRepository

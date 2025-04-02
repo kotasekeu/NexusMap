@@ -12,17 +12,17 @@
 							</a>
 						</div>
 						<div class="login-main">
-							{form loginForm, class => "theme-form"}
+							{form loginForm, class => "theme-form", autocomplete => "off"}
 								<h4>Přihlasit se k účtu</h4>
 								<p>Vložte Váš e-mail a heslo</p>
 								<div class="form-group">
 									{label email, class => "col-form-label" /}
-									{input email, class => "form-control"}
+									{input email, class => "form-control", tabindex => "1"}
 								</div>
 								<div class="form-group">
 									{label passwd, class => "col-form-label" /}
 									<div class="form-input position-relative">
-										{input passwd, class => "form-control"}
+										{input passwd, class => "form-control", tabindex => "2"}
 									</div>
 								</div>
 								<ul class="errors text-danger" n:ifcontent>
@@ -31,7 +31,7 @@
 								<div class="form-group mb-0">
 									<div class="text-end mt-3">
 										<br />
-										<button class="btn btn-primary btn-block w-100" type="submit">Přihlásit</button>
+										<button class="btn btn-primary btn-block w-100" type="submit" tabindex = "3">Přihlásit</button>
 									</div>
 								</div>
 							{/form}

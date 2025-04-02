@@ -14,8 +14,12 @@ abstract class BasePresenter extends Presenter
 
 	protected function startup()
 	{
-
 		parent::startup();
+
+		if (!$this->getUser()->isLoggedIn() && !($this->getPresenter()->getName() == 'Modules:Login'
+			&& $this->getPresenter()->getAction() == 'default')) {
+			$this->redirect('Login:default');
+		}
 	}
 
 	protected function beforeRender()
@@ -23,10 +27,5 @@ abstract class BasePresenter extends Presenter
 		$presenterReflection = new \ReflectionClass($this);
 		$presenterDir = dirname($presenterReflection->getFileName());
 		$this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
-
-		if (!$this->getUser()->isLoggedIn() && $this->getPresenter()->getName() !== 'Modules:Login'
-			&& $this->getPresenter()->getAction() !== 'default') {
-			$this->redirect('Login:default');
-		}
 	}
 }

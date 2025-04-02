@@ -10,11 +10,12 @@ use Contributte;
 
 class ApiService extends BaseService
 {
-	private const API_URL = 'http://api.nexusmap.l/v1'; // #TODO
+	private string $apiUrl;
 	private Client $httpClient;
 
-	public function __construct()
+	public function __construct(string $apiUrl)
 	{
+		$this->apiUrl = $apiUrl;
 		$this->httpClient = new Client([]);
 	}
 

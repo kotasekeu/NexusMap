@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Login\Forms;
 
 use App\Common\Factory\FormFactory;
+use App\Modules\Projects\LoginService;
 use Nette;
 use Nette\Application\UI\Form;
 use Nette\Utils\ArrayHash;
@@ -16,10 +17,14 @@ final class LoginFormFactory
 	/** @var FormFactory */
 	private $factory;
 
+	private $loginService;
+
 	public function __construct(
-		FormFactory					$factory)
+		FormFactory					$factory,
+		LoginService				$loginService)
 	{
 		$this->factory				= $factory;
+		$this->loginService			= $loginService;
 	}
 
 	public function loginForm(callable $onSuccess): Form
@@ -36,15 +41,26 @@ final class LoginFormFactory
 		$form->addSubmit('login', 'Přihlásit se');
 
 		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
-			if ($this->loginFacade->isDiredocUidUnique($values['diredoc_uid'], intval($values['diredoc_id'])) == false) {
+			$customer = $this->loginService->getCustomerByEmail($values->email);
+			if ( empty($customer) ) {
 				$form->addError('Tato kombinace e-mailu a hesla je neplatná');
 			}
 		};
 
 		$form->onSuccess[] = function (Form $form, ArrayHash $values) use ($onSuccess): void {
 
-			$this->formSuccess($values);
+			$customer = $this->loginService->getCustomerByEmail($values->email);
 
+			try {
+				$this->getUser()->login($values->username, $values->password);
+
+				$this->restoreRequest($this->backlink);
+				$this->redirect('MyNotify:default');
+			} catch (NS\AuthenticationException $e) {
+				$form->addError($e->getMessage());
+			}
+
+			$this->formSuccess($values);
 			$onSuccess();
 		};
 
@@ -53,24 +69,6 @@ final class LoginFormFactory
 
 	private function formSuccess($values): int
 	{
-		$diredoc = $this->diredocFacade->parseEntityFromFormData($values);
-		$tags = $diredoc->tags;
-		$associated_diredoc = $diredoc->associated_diredoc;
-
-		$diredoc_id = $this->diredocFacade->setDiredoc($diredoc);
-
-
-//		try {
-//			$this->getUser()->login($values->username, $values->password);
-//
-//			$this->restoreRequest($this->backlink);
-//			$this->redirect('MyNotify:default');
-//		} catch (NS\AuthenticationException $e) {
-//			$form->addError($e->getMessage());
-//		}
-
-
-
-		return $diredoc_id;
+		return $this->getUser()->getId();
 	}
 }
