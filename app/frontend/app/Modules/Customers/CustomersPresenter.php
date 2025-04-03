@@ -4,7 +4,7 @@ declare(strict_types = 1);
 
 namespace App\Modules\Customers;
 
-use App\Common\Services\BaseService;
+use App\Common\Service\BaseService;
 
 class CustomersPresenter extends BaseService
 {

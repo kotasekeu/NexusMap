@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Common\Services;
+namespace App\Common\Service;
 
 use App\Common\Repository\RouterRepository;
 use Dibi\Row;

@@ -27,5 +27,7 @@ abstract class BasePresenter extends Presenter
 		$presenterReflection = new \ReflectionClass($this);
 		$presenterDir = dirname($presenterReflection->getFileName());
 		$this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
+		$this->getTemplate()->userId  = $this->getUser()->getIdentity()->getId();
+		$this->getTemplate()->userData  = $this->getUser()->getIdentity()->getData();
 	}
 }

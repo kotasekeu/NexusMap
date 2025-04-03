@@ -19,8 +19,9 @@ latte:
 
 session:
 	expiration: 14 days
-	autoStart: smart
+	autoStart: true
 	savePath: "%tempDir%/sessions"
+
 
 extensions:
 	dibi: Dibi\Bridges\Nette\DibiExtension22

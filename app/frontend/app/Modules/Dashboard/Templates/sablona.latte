@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="cs">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>NexusMap</title>
+    <!-- Google font-->
+    <link rel="preconnect" href="https://fonts.googleapis.com"/>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""/>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@200;300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+    <!-- Feather icon-->
+    <link rel="stylesheet" type="text/css" href="{$baseUrl}/assets/css/vendors/feather-icon.css"/>
+    <!-- Bootstrap css-->
+    <link rel="stylesheet" type="text/css" href="{$baseUrl}/assets/css/vendors/bootstrap.css"/>
+    <!-- App css-->
+    <link rel="stylesheet" type="text/css" href="{$baseUrl}/assets/css/style.css"/>
+    <link id="color" rel="stylesheet" href="{$baseUrl}/assets/css/color-1.css" media="screen"/>
+    <!-- Responsive css-->
+    <link rel="stylesheet" type="text/css" href="{$baseUrl}/assets/css/responsive.css"/>
+  </head>
+  <body>
+    <!-- loader starts-->
+    <div class="loader-wrapper">
+      <div class="loader">
+        <div class="loader4"></div>
+      </div>
+    </div>
+    <!-- loader ends-->
+    <!-- tap on top starts-->
+    <div class="tap-top"><i data-feather="chevrons-up"></i></div>
+    <!-- tap on tap ends-->
+    <!-- page-wrapper Start-->
+    <div class="page-wrapper horizontal-wrapper" id="pageWrapper">
+      <!-- Page Header Start-->
+      <div class="page-header">
+        <div class="header-wrapper row m-0">
+          <div class="header-logo-wrapper col-auto p-0">
+            <div class="logo-wrapper">
+              <a href="index.html">
+                <img class="img-fluid for-light" src="{$baseUrl}/assets/images/logo/logo_dark.png" alt=""/>
+                <img class="img-fluid for-dark" src="{$baseUrl}/assets/images/logo/logo.png" alt=""/>
+              </a>
+            </div>
+          </div>
+          <div class="nav-right col-xxl-7 col-xl-6 col-md-7 col-8 pull-right right-header p-0 ms-auto">
+            <ul class="nav-menus">
+              <li>
+                <div class="mode"><i class="moon" data-feather="moon"> </i></div>
+              </li>
+              <li class="profile-nav onhover-dropdown">
+                <div class="media profile-media">
+                  <img class="b-r-10" src="{$baseUrl}/assets/images/dashboard/profile.png" alt=""/>
+                  <div class="media-body d-xxl-block d-none box-col-none">
+                    <div class="d-flex align-items-center gap-2">
+                      <span>Uživatel</span>
+                      <i class="middle fa fa-angle-down"> </i>
+                    </div>
+                    <p class="mb-0 font-roboto">Admin</p>
+                  </div>
+                </div>
+                <ul class="profile-dropdown onhover-show-div">
+                  <li><a href="user-profile.html"><i data-feather="user"></i><span>Můj profil</span></a></li>
+                  <li><a href="settings.html"><i data-feather="settings"></i><span>Nastavení</span></a></li>
+                  <li><a class="btn btn-pill btn-outline-primary btn-sm" href="login.html">Odhlásit se</a></li>
+                </ul>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <!-- Page Header Ends -->
+      <!-- Page Body Start-->
+      <div class="page-body-wrapper horizontal-menu">
+        <!-- Page Sidebar Start-->
+        <div class="sidebar-wrapper" data-layout="stroke-svg">
+          <div>
+            <nav class="sidebar-main">
+              <div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
+              <div id="sidebar-menu">
+                <ul class="sidebar-links" id="simple-bar">
+                  <li class="back-btn">
+                    <div class="mobile-back text-end"><span>Zpět</span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
+                  </li>
+                  <li class="sidebar-list">
+                    <a class="sidebar-link sidebar-title" href="index.html">
+                      <svg class="stroke-icon">
+                        <use href="{$baseUrl}/assets/svg/icon-sprite.svg#stroke-home"></use>
+                      </svg>
+                      <svg class="fill-icon">
+                        <use href="{$baseUrl}/assets/svg/icon-sprite.svg#fill-home"></use>
+                      </svg>
+                      <span>Dashboard</span>
+                    </a>
+                  </li>
+                  <li class="sidebar-list">
+                    <a class="sidebar-link sidebar-title" href="map.html">
+                      <svg class="stroke-icon">
+                        <use href="{$baseUrl}/assets/svg/icon-sprite.svg#stroke-map"></use>
+                      </svg>
+                      <svg class="fill-icon">
+                        <use href="{$baseUrl}/assets/svg/icon-sprite.svg#fill-map"></use>
+                      </svg>
+                      <span>Mapa</span>
+                    </a>
+                  </li>
+                  <li class="sidebar-list">
+                    <a class="sidebar-link sidebar-title" href="settings.html">
+                      <svg class="stroke-icon">
+                        <use href="{$baseUrl}/assets/svg/icon-sprite.svg#stroke-settings"></use>
+                      </svg>
+                      <svg class="fill-icon">
+                        <use href="{$baseUrl}/assets/svg/icon-sprite.svg#fill-settings"></use>
+                      </svg>
+                      <span>Nastavení</span>
+                    </a>
+                  </li>
+                </ul>
+              </div>
+              <div class="right-arrow" id="right-arrow"><i data-feather="arrow-right"></i></div>
+            </nav>
+          </div>
+        </div>
+        <!-- Page Sidebar Ends-->
+        <div class="page-body">
+          <div class="container-fluid">
+            <div class="page-title">
+              <div class="row">
+                <div class="col-6">
+                  <h3>Název stránky</h3>
+                </div>
+                <div class="col-6">
+                  <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                      <a href="index.html">
+                        <svg class="stroke-icon">
+                          <use href="{$baseUrl}/assets/svg/icon-sprite.svg#stroke-home"></use>
+                        </svg>
+                      </a>
+                    </li>
+                    <li class="breadcrumb-item active">Aktuální stránka</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid starts-->
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-sm-12">
+                <div class="card">
+                  <div class="card-body">
+                    ##### OBSAH #####
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Container-fluid Ends-->
+        </div>
+        <!-- footer start-->
+        <footer class="footer">
+          <div class="container-fluid">
+            <div class="row">
+              <div class="col-md-12 footer-copyright text-center">
+                <p class="mb-0">Copyright 2024 © NexusMap</p>
+              </div>
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+    <!-- latest jquery-->
+    <script src="{$baseUrl}/assets/js/jquery.min.js"></script>
+    <!-- Bootstrap js-->
+    <script src="{$baseUrl}/assets/js/bootstrap/bootstrap.bundle.min.js"></script>
+    <!-- feather icon js-->
+    <script src="{$baseUrl}/assets/js/icons/feather-icon/feather.min.js"></script>
+    <script src="{$baseUrl}/assets/js/icons/feather-icon/feather-icon.js"></script>
+    <!-- scrollbar js-->
+    <script src="{$baseUrl}/assets/js/scrollbar/simplebar.js"></script>
+    <script src="{$baseUrl}/assets/js/scrollbar/custom.js"></script>
+    <!-- Sidebar jquery-->
+    <script src="{$baseUrl}/assets/js/config.js"></script>
+    <!-- Plugins JS start-->
+    <script src="{$baseUrl}/assets/js/sidebar-menu.js"></script>
+    <script src="{$baseUrl}/assets/js/sidebar-pin.js"></script>
+    <!-- Theme js-->
+    <script src="{$baseUrl}/assets/js/script.js"></script>
+    <script src="{$baseUrl}/assets/js/theme-customizer/customizer.js"></script>
+  </body>
+</html>

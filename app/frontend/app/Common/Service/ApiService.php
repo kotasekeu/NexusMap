@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Common\Services;
+namespace App\Common\Service;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;

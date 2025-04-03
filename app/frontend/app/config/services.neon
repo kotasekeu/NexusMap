@@ -2,15 +2,24 @@ services:
 	#common
 	- App\Common\Router\RouterFactory::createRouter
 
-	- App\Common\Services\ApiService(%api.apiBaseUrl%)
-	- App\Common\Services\RouterService
+	- App\Common\Service\ApiService(%api.apiBaseUrl%)
+	- App\Common\Service\RouterService
 
 	- App\Common\Repository\RouterRepository
 
 	- App\Common\Factory\FormFactory
 
+	- App\Common\Service\AuthenticatorService(%passSalt%)
+
+	security.passwords: Nette\Security\Passwords(::PASSWORD_BCRYPT, [cost: 12])
+
+
 	- App\Modules\Dashboard\Service\DashboardService
 
 	- App\Modules\Login\Forms\LoginFormFactory
-	- App\Modules\Projects\LoginService
+	- App\Modules\Login\Service\LoginService
 	- App\Modules\Login\Repository\LoginRepository
+
+	- App\Modules\Projects\Service\ProjectsService
+	- App\Modules\Projects\Repository\ProjectsRepository
+	

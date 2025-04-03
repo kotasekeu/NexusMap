@@ -5,11 +5,19 @@ declare(strict_types=1);
 namespace App\Modules\Login\Forms;
 
 use App\Common\Factory\FormFactory;
-use App\Modules\Projects\LoginService;
+use App\Common\Service\AuthenticatorService;
+use App\Modules\Login\Service\LoginService;
 use Nette;
 use Nette\Application\UI\Form;
 use Nette\Utils\ArrayHash;
+use Nette\Security\Passwords;
+use App\Common\Service\Authenticator;
 
+/**
+ * LoginFormFactory class
+ * 
+ * This class is responsible for creating and managing the login form.
+ */
 final class LoginFormFactory
 {
 	use Nette\SmartObject;
@@ -17,20 +25,45 @@ final class LoginFormFactory
 	/** @var FormFactory */
 	private $factory;
 
+	/** @var LoginService */
 	private $loginService;
 
+	/** @var Passwords */
+	private $passwords;
+
+	/** @var AuthenticatorService */
+	private $authenticatorService;
+
+	/**
+	 * Constructor for LoginFormFactory class
+	 * 
+	 * @param FormFactory				$factory				Form factory.
+	 * @param LoginService				$loginService			Login service.
+	 * @param Passwords					$passwords				Password utility.
+	 * @param AuthenticatorService		$authenticatorService	Authenticator service.
+	 */
 	public function __construct(
 		FormFactory					$factory,
-		LoginService				$loginService)
+		LoginService				$loginService,
+		Passwords					$passwords,
+		AuthenticatorService		$authenticatorService)
 	{
 		$this->factory				= $factory;
 		$this->loginService			= $loginService;
+		$this->passwords			= $passwords;
+		$this->authenticatorService	= $authenticatorService;
 	}
 
+	/**
+	 * Creates and configures the login form.
+	 * 
+	 * @param callable $onSuccess Callback function to be executed on form success.
+	 * @return Form The configured login form.
+	 */
 	public function loginForm(callable $onSuccess): Form
 	{
 		$form = $this->factory->create();
-		$form->addProtection();
+		$form->addProtection('Platnost formuláře vypršela, obnovte stránku.');
 
 		$form->addEmail('email', 'E-mailová adresa')
 			->setRequired('Vyplňte email');
@@ -52,23 +85,14 @@ final class LoginFormFactory
 			$customer = $this->loginService->getCustomerByEmail($values->email);
 
 			try {
-				$this->getUser()->login($values->username, $values->password);
-
-				$this->restoreRequest($this->backlink);
-				$this->redirect('MyNotify:default');
-			} catch (NS\AuthenticationException $e) {
+				$identity = $this->authenticatorService->authenticate($customer, $values->passwd);
+			} catch (Nette\Security\AuthenticationException $e) {
 				$form->addError($e->getMessage());
 			}
 
-			$this->formSuccess($values);
-			$onSuccess();
+			$onSuccess($identity);
 		};
 
 		return $form;
-	}
-
-	private function formSuccess($values): int
-	{
-		return $this->getUser()->getId();
 	}
 }

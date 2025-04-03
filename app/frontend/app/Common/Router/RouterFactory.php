@@ -6,7 +6,7 @@ namespace App\Common\Router;
 
 use Nette;
 use Nette\Application\Routers\RouteList;
-use App\Common\Services\RouterService;
+use App\Common\Service\RouterService;
 
 /**
  * Factory for creating application router

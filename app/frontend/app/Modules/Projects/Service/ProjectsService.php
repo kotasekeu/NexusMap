@@ -2,9 +2,23 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\Projects;
+namespace App\Modules\Projects\Service;
 
-class ProjectsService extends BaseSer
+use App\Common\Service\BaseService;
+use App\Modules\Projects\Repository\ProjectsRepository;
+
+class ProjectsService extends BaseService
 {
-	private int $id; // smazat jen pro phpcs
+    private $projectsRepository;
+
+    public function __construct(ProjectsRepository $projectsRepository)
+    {
+        $this->projectsRepository = $projectsRepository;
+    }
+
+    public function getProjects(int $customer_id)
+    {
+        return $this->projectsRepository->getProjects($customer_id);
+    }
+
 }

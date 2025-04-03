@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Dashboard\Service;
 
-use App\Common\Services\BaseService;
+use App\Common\Service\BaseService;
 
 class DashboardService extends BaseService
 {
