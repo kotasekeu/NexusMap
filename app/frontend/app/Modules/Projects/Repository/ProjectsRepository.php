@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Projects\Repository;
 
 use App\Common\Repository\BaseRepository;
+use Dibi\Row;
 
 /**
  * ProjectRepository class
@@ -29,6 +30,16 @@ class ProjectsRepository extends BaseRepository
 			->where('customer_id = %i', $customer_id)
 			->where('visible = 1')
 			->fetchAll();
+	}
+
+	public function getProjectDetail(int $customer_id, int $project_id): Row
+	{
+		return $this->db->select('*')
+			->from($this->table)
+			->where('customer_id = %i', $customer_id)
+			->where('project_id = %i', $project_id)
+			->where('visible = 1')
+			->fetch();
 	}
 	
 }

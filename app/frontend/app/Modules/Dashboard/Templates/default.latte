@@ -1,66 +1,18 @@
-{layout '../../../Common/Templates/@layout2.latte'}
+{layout '../../../Common/Templates/@layout.latte'}
 
 {block content}
 
-
-	<!-- Page Body Start-->
-	<div class="page-body-wrapper">
-	<!-- Page Sidebar Start-->
-	<div class="sidebar-wrapper" data-layout="stroke-svg">
-		<div class="logo-wrapper"><a n:href="Dashboard:default"><img class="img-fluid" src="../assets/images/logo/logo.png" alt=""></a>
-			<div class="back-btn"><i class="fa fa-angle-left"> </i></div>
-			<div class="toggle-sidebar"><i class="status_toggle middle sidebar-toggle" data-feather="grid"> </i></div>
-		</div>
-		<div class="logo-icon-wrapper"><a n:href="Dashboard:default"><img class="img-fluid" src="../assets/images/logo/logo-icon.png" alt=""></a></div>
-		<nav class="sidebar-main">
-			<div class="left-arrow" id="left-arrow"><i data-feather="arrow-left"></i></div>
-			<div id="sidebar-menu">
-				<ul class="sidebar-links" id="simple-bar">
-					<li class="back-btn"><a n:href="Dashboard:default"><img class="img-fluid" src="../assets/images/logo/logo-icon.png" alt=""></a>
-						<div class="mobile-back text-end"> <span>Back </span><i class="fa fa-angle-right ps-2" aria-hidden="true"></i></div>
-					</li>
-
-					<li class="sidebar-main-title">
-						<div>
-							<h6 class="lan-1">General</h6>
-						</div>
-					</li>
-					<li class="sidebar-list">
-						<a class="sidebar-link sidebar-title" href="#">
-							<svg class="stroke-icon">
-								<use href="../assets/svg/icon-sprite.svg#stroke-home"></use>
-							</svg>
-							<svg class="fill-icon">
-								<use href="../assets/svg/icon-sprite.svg#fill-home"></use>
-							</svg>
-							<span class="lan-3">Dashboard</span>
-						</a>
-					</li>
-				</ul>
-			</div>
-		</nav>
-	</div>
 	<!-- Page Sidebar Ends-->
 	<div class="page-body">
 		<div class="container-fluid">
 			<div class="page-title">
 				<div class="row">
 					<div class="col-6">
-						<h4>Sample Page</h4>
-					</div>
-					<div class="col-6">
-						<ol class="breadcrumb">
-							<li class="breadcrumb-item"><a n:href="Dashboard:default">
-									<svg class="stroke-icon">
-										<use href="../assets/svg/icon-sprite.svg#stroke-home"></use>
-									</svg></a></li>
-							<li class="breadcrumb-item active">DD</li>
-						</ol>
+						<h3>Název stránky</h3>
 					</div>
 				</div>
 			</div>
 		</div>
-		<!-- Container-fluid starts-->
 		<div class="container-fluid">
 			<div class="row">
 				<div class="col-sm-12">
@@ -73,17 +25,15 @@
 							asdasdasd
 							{* Detail zákazníka <a n:href="Customers:detail, customer_id => 1">Tomáš Kotásek</a> *}
 							jsem na defaultu.
-							<a n:href="Projects:default">Projekty</a>
 
-
-							<a n:href="Login:logout">Odhlásit se</a>
-
-							<p>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum."</p>
+							<p>"Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+								Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irur
+								e dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat n
+								on proident, sunt in culpa qui officia deserunt mollit anim id est laborum."</p>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-
 {/block}

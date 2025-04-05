@@ -1,7 +1,3 @@
-if (localStorage.getItem("page-wrapper") === null) {
-   $(".page-wrapper").addClass("horizontal-wrapper");
-}
-
 (function ($) {
   $(".toggle-nav").click(function () {
     $("#sidebar-links .nav-menu").css("left", "0px");
@@ -14,7 +10,7 @@ if (localStorage.getItem("page-wrapper") === null) {
     "page-wrapper " + localStorage.getItem("page-wrapper")
   );
   if (localStorage.getItem("page-wrapper") === null) {
-    $(".page-wrapper").addClass("compact-wrapper");
+    $(".page-wrapper").addClass("horizontal-wrapper");
   }
 
   // left sidebar and vertical menu

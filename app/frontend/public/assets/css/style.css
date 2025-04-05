@@ -33,7 +33,7 @@
         2.18 Forms CSS
         2.19 Icons CSS
         2.20 List CSS
-        2.21 Loader CSS 
+        2.21 Loader CSS
         2.22 Modal CSS
         2.23 Popover CSS
         2.24 Print CSS
@@ -60,7 +60,7 @@
         3.7 Comingsoon CSS
         3.8 Contacts CSS
         3.9 Dashboard_2 CSS
-        3.10 Dashboard_3 CSS 
+        3.10 Dashboard_3 CSS
         3.11 Dashboard_4 CSS
         3.12 Dashboard_5 CSS
         3.13 Dashboard_default CSS
@@ -111,7 +111,7 @@
         5.6 Select2 CSS
         5.7 Sidebar CSS
         5.8 Rtl CSS
-        5.9 Box-layout CSS 
+        5.9 Box-layout CSS
 
  */
 :root {
@@ -43546,9 +43546,8 @@ table.table-bordered thead tr th p {
   left: unset !important;
 }
 .page-wrapper .page-header .header-wrapper .nav-right .profile-dropdown {
-  width: 160px;
+  width: 180px;
   top: 57px;
-  left: -12px;
   padding: 0 10px;
 }
 .page-wrapper .page-header .header-wrapper .nav-right .profile-dropdown li {
@@ -43595,8 +43594,8 @@ table.table-bordered thead tr th p {
   background-color: #F5F5F5;
 }
 .page-wrapper .page-body-wrapper .page-body {
-  min-height: calc(100vh - 136px);
-  margin-top: 136px;
+  min-height: calc(100vh - 165px);
+  margin-top: 165px;
   padding: 25px 15px;
   position: relative;
   -webkit-transition: 0.5s;

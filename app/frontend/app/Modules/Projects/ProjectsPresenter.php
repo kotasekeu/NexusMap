@@ -22,9 +22,7 @@ class ProjectsPresenter extends BasePresenter
 
 	public function renderDetail(int $project_id)
 	{
-//		$this->getTemplate()->projectDetail = $project_detail = $this->projectsModel->getProjectDetail($project_id);
-//		$this->getTemplate()->json = json_decode($project_detail->som_settings);
-//
-//		$this->getTemplate()->customerDetail = $this->customersModel->getCustomerDetail($project_detail->customer_id);
+		$this->getTemplate()->projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+
 	}
 }
