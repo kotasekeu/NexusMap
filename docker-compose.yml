@@ -47,6 +47,7 @@ services:
       - ./config/php:/usr/local/etc/php
       - ./app/api:/var/www
       - ./app/api/public:/var/www/html
+      - ./tests/:/var/www/tests
 
   frontend:
     container_name: NexusMapFront
@@ -59,6 +60,7 @@ services:
       - ./config/php:/usr/local/etc/php
       - ./app/frontend:/var/www
       - ./app/frontend/public:/var/www/html
+      - ./tests/:/var/www/tests
     depends_on:
       - api
     networks:

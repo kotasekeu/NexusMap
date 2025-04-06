@@ -8,7 +8,11 @@
 				<div class="col-6">
 					<h4>Detail projektu</h4>
 				</div>
+				<div class="col-md-6 project-list">
+					<div class="form-group mb-0 me-0"></div><a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
+				</div>
 			</div>
+
 		</div>
 	</div>
 	<div class="container-fluid">
@@ -26,7 +30,7 @@
 									<div class="card mt-4">
 										<div class="card-body">
 											<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
-											<p><strong>Analýza dokončena:</strong> {if $projectDetail->analysis_done}Ano{else}Ne{/if}</p>
+											<p><strong>Analýza dokončena:</strong> {if $projectDetail->analysis_done == 1}Ano{else}Ne{/if}</p>
 											<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
 										</div>
 									</div>

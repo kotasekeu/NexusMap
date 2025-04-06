@@ -53,17 +53,15 @@ final class ProjectFormFactory
 		$form->addText('name', 'Název projektu')
 			->setRequired('Vyplňte název projektu');
 
-		$form->addSubmit('submit', 'Vytvořit projekt');
+		$form->addSubmit('submit', 'Uložit projekt');
 
-//		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
-//		};
+		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
+			// form validation
+		};
 
 		$form->onSuccess[] = function (Form $form, ArrayHash $values) use ($onSuccess): void {
 
-
-			$project_id = $this->projectsService->createProject($values);
-
-
+			$project_id = $this->projectsService->saveProject($values);
 			$onSuccess($project_id);
 		};
 

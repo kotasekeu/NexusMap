@@ -23,6 +23,12 @@ class ProjectsPresenter extends BasePresenter
 		$this->projectFormFactory	= $projectFormFactory;
 	}
 
+	public function startup()
+	{
+		parent::startup();
+		$this->projectsService->setCustomerId($this->getUser()->getId());
+	}
+
 	public function renderDefault(): void
 	{
 		$this->getTemplate()->projects = $this->projectsService->getProjects($this->getUser()->getId());
@@ -35,11 +41,13 @@ class ProjectsPresenter extends BasePresenter
 
 	public function renderCreate()
 	{
-
 		$this->getTemplate()->setFile(__DIR__.'/Templates/edit.latte');
+	}
 
-//		dump($this->getTemplate()->getFile());
-//		die("File:" . __FILE__ . "; Line:" . __LINE__);
+	public function actionEdit(int $project_id)
+	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		$this->getComponent('projectForm')->setDefaults($projectDetail);
 	}
 
 	public function createComponentProjectForm(): Form

@@ -108,11 +108,15 @@ abstract class BaseRepository
 	 * @param string $id_column Column name with ID
 	 * @return int Last ID in table
 	 */
-	public function getLastId(string $table, string $id_column): int
+	public function getNewId(?string $table = null, ?string $id_column = null): int
 	{
-		return $this->db->select('MAX('.$id_column.') AS last_id')
+		$table = $table ?: $this->table;
+		$id_column = $id_column ?: $this->primaryKey;
+		
+		$last_id = $this->db->select('MAX('.$id_column.') AS last_id')
 			->from($table)
 			->fetchSingle();
+		return $last_id + 1;
 	}
 
 	/**
@@ -123,17 +127,26 @@ abstract class BaseRepository
 	 * @param int $value Value to hide records by
 	 * @return bool Success of operation
 	 */
-	public function hidePreviousRecords(string $table, string $id_column,int $value): bool
+	public function hidePreviousRecords(int $value, ?string $table = null, ?string $id_column = null): mixed
 	{
-		try {
-			$this->db->update($table, ["visible" => 0])
+		return $this->db->update($table, ["visible" => 0])
 				->where("%s = %i", $id_column, $value)
 				->where("visible = 1")
 				->execute();
-			return true;
-		} catch (\Exception $e) {
-			return false;
-		}
 	}
 
+	public function transactionBegin(): void
+	{
+		$this->db->begin();
+	}
+
+	public function transactionCommit(): void
+	{
+		$this->db->commit();
+	}
+
+	public function transactionRollback(): void
+	{
+		$this->db->rollback();
+	}
 }

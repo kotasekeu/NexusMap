@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Projects\Repository;
 
 use App\Common\Repository\BaseRepository;
+use Dibi\DriverException;
 use Dibi\Row;
 
 /**
@@ -41,4 +42,5 @@ class ProjectsRepository extends BaseRepository
 			->where('visible = 1')
 			->fetch();
 	}
+
 }

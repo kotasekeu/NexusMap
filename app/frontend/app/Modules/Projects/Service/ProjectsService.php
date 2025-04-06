@@ -6,7 +6,6 @@ namespace App\Modules\Projects\Service;
 
 use App\Common\Service\BaseService;
 use App\Modules\Projects\Repository\ProjectsRepository;
-use Cassandra\Uuid;
 use Dibi\Row;
 use Nette\Utils\ArrayHash;
 
@@ -40,58 +39,36 @@ class ProjectsService extends BaseService
 		return $project;
 	}
 
-	public function createProject(array|ArrayHash $data)
+	public function saveProject(array|ArrayHash $data): int
 	{
-		dump(0);
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
-		$project_uid = $this->getUid();
-//		if (! empty ( $data->project_id)
-		dump($data);
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
-		dump($project_uid);
-
+		$preparedData = $this->prepareProjectForDb($data);
+		return $this->update($preparedData);
 	}
 
 	private function prepareProjectForDb(array|ArrayHash $data): array
 	{
-
-		return [];
+		return [
+			'project_id'	=> intval($data['project_id']) ?: $this->projectsRepository->getNewId(),
+			'uid_hash'		=> $this->getUid(),
+			'name'			=> $data->name,
+			'customer_id'	=> $this->getCustomerId(),
+			'som_settings'	=> json_encode([]),
+		];
 	}
-	/*
-	public function setRisk($values)
+
+	private function update(array $data): int
 	{
-		$data = $this->prepareRisk($values);
+		try {
+			$this->transactionBegin($this->projectsRepository);
+			$this->projectsRepository->hidePreviousRecords($data['project_id']);
 
-		$this->hidePreviousRecords($this->table_name, 'risk_id', $data['risk_id']);
-		$this->saveDbItem($data);
-
-		if ( empty($data['risk_id']) ) {
-			$this->taskModel->addNewTaskFromNewRisk();
-			return $this->getLastRiskId();
+			$this->projectsRepository->create($data);
+			$this->transactionCommit($this->projectsRepository);
+		} catch (\Exception $e) {
+			$this->transactionRollback($this->projectsRepository);
+			throw $e;
 		}
 
-		return $data['risk_id'];
+		return $data['project_id'];
 	}
-
-	public function prepareRisk($values)
-	{
-		$data = [];
-
-		if(empty($values['risk_id'])){
-			$risk_id 		= $this->getLastRiskId()+1;
-			$data['trend']	= $this->getTrendForRisk();
-		}else{
-			$risk_id 		= $values->risk_id;
-			$oldRate = $this->getRateByRiskId($values->risk_id);
-			if (isset($values->probability) && isset($values->significance)) {
-				$data['trend']	= $this->getTrendForRisk(intval($values->probability * $values->significance), $oldRate);
-			}
-		}
-
-		$data['author_id']          = self::$author_id;
-
-		return $data;
-	}
-	 */
-
 }
