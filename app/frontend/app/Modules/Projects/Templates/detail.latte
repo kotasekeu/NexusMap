@@ -9,7 +9,8 @@
 					<h4>Detail projektu</h4>
 				</div>
 				<div class="col-md-6 project-list">
-					<div class="form-group mb-0 me-0"></div><a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
+					<a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
+					<a class="btn btn-danger" n:href="remove!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
 				</div>
 			</div>
 

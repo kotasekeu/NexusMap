@@ -36,7 +36,13 @@ class ProjectsPresenter extends BasePresenter
 
 	public function renderDetail(int $project_id)
 	{
-		$this->getTemplate()->projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.');
+			$this->redirect('Projects:default');
+		}
+
+		$this->getTemplate()->projectDetail = $projectDetail;
 	}
 
 	public function renderCreate()
@@ -44,9 +50,26 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->setFile(__DIR__.'/Templates/edit.latte');
 	}
 
+	public function handleDelete(int $project_id)
+	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.', 'success');
+			$this->redirect('Projects:default');
+		}
+		$this->projectsService->delete($this->getUser()->getId(), $project_id);
+
+		$this->flashMessage('Projekt byl smazán.', 'success');
+		$this->redirect('Projects:default');
+	}
+
 	public function actionEdit(int $project_id)
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.');
+			$this->redirect('Projects:default');
+		}
 		$this->getComponent('projectForm')->setDefaults($projectDetail);
 	}
 

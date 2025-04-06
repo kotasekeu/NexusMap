@@ -5,13 +5,16 @@ declare(strict_types=1);
 namespace App\Modules\Projects\Service;
 
 use App\Common\Service\BaseService;
+use App\Common\Service\BaseCrudServiceTrait;
 use App\Modules\Projects\Repository\ProjectsRepository;
 use Dibi\Row;
 use Nette\Utils\ArrayHash;
 
 class ProjectsService extends BaseService
 {
-    private $projectsRepository;
+    use BaseCrudServiceTrait;
+
+    private ProjectsRepository $projectsRepository;
 
     public function __construct(ProjectsRepository $projectsRepository)
     {
@@ -23,12 +26,10 @@ class ProjectsService extends BaseService
         return $this->projectsRepository->getProjectsForCustomer($customer_id);
     }
 
-	public function getProjectDetail(int $customer_id, int $project_id)
+	public function getProjectDetail(int $customer_id, int $project_id): ?Row
 	{
-		return $this->prepareProject(
-			$this->projectsRepository->getProjectDetail($customer_id, $project_id)
-		);
-
+		$projectDetail = $this->projectsRepository->getProjectDetail($customer_id, $project_id);
+		return $projectDetail ? $this->prepareProject($projectDetail) : null;
 	}
 
 	private function prepareProject(Row $project)
@@ -41,8 +42,11 @@ class ProjectsService extends BaseService
 
 	public function saveProject(array|ArrayHash $data): int
 	{
-		$preparedData = $this->prepareProjectForDb($data);
-		return $this->update($preparedData);
+		return $this->saveWithTransaction(
+			$data,
+			$this->projectsRepository,
+			fn($data) => $this->prepareProjectForDb($data)
+		);
 	}
 
 	private function prepareProjectForDb(array|ArrayHash $data): array
@@ -54,21 +58,5 @@ class ProjectsService extends BaseService
 			'customer_id'	=> $this->getCustomerId(),
 			'som_settings'	=> json_encode([]),
 		];
-	}
-
-	private function update(array $data): int
-	{
-		try {
-			$this->transactionBegin($this->projectsRepository);
-			$this->projectsRepository->hidePreviousRecords($data['project_id']);
-
-			$this->projectsRepository->create($data);
-			$this->transactionCommit($this->projectsRepository);
-		} catch (\Exception $e) {
-			$this->transactionRollback($this->projectsRepository);
-			throw $e;
-		}
-
-		return $data['project_id'];
 	}
 }

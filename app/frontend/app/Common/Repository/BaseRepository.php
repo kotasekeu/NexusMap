@@ -14,8 +14,6 @@ use Nette\Utils\ArrayHash;
  * This class provides basic methods for reading, creating, and deleting records in the database.
  * 
  * @property-read Connection $db Instance of the database connection.
- * @property-read string $table Name of the table the repository works with.
- * @property-read string $primaryKey Name of the primary key of the table.
  */
 abstract class BaseRepository
 {
@@ -23,19 +21,19 @@ abstract class BaseRepository
 	 * Instance of the database connection.
 	 * @var Connection
 	 */
-	protected Connection		$db;
-	
+	protected Connection $db;
+
 	/**
-	 * Name of the table the repository works with.
+	 * Name of the table this repository works with.
 	 * @var string
 	 */
-	protected string			$table;
-	
+	protected string $table;
+
 	/**
-	 * Name of the primary key of the table.
+	 * Name of the primary key column.
 	 * @var string
 	 */
-	protected string			$primaryKey;
+	protected string $primaryKey;
 
 	/**
 	 * Initializes the repository with a database connection.
@@ -48,6 +46,26 @@ abstract class BaseRepository
 	}
 
 	/**
+	 * Get the name of the table this repository works with
+	 * 
+	 * @return string Table name
+	 */
+	public function getTable(): string
+	{
+		return $this->table;
+	}
+
+	/**
+	 * Get the name of the primary key column
+	 * 
+	 * @return string Primary key column name
+	 */
+	public function getPrimaryKey(): string
+	{
+		return $this->primaryKey;
+	}
+
+	/**
 	 * Find all active records
 	 * 
 	 * @param array|null $filters Filters for record selection
@@ -56,7 +74,7 @@ abstract class BaseRepository
 	public function getFilteredList(?array $filters): array
 	{
 		return $this->db->select('*')
-			->from($this->table)
+			->from($this->getTable())
 			->where('visible = 1')
 			->fetchAll();
 	}
@@ -70,8 +88,8 @@ abstract class BaseRepository
 	public function getOneById(int $id): ?Row
 	{
 		return $this->db->select('*')
-			->from($this->table)
-			->where('%n = %i AND visible = 1', $this->primaryKey, $id)
+			->from($this->getTable())
+			->where('%n = %i AND visible = 1', $this->getPrimaryKey(), $id)
 			->fetch();
 	}
 
@@ -83,9 +101,9 @@ abstract class BaseRepository
 	 */
 	public function create(array|ArrayHash $data): int
 	{
-		$this->db->insert($this->table, $data)
+		$this->db->insert($this->getTable(), $data)
 			->execute();
-		return $data[$this->primaryKey];
+		return $data[$this->getPrimaryKey()];
 	}
 
 	/**
@@ -96,25 +114,20 @@ abstract class BaseRepository
 	 */
 	public function delete(int $id): mixed
 	{
-		return $this->db->update($this->table, ['visible' => 0])
-			->where('%n = %i AND visible = 1', $this->primaryKey, $id)
+		return $this->db->update($this->getTable(), ['visible' => 0])
+			->where('%n = %i AND visible = 1', $this->getPrimaryKey(), $id)
 			->execute();
 	}
 
 	/**
 	 * Get last ID in table
 	 * 
-	 * @param string $table Table name
-	 * @param string $id_column Column name with ID
 	 * @return int Last ID in table
 	 */
-	public function getNewId(?string $table = null, ?string $id_column = null): int
+	public function getNewId(): int
 	{
-		$table = $table ?: $this->table;
-		$id_column = $id_column ?: $this->primaryKey;
-		
-		$last_id = $this->db->select('MAX('.$id_column.') AS last_id')
-			->from($table)
+		$last_id = $this->db->select('MAX('.$this->getPrimaryKey().') AS last_id')
+			->from($this->getTable())
 			->fetchSingle();
 		return $last_id + 1;
 	}
@@ -122,17 +135,15 @@ abstract class BaseRepository
 	/**
 	 * Hide previous records
 	 * 
-	 * @param string $table Table name
-	 * @param string $id_column Column name with ID
 	 * @param int $value Value to hide records by
 	 * @return bool Success of operation
 	 */
-	public function hidePreviousRecords(int $value, ?string $table = null, ?string $id_column = null): mixed
+	public function hidePreviousRecords(int $value): mixed
 	{
-		return $this->db->update($table, ["visible" => 0])
-				->where("%s = %i", $id_column, $value)
-				->where("visible = 1")
-				->execute();
+		return $this->db->update($this->getTable(), ["visible" => 0])
+			->where("%sql = %i", $this->getPrimaryKey(), $value)
+			->where("visible = 1")
+			->execute();
 	}
 
 	public function transactionBegin(): void
