@@ -1,0 +1,54 @@
+{layout '../../../Common/Templates/@layout.latte'}
+
+{block content}
+<div class="page-body">
+	<div class="container-fluid">
+		<div class="row page-title">
+			<div class="col-6">
+				<h4>
+					Vytvoření projektu
+				</h4>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-12 card">
+				<div class="card-body">
+					{form projectForm, class => "form theme-form"}
+						<div class="row">
+							<div class="col mb-3">
+								{label name/}
+								{input name, class => "form-control"}
+							</div>
+						</div>
+{*								<div class="row">*}
+{*									<div class="col mb-3">*}
+{*										<label>Upload project file</label>*}
+{*										<form class="dropzone" id="singleFileUpload" action="/upload.php">*}
+{*											<div class="dz-message needsclick"><i class="icon-cloud-up"></i>*}
+{*												<h6 class="f-w-600">Drop files here or click to upload.</h6>*}
+{*												<span class="note needsclick">*}
+{*													(This is just a demo dropzone. Selected files are <strong>not</strong> actually uploaded.)*}
+{*												</span>*}
+{*											</div>*}
+{*										</form>*}
+{*									</div>*}
+{*								</div>*}
+						<div class="row">
+							<div class="col">
+								<div class="text-end">
+									{input project_id}
+									{input submit, class => "btn btn-success me-3"}
+									<a class="btn btn-danger" n:href="Projects:default">Zrušit</a>
+								</div>
+							</div>
+						</div>
+					{/form}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{/block}

@@ -41,5 +41,4 @@ class ProjectsRepository extends BaseRepository
 			->where('visible = 1')
 			->fetch();
 	}
-	
 }

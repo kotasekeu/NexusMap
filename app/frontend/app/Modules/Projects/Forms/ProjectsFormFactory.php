@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\Projects\Forms;
 
+use App\Modules\Projects\Service\ProjectsService;
 use App\Common\Factory\FormFactory;
 use Nette;
 use Nette\Application\UI\Form;
+use Nette\Utils\ArrayHash;
 
 /**
  * ProjectFormFactory class
@@ -20,14 +22,20 @@ final class ProjectFormFactory
 	/** @var FormFactory */
 	private $factory;
 
+	private $projectsService;
+
 	/**
 	 * Constructor for ProjectFormFactory class
 	 *
 	 * @param FormFactory	$factory	Form factory.
 	 */
-	public function __construct(FormFactory $factory)
+	public function __construct(
+		FormFactory					$factory,
+		ProjectsService				$projectsService
+	)
 	{
-		$this->factory = $factory;
+		$this->factory				= $factory;
+		$this->projectsService		= $projectsService;
 	}
 
 	/**
@@ -40,27 +48,23 @@ final class ProjectFormFactory
 		$form = $this->factory->create();
 		$form->addProtection('Platnost formuláře vypršela, obnovte stránku.');
 
+		$form->addHidden('project_id');
 
-		$form->addSubmit('login', 'Přihlásit se');
+		$form->addText('name', 'Název projektu')
+			->setRequired('Vyplňte název projektu');
 
-		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
-//			$customer = $this->loginService->getCustomerByEmail($values->email);
-//			if ( empty($customer) ) {
-//				$form->addError('Tato kombinace e-mailu a hesla je neplatná');
-//			}
-		};
+		$form->addSubmit('submit', 'Vytvořit projekt');
+
+//		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
+//		};
 
 		$form->onSuccess[] = function (Form $form, ArrayHash $values) use ($onSuccess): void {
 
-			$customer = $this->loginService->getCustomerByEmail($values->email);
 
-			try {
-				$identity = $this->authenticatorService->authenticate($customer, $values->passwd);
-			} catch (Nette\Security\AuthenticationException $e) {
-				$form->addError($e->getMessage());
-			}
+			$project_id = $this->projectsService->createProject($values);
 
-			$onSuccess($identity);
+
+			$onSuccess($project_id);
 		};
 
 		return $form;

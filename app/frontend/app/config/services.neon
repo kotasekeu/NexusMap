@@ -22,4 +22,4 @@ services:
 
 	- App\Modules\Projects\Service\ProjectsService
 	- App\Modules\Projects\Repository\ProjectsRepository
-	
+	- App\Modules\Projects\Forms\ProjectFormFactory
