@@ -1,16 +1,16 @@
 import os
 import shutil
 
-# Globální proměnná pro uid_hash
+# Global variable for uid_hash
 _uid_hash = None
 
 def set_uid_hash(uid_hash: str) -> None:
-    """Nastaví globální uid_hash pro logování."""
+    """Set the global uid_hash for logging."""
     global _uid_hash
     _uid_hash = uid_hash
 
 def log_message(message: str) -> None:
-    """Zapíše zprávu do souboru log.txt včetně data a času."""
+    """Write a message to the log.txt file including date and time."""
     if _uid_hash:
         log_file = f"/userfiles/{_uid_hash}/log.txt"
     else:
@@ -20,16 +20,17 @@ def log_message(message: str) -> None:
     with open(log_file, "a") as log:
         log.write(f"{current_time} {message}\n")
 
-def read_csv(file_path: str) -> list:
-    """Načte CSV soubor a vrátí data jako seznam."""
-    pass
-
-def save_csv(data: list, file_path: str) -> None:
-    """Uloží seznam dat do CSV souboru."""
-    pass
+# # not needed yet
+# def read_csv(file_path: str) -> list:
+#     """Reads a CSV file and returns the data as a list."""
+#     pass
+#
+# def save_csv(data: list, file_path: str) -> None:
+#     """Saves a list of data to a CSV file."""
+#     pass
 
 def clear_files(uid_hash: str) -> None:
-    """Smaže všechny soubory v adresáři pro daný uid_hash, kromě souboru input.csv."""
+    """Deletes all files in the directory for the given uid_hash, except for the input.csv file."""
     directory = f"/userfiles/{uid_hash}"
     if os.path.exists(directory):
         for filename in os.listdir(directory):
@@ -41,4 +42,4 @@ def clear_files(uid_hash: str) -> None:
                     elif os.path.isdir(file_path):
                         shutil.rmtree(file_path)
                 except Exception as e:
-                    print(f"Chyba při mazání souboru {filename}: {e}")
+                    print(f"Error deleting file {filename}: {e}")

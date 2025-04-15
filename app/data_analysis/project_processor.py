@@ -57,18 +57,18 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
     # Uložení naučených vah
     np.save(f"/userfiles/{uid_hash}/weights.npy", som.weights)
 
-    # # Analýza clusterů
-    # clusters = {}
-    # for i, sample in enumerate(data):
-    #     bmu = som.find_bmu(sample)
-    #     cluster_key = f"{bmu[0]}_{bmu[1]}"
-    #     if cluster_key not in clusters:
-    #         clusters[cluster_key] = []
-    #     clusters[cluster_key].append(i)  # Ukládáme indexy původních řádků
-    #
-    # # Uložení clusterů do JSON
-    # with open(f"{output_path}clusters.json", "w", encoding="utf-8") as f:
-    #     json.dump(clusters, f, indent=4)
+    # Analýza clusterů
+    clusters = {}
+    for i, sample in enumerate(data):
+        bmu = som.find_bmu(sample)
+        cluster_key = f"{bmu[0]}_{bmu[1]}"
+        if cluster_key not in clusters:
+            clusters[cluster_key] = []
+        clusters[cluster_key].append(i)  # Ukládáme indexy původních řádků
+    
+    # Uložení clusterů do JSON
+    with open(f"/userfiles/{uid_hash}/clusters.json", "w", encoding="utf-8") as f:
+        json.dump(clusters, f, indent=4)
 
     # Generování heatmapy
     generate_heatmap(som, data, output_path)
@@ -100,8 +100,8 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 20,
-        "som_width": 20,
+        "som_height": 10,
+        "som_width": 10,
         "learning_rate": 0.5,
         "lr_decay": 0.9998705
     }

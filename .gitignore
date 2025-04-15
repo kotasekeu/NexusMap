@@ -17,6 +17,7 @@ var/cache/
 var/db/
 var/log/
 var/projects/
+var/backup/
 #   --- odstranit jenom odklad
 var/smazat
 var/empty_module_Api
