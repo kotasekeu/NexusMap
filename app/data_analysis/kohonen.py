@@ -3,7 +3,7 @@ import numpy as np
 from utils import log_message
 
 class KohonenSOM:
-    def __init__(self, m, n, dim, learning_rate=0.9, radius=None, radius_decay=0.99, lr_decay=0.99,
+    def __init__(self, m, n, dim, learning_rate=0.9, radius=None, radius_decay=0.99, lr_decay=0.995,
                  min_learning_rate=0.01):
         # m, n rozměr mapy, dim - dimenze dat (počet sloupců csv se kterými pracujeme), learnin_rate - výchozí hodnota, menší než 1, radius - pokud není nastaven bere se
         # polovina rozměru výchozího pole, radius_decay - hodnota snižování poloměru pro výpočet váhy, lr_decay - hodnota pro snižování atributu učení
@@ -37,7 +37,8 @@ class KohonenSOM:
 
             # Krok 6: Dynamická úprava learning rate
             update_ratio = updated_neurons / (self.m * self.n)
-            self.learning_rate = self.update_learning_rate_dynamic(self.learning_rate, update_ratio, self.min_learning_rate)
+            # self.learning_rate = self.update_learning_rate_dynamic(self.learning_rate, update_ratio, self.min_learning_rate)
+            self.learning_rate = self.learning_rate * self.lr_decay
 
             # Krok 7: Zmenšení poloměru sousedství
             self.radius *= self.radius_decay
@@ -46,6 +47,7 @@ class KohonenSOM:
             iteration += 1
             if (iteration <= 1000 and iteration % 100 == 0) or (iteration > 1000 and iteration % 1000 == 0):
                 log_message(f"Průchod č. {iteration}: trénování stále probíhá...")
+                log_message(f"learning rate {self.learning_rate}...")
 
     def find_bmu(self, sample):
         min_dist = float('inf')
@@ -83,14 +85,15 @@ class KohonenSOM:
     def update_learning_rate_dynamic(self, initial_learning_rate, update_ratio, min_learning_rate=0.01):
         """Dynamicky upravuje learning rate podle míry změny."""
 
-        log_message(f"update ratio {update_ratio}...")
-        log_message(f"learning rate {initial_learning_rate}...")
+        # log_message(f"update ratio {update_ratio}...")
+        # log_message(f"learning rate {initial_learning_rate}...")
 
-        if update_ratio > 0.3:
-            return initial_learning_rate  # Neměníme learning rate
-        elif update_ratio > 0.2:
-            return max(initial_learning_rate * 0.9995, min_learning_rate)  # Pomalé snižování
-        elif update_ratio > 0.15:
-            return max(initial_learning_rate * 0.995, min_learning_rate)  # Mírné snižování
-        else:
-            return max(initial_learning_rate * 0.98, min_learning_rate)  # Rychlé snižování
+        # if update_ratio > 0.3:
+        #     return initial_learning_rate  # Neměníme learning rate
+        # elif update_ratio > 0.2:
+        #     return max(initial_learning_rate * 0.9995, min_learning_rate)  # Pomalé snižování
+        # elif update_ratio > 0.15:
+        #     return max(initial_learning_rate * 0.995, min_learning_rate)  # Mírné snižování
+        # else:
+        #     return max(initial_learning_rate * 0.98, min_learning_rate)  # Rychlé snižování
+        return initial_learning_rate * 0.995  # Klasické snižování

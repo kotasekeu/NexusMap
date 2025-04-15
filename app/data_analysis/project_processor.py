@@ -44,7 +44,7 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
         learning_rate=settings.get("learning_rate", 0.1),
         radius=settings.get("initial_sigma", max(settings["som_height"], settings["som_width"]) / 2),
         radius_decay=settings.get("radius_decay", 0.99),
-        lr_decay=settings.get("lr_decay", 0.99),
+        lr_decay=settings.get("lr_decay", 0.995),
         min_learning_rate=settings.get("min_learning_rate", 0.01)
     )
 
@@ -85,6 +85,8 @@ def process_project(uid_hash: str) -> None:
     # Načtení detailů projektu
     project = get_project_detail(uid_hash)
     settings = load_project_settings(project)
+    log_message(f"Nastavení projektu: {settings}")
+    # sys.exit()
 
     # Kontrola vstupního souboru
     input_file = f"/userfiles/{uid_hash}/input.csv"
@@ -98,16 +100,16 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 30,
-        "som_width": 30,
+        "som_height": 20,
+        "som_width": 20,
         "learning_rate": 0.5,
-        "lr_decay": 0.995
+        "lr_decay": 0.9998705
     }
 
     train_and_analyze_som(preprocess_file, kohonen_settings, output_path, uid_hash)
 
     # Aktualizace stavu projektu v databázi
-    update_project_status(uid_hash)
+    # update_project_status(uid_hash) odkomentovat, v prubehu testovani by se nepoustela analyza znovu
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 
@@ -118,4 +120,5 @@ if __name__ == "__main__":
 
 
     uid_hash = sys.argv[1]
+    clear_files(uid_hash)
     process_project(uid_hash)
