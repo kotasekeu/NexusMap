@@ -20,5 +20,14 @@ def fetch_project(uid_hash):
 
     return result
 
-def update_project_status():
-    return
+def update_project_status(uid_hash):
+    db = get_db_connection()
+    cursor = db.cursor()
+
+    try:
+        query = "UPDATE projects SET analysis_done = 1 WHERE uid_hash = %s"
+        cursor.execute(query, (uid_hash,))
+        db.commit()
+    finally:
+        cursor.close()
+        db.close()

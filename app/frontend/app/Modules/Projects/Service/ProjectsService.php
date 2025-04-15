@@ -7,6 +7,7 @@ namespace App\Modules\Projects\Service;
 use App\Common\Service\BaseService;
 use App\Common\Service\BaseCrudServiceTrait;
 use App\Modules\Projects\Repository\ProjectsRepository;
+use Dibi\Result;
 use Dibi\Row;
 use Nette\Utils\ArrayHash;
 
@@ -59,4 +60,17 @@ class ProjectsService extends BaseService
 			'som_settings'	=> json_encode([]),
 		];
 	}
+
+	public function deleteProject(int $customer_id, Row $project): Result|int|null
+	{
+		if ($project->customer_id !== $customer_id) {
+			throw new \Exception('Tento zákazník nemá oprávnění k odstranění tohoto projektu.');
+		}
+
+		return $this->delete(
+			$this->projectsRepository,
+			$project->project_id
+		);
+	}
+
 }

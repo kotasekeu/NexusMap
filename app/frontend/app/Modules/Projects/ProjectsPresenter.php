@@ -57,7 +57,7 @@ class ProjectsPresenter extends BasePresenter
 			$this->flashMessage('Projekt nenalezen.', 'success');
 			$this->redirect('Projects:default');
 		}
-		$this->projectsService->delete($this->getUser()->getId(), $project_id);
+		$this->projectsService->deleteProject($this->getUser()->getId(), $projectDetail);
 
 		$this->flashMessage('Projekt byl smazán.', 'success');
 		$this->redirect('Projects:default');

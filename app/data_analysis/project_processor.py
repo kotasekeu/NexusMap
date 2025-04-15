@@ -2,7 +2,7 @@ import sys
 from database import fetch_project, update_project_status
 from preprocess import validate_input_file, normalize_data
 from output import generate_heatmap
-from utils import log_message
+from utils import log_message, set_uid_hash, clear_files
 from kohonen import KohonenSOM
 import pandas as pd
 import numpy as np
@@ -31,7 +31,7 @@ def load_project_settings(project: dict) -> dict:
 #def load_som_settings(project: dict) -> dict:
 
 
-def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str) -> None:
+def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str, uid_hash: str) -> None:
     """Trénuje SOM a generuje výstupy."""
     # Načtení předzpracovaných dat
     data = pd.read_csv(preprocess_file, delimiter=';').values
@@ -77,6 +77,9 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
 
 # hlavní metoda co řídí všechno
 def process_project(uid_hash: str) -> None:
+    # Nastavení uid_hash pro logování
+    set_uid_hash(uid_hash)
+    
     log_message(f"Spouštím zpracování projektu s UID {uid_hash}...")
 
     # Načtení detailů projektu
@@ -97,22 +100,22 @@ def process_project(uid_hash: str) -> None:
     kohonen_settings = {
         "som_height": 30,
         "som_width": 30,
-        "learning_rate": 0.9,
+        "learning_rate": 0.5,
         "lr_decay": 0.995
     }
 
-    train_and_analyze_som(preprocess_file, kohonen_settings, output_path)
+    train_and_analyze_som(preprocess_file, kohonen_settings, output_path, uid_hash)
 
     # Aktualizace stavu projektu v databázi
-    # update_project_status(uid_hash, analysis_done=True)
+    update_project_status(uid_hash)
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Použití: python3 project_processor.py <uid_hash>")
-        sys.exit(1)
-    log_message(f"====Začínáme=====")
+        sys.exit(1)    
+
 
     uid_hash = sys.argv[1]
     process_project(uid_hash)

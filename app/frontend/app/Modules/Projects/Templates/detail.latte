@@ -10,7 +10,7 @@
 				</div>
 				<div class="col-md-6 project-list">
 					<a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
-					<a class="btn btn-danger" n:href="remove!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
+					<a class="btn btn-danger" n:href="delete!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
 				</div>
 			</div>
 
@@ -33,6 +33,9 @@
 											<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
 											<p><strong>Analýza dokončena:</strong> {if $projectDetail->analysis_done == 1}Ano{else}Ne{/if}</p>
 											<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
+
+											{$projectDetail->result_id} odkaz na výsledek
+											{dump $projectDetail->settings}
 										</div>
 									</div>
 

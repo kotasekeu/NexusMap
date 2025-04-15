@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Common\Service;
 
 use App\Common\Repository\BaseRepository;
+use Dibi\Row;
 use Nette\Utils\ArrayHash;
 
 trait BaseCrudServiceTrait
@@ -44,8 +45,8 @@ trait BaseCrudServiceTrait
         }
     }
 
-	public function delete()
+	public function delete(BaseRepository $repository, int $id): Row|int|null
 	{
-		
+		return $repository->hidePreviousRecords($id);
 	}
 } 

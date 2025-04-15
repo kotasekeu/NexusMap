@@ -27,6 +27,7 @@ services:
       - shared_network
     volumes:
       - ./app/data_analysis:/app/data_analysis
+      - ./var/projects:/userfiles
     depends_on:
       - db
 

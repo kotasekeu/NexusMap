@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Common\Repository;
 
 use Dibi\Connection;
+use Dibi\Result;
 use Dibi\Row;
 use Nette\Utils\ArrayHash;
 
@@ -138,7 +139,7 @@ abstract class BaseRepository
 	 * @param int $value Value to hide records by
 	 * @return bool Success of operation
 	 */
-	public function hidePreviousRecords(int $value): mixed
+	public function hidePreviousRecords(int $value): Result|int|null
 	{
 		return $this->db->update($this->getTable(), ["visible" => 0])
 			->where("%sql = %i", $this->getPrimaryKey(), $value)
