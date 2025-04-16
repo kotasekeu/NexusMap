@@ -30,16 +30,18 @@ def log_message(message: str) -> None:
 #     pass
 
 def clear_files(uid_hash: str) -> None:
-    """Deletes all files in the directory for the given uid_hash, except for the input.csv file."""
+    """Moves all files in the directory for the given uid_hash to a new directory named backup-{timestamp}, except for the input.csv file."""
+    from datetime import datetime
     directory = f"/userfiles/{uid_hash}"
+    backup_dir = f"/userfiles/{uid_hash}/backup-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    if not os.path.exists(backup_dir):
+        os.makedirs(backup_dir)
     if os.path.exists(directory):
         for filename in os.listdir(directory):
             if filename != "input.csv":
                 file_path = os.path.join(directory, filename)
-                try:
-                    if os.path.isfile(file_path) or os.path.islink(file_path):
-                        os.unlink(file_path)
-                    elif os.path.isdir(file_path):
-                        shutil.rmtree(file_path)
-                except Exception as e:
-                    print(f"Error deleting file {filename}: {e}")
+                if os.path.isfile(file_path):  # Přesunujeme jenom soubory, nikoliv adresáře
+                    try:
+                        shutil.move(file_path, backup_dir)
+                    except Exception as e:
+                        print(f"Error moving file {filename}: {e}")

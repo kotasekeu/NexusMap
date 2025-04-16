@@ -41,12 +41,19 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
         m=settings["som_height"],
         n=settings["som_width"],
         dim=data.shape[1],
-        learning_rate=settings.get("learning_rate", 0.1),
         radius=settings.get("initial_sigma", max(settings["som_height"], settings["som_width"]) / 2),
-        radius_decay=settings.get("radius_decay", 0.99),
-        lr_decay=settings.get("lr_decay", 0.995),
-        min_learning_rate=settings.get("min_learning_rate", 0.01)
-    )    
+        learning_rate=settings.get("learning_rate", 0.9),
+        min_learning_rate=settings.get("min_learning_rate", 0.1),
+        num_batches=settings.get("num_batches", 10),
+        min_batch_percent=settings.get("min_batch_percent", 0.1),
+        max_batch_percent=settings.get("max_batch_percent", 10),
+        lr_decay_type=settings.get("lr_decay_type", "exp-drop"),
+        radius_decay_type=settings.get("radius_decay_type", "exp-drop"),
+        batch_growth_type=settings.get("batch_growth_type", "exp-growth"),
+        random_seed=settings.get("random_seed", 42),
+        growth_g=settings.get("growth_g", 15.0)
+    ) 
+
 
     # Trénování SOM
     som.train(data)
@@ -98,8 +105,8 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 20,
-        "som_width": 20,
+        "som_height": 30,
+        "som_width": 30,
         "learning_rate": 0.5,
         "lr_decay": 0.995
     }
