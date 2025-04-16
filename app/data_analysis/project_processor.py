@@ -46,7 +46,7 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
         radius_decay=settings.get("radius_decay", 0.99),
         lr_decay=settings.get("lr_decay", 0.995),
         min_learning_rate=settings.get("min_learning_rate", 0.01)
-    )
+    )    
 
     # Trénování SOM
     som.train(data)
@@ -67,8 +67,8 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
         clusters[cluster_key].append(i)  # Ukládáme indexy původních řádků
     
     # Uložení clusterů do JSON
-    with open(f"/userfiles/{uid_hash}/clusters.json", "w", encoding="utf-8") as f:
-        json.dump(clusters, f, indent=4)
+    # with open(f"/userfiles/{uid_hash}/clusters.json", "w", encoding="utf-8") as f:
+    #     json.dump(clusters, f, indent=4)
 
     # Generování heatmapy
     generate_heatmap(som, data, output_path)
@@ -85,8 +85,6 @@ def process_project(uid_hash: str) -> None:
     # Načtení detailů projektu
     project = get_project_detail(uid_hash)
     settings = load_project_settings(project)
-    log_message(f"Nastavení projektu: {settings}")
-    # sys.exit()
 
     # Kontrola vstupního souboru
     input_file = f"/userfiles/{uid_hash}/input.csv"
@@ -100,10 +98,10 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 10,
-        "som_width": 10,
+        "som_height": 20,
+        "som_width": 20,
         "learning_rate": 0.5,
-        "lr_decay": 0.9998705
+        "lr_decay": 0.995
     }
 
     train_and_analyze_som(preprocess_file, kohonen_settings, output_path, uid_hash)

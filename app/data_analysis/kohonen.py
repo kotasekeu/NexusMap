@@ -20,27 +20,43 @@ class KohonenSOM:
 
         # Krok 0: Inicializace vah (náhodně)
         self.weights = np.random.rand(m, n, dim)
+        # Normalizace vah po inicializaci
+        self.normalize_weights()
+
+    def normalize_weights(self):
+        """Normalizuje váhy neuronů."""
+        for i in range(self.m):
+            for j in range(self.n):
+                norm = np.linalg.norm(self.weights[i, j])
+                if norm > 0:  # Zabránění dělení nulou
+                    self.weights[i, j] = self.weights[i, j] / norm
 
     def train(self, data):
         """Trénuje Kohonenovu SOM na zadaných datech."""
         iteration = 0
+        num_samples = data.shape[0]
 
         while self.learning_rate > self.min_learning_rate:
-            # Krok 2: Náhodný výběr vstupního vektoru
-            sample = data[np.random.randint(0, data.shape[0])]
+            # Projít celou epochu (všechny vzorky)
+            for sample_idx in range(num_samples):
+                # Krok 2: Výběr vstupního vektoru
+                sample = data[sample_idx]
 
-            # Krok 3: Najít nejlepšího shodného neuronu (BMU)
-            bmu_idx = self.find_bmu(sample)
+                # Krok 3: Najít nejlepšího shodného neuronu (BMU)
+                bmu_idx = self.find_bmu(sample)
 
-            # Krok 5: Aktualizace vah
-            updated_neurons = self.update_weights(sample, bmu_idx)
+                # Krok 5: Aktualizace vah
+                self.update_weights(sample, bmu_idx)
 
-            # Krok 6: Dynamická úprava learning rate
-            update_ratio = updated_neurons / (self.m * self.n)
-            # self.learning_rate = self.update_learning_rate_dynamic(self.learning_rate, update_ratio, self.min_learning_rate)
+                # Logování průběhu
+                iteration += 1
+                if (iteration <= 1000 and iteration % 100 == 0) or (iteration > 1000 and iteration % 1000 == 0):
+                    log_message(f"Vstupní vektor č. {iteration}: trénování stále probíhá...")
+
+            # Krok 6: Dynamická úprava learning rate po dokončení epochy
             self.learning_rate = self.learning_rate * self.lr_decay
 
-            # Krok 7: Zmenšení poloměru sousedství
+            # Krok 7: Zmenšení poloměru sousedství po dokončení epochy
             self.radius *= self.radius_decay
 
             # Logování průběhu
@@ -80,20 +96,10 @@ class KohonenSOM:
                     if np.linalg.norm(weight_change) > 1e-6:
                         updated_neurons += 1
 
+        # Normalizace vah po aktualizaci
+        self.normalize_weights()
         return updated_neurons
 
     def update_learning_rate_dynamic(self, initial_learning_rate, update_ratio, min_learning_rate=0.01):
         """Dynamicky upravuje learning rate podle míry změny."""
-
-        # log_message(f"update ratio {update_ratio}...")
-        # log_message(f"learning rate {initial_learning_rate}...")
-
-        # if update_ratio > 0.3:
-        #     return initial_learning_rate  # Neměníme learning rate
-        # elif update_ratio > 0.2:
-        #     return max(initial_learning_rate * 0.9995, min_learning_rate)  # Pomalé snižování
-        # elif update_ratio > 0.15:
-        #     return max(initial_learning_rate * 0.995, min_learning_rate)  # Mírné snižování
-        # else:
-        #     return max(initial_learning_rate * 0.98, min_learning_rate)  # Rychlé snižování
         return initial_learning_rate * 0.995  # Klasické snižování
