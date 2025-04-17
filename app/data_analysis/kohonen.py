@@ -42,7 +42,7 @@ class KohonenSOM:
     def get_decay_value(self, t, N, start, end, decay_type):
         if decay_type == 'logarithmic':
             return start - (np.log10(t + 1) / np.log10(N)) * (start - end)
-        elif decay_type == 'linear':
+        elif decay_type == 'linear-growth':
             return start + (t / (N - 1)) * (end - start)
         elif decay_type == 'linear-drop':
             return start - (t / (N - 1)) * (start - end)

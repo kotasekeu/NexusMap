@@ -50,10 +50,10 @@ CONFIG = {
     "num_batches": 10,
 
     # Minimální procento dat použitých v jednom kroku
-    "min_batch_percent": 0.1,
+    "min_batch_percent": [5.0, 1.0, 0.1],
 
     # Maximální procento dat použitých v jednom kroku
-    "max_batch_percent": 5.0,
+    "max_batch_percent": [10.0, 5.0, 1.0],
 
     # Typ útlumu learning rate – zde exponenciální pokles
     "lr_decay_type": ["exp-drop", "linear-drop"],
@@ -71,13 +71,13 @@ CONFIG = {
     "growth_g": [15.0],
 
     # Počet vstupních vzorků pro generovaná data
-    "sample_size": 500,
+    "sample_size": 1000,
 
     # Počet vstupních atributů (rozměrů) pro generovaná data
-    "input_dim": 3,
+    "input_dim": 6,
 
     # Velikost výstupní mapy (šířka, výška)
-    "map_size": (20, 20),
+    "map_size": (30, 30),
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
     "epoch_multiplier": 1.0
