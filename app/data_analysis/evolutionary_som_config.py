@@ -68,16 +68,16 @@ CONFIG = {
     "random_seed": 42,
 
     # Parametr G pro růstovou funkci – ovlivňuje tvar exp-growth
-    "growth_g": [15.0, 25.0],
+    "growth_g": [10.0, 15.0, 25.0],
 
     # Počet vstupních vzorků pro generovaná data
-    "sample_size": [100],
+    "sample_size": 1000,
 
     # Počet vstupních atributů (rozměrů) pro generovaná data
-    "input_dim": 3,
+    "input_dim": 5,
 
     # Velikost výstupní mapy (šířka, výška)
-    "map_size": (10, 10),
+    "map_size": (20, 20),
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
     "epoch_multiplier": 1.0
