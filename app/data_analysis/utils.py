@@ -12,9 +12,9 @@ def set_uid_hash(uid_hash: str) -> None:
 def log_message(message: str) -> None:
     """Write a message to the log.txt file including date and time."""
     if _uid_hash:
-        log_file = f"/userfiles/{_uid_hash}/log.txt"
+        log_file = f"/userfiles/{_uid_hash}/kohonen-log.txt"
     else:
-        log_file = "/app/data_analysis/log.txt"
+        log_file = "./kohonen-log.txt"
     from datetime import datetime
     current_time = datetime.now()
     with open(log_file, "a") as log:

@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from utils import log_message
+from numba import njit
 
 class KohonenSOM:
     def __init__(self, m, n, dim, learning_rate=0.9, min_learning_rate=0.1,
@@ -80,8 +81,12 @@ class KohonenSOM:
                 current_radius = self.get_decay_value(epoch, total_epochs, self.radius, self.min_radius, self.radius_decay_type)
 
                 for sample in batch_data:
-                    bmu_idx = self.find_bmu(sample)
+                    bmu_idx = find_bmu_numba(sample, self.weights)
                     self.update_weights(sample, bmu_idx, current_lr, current_radius)
+                
+                # for sample in batch_data:
+                #     bmu_idx = self.find_bmu(sample)
+                #     self.update_weights(sample, bmu_idx, current_lr, current_radius)
 
             if epoch % 100 == 0:
                 # log_message(f"Epocha {epoch}/{total_epochs}")
@@ -110,3 +115,21 @@ class KohonenSOM:
                     influence = np.exp(-distance_to_bmu ** 2 / (2 * (radius ** 2)))
                     self.weights[i, j] += influence * learning_rate * (sample - self.weights[i, j])
         self.normalize_weights()
+
+    @njit
+    def find_bmu_numba(sample, weights):
+        m, n, dim = weights.shape
+        min_dist = float('inf')
+        bmu_idx = None
+
+        for i in range(m):
+            for j in range(n):
+                dist = 0.0
+                for d in range(dim):
+                    diff = sample[d] - weights[i, j, d]
+                    dist += diff * diff
+                dist = dist ** 0.5
+                if dist < min_dist:
+                    min_dist = dist
+                    bmu_idx = (i, j)
+        return bmu_idx
