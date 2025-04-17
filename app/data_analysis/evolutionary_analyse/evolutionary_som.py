@@ -1,5 +1,4 @@
 # evolutionary_som.py
-
 # Tento skript bude řídit běh evolučního algoritmu pro optimalizaci parametrů Kohonenovy sítě.
 
 import random
@@ -14,7 +13,7 @@ import shutil
 from datetime import datetime
 import numpy as np
 from sklearn.datasets import make_blobs
-from kohonen_24_04_17 import KohonenSOM
+from kohonen import KohonenSOM
 from sklearn.metrics import pairwise_distances_argmin_min
 from multiprocessing import Pool, cpu_count
 

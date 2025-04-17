@@ -35,16 +35,16 @@ CONFIG = {
 
     # Parametry Kohonenova SOM
     # Počáteční learning rate – určuje rychlost učení na začátku tréninku
-    "learning_rate": 0.9,
+    "learning_rate": [0.9, 0.6, 0.3],
 
     # Minimální learning rate – dolní mez pro útlum learning rate
-    "min_learning_rate": 0.1,
+    "min_learning_rate": [0.4, 0.25, 0.01],
 
     # Počáteční poloměr sousedství – pokud není zadán, určuje se automaticky
-    "radius": None,
+    "radius": 10,
 
     # Minimální poloměr – dolní mez pro útlum radiusu během tréninku
-    "min_radius": 0.1,
+    "min_radius": [0.5, 0.1, 0.05],
 
     # Počet batchů v rámci jedné epochy – jak často se aktualizují váhy
     "num_batches": 10,
@@ -56,25 +56,25 @@ CONFIG = {
     "max_batch_percent": 5.0,
 
     # Typ útlumu learning rate – zde exponenciální pokles
-    "lr_decay_type": "exp-drop",
+    "lr_decay_type": ["exp-drop", "linear-drop"],
 
     # Typ útlumu radiusu – zde také exponenciální pokles
-    "radius_decay_type": "exp-drop",
+    "radius_decay_type": ["exp-drop", "linear-drop"],
 
     # Typ růstu počtu vzorků v čase – zde exponenciální růst
-    "batch_growth_type": "exp-growth",
+    "batch_growth_type": ["exp-growth", "linear-growth"],
 
     # Náhodné semínko pro replikovatelnost výsledků
     "random_seed": 42,
 
     # Parametr G pro růstovou funkci – ovlivňuje tvar exp-growth
-    "growth_g": [10.0, 15.0, 25.0],
+    "growth_g": [15.0],
 
     # Počet vstupních vzorků pro generovaná data
-    "sample_size": 1000,
+    "sample_size": 500,
 
     # Počet vstupních atributů (rozměrů) pro generovaná data
-    "input_dim": 5,
+    "input_dim": 3,
 
     # Velikost výstupní mapy (šířka, výška)
     "map_size": (20, 20),

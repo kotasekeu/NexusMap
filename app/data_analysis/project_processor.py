@@ -81,7 +81,6 @@ def train_and_analyze_som(preprocess_file: str, settings: dict, output_path: str
     generate_heatmap(som, data, output_path)
 
 
-
 # hlavní metoda co řídí všechno
 def process_project(uid_hash: str) -> None:
     # Nastavení uid_hash pro logování

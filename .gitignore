@@ -23,6 +23,7 @@ var/smazat
 var/empty_module_Api
 #   --- odstranit jenom odklad
 *.log
+*log.txt
 
 # IDE/Editor specific
 .vscode/

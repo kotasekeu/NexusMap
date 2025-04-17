@@ -6,9 +6,6 @@ import datetime
 #     """Uloží clustery do souboru clusters.txt."""
 #     pass
 #
-# def generate_html(output_path: str, clusters: dict, log_data: str) -> None:
-#     """Vytvoří výstupní HTML soubor."""
-#     pass
 
 def generate_heatmap(som, data, output_path: str) -> None:
     """Generuje heatmapu SOM a ukládá ji jako map.jpg."""
