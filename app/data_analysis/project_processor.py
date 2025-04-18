@@ -205,7 +205,7 @@ def process_project(uid_hash: str) -> None:
     kohonen_settings = {
         "som_height": 20,
         "som_width": 20,
-        "map_type": "hex"
+        "map_type": "square"
     }    
 
     train_and_analyze_som(preprocess_file, kohonen_settings, settings,output_path, uid_hash)
@@ -283,7 +283,7 @@ def generate_maps(som, data, output_path, settings):
     # 1) U‑Matrix
     generate_u_matrix(
         som,
-        f"{output_path}/u_matrix_{map_type}.png",
+        f"{output_path}/visualization/u_matrix_{map_type}.png",
         map_type=map_type
     )
 
@@ -291,7 +291,7 @@ def generate_maps(som, data, output_path, settings):
     generate_hit_map(
         som,
         data,
-        f"{output_path}/hit_map_{map_type}.png",
+        f"{output_path}/visualization/hit_map_{map_type}.png",
         map_type=map_type
     )
 
@@ -300,7 +300,7 @@ def generate_maps(som, data, output_path, settings):
         generate_component_plane(
             som,
             component=dim,
-            output_file=f"{output_path}/component_{dim}_{map_type}.png",
+            output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
             map_type=map_type
         )
 
@@ -309,7 +309,7 @@ def generate_maps(som, data, output_path, settings):
     generate_cluster_map(
         som,
         clusters,
-        f"{output_path}/cluster_map_{map_type}.png",
+        f"{output_path}/visualization/cluster_map_{map_type}.png",
         map_type=map_type
     )
 
@@ -317,7 +317,7 @@ def generate_maps(som, data, output_path, settings):
     generate_distance_map(
         som,
         data,
-        f"{output_path}/distance_map_{map_type}.png",
+        f"{output_path}/visualization/distance_map_{map_type}.png",
         map_type=map_type
     )
 

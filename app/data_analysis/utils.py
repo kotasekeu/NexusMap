@@ -28,9 +28,8 @@ def log_message(message: str) -> None:
 # def save_csv(data: list, file_path: str) -> None:
 #     """Saves a list of data to a CSV file."""
 #     pass
-
 def clear_files(uid_hash: str) -> None:
-    """Moves all files in the directory for the given uid_hash to a new directory named backup-{timestamp}, except for the input.csv file."""
+    """Moves all files and the visualization directory in the directory for the given uid_hash to a new directory named backup-{timestamp}, except for the input.csv file."""
     from datetime import datetime
     directory = f"/userfiles/{uid_hash}"
     backup_dir = f"/userfiles/{uid_hash}/backup-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
@@ -38,9 +37,14 @@ def clear_files(uid_hash: str) -> None:
         os.makedirs(backup_dir)
     if os.path.exists(directory):
         for filename in os.listdir(directory):
+            file_path = os.path.join(directory, filename)
             if filename != "input.csv":
-                file_path = os.path.join(directory, filename)
-                if os.path.isfile(file_path):  # Přesunujeme jenom soubory, nikoliv adresáře
+                if os.path.isdir(file_path) and filename == "visualization":
+                    try:
+                        shutil.move(file_path, backup_dir)
+                    except Exception as e:
+                        print(f"Error moving directory {filename}: {e}")
+                elif os.path.isfile(file_path):
                     try:
                         shutil.move(file_path, backup_dir)
                     except Exception as e:
