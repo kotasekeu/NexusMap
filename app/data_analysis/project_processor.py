@@ -111,7 +111,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
 
 
 
-    generate_maps(som, data, output_path, som_settings)
+    generate_maps(som, data, preprocess_file, output_path, som_settings)
 
 
 
@@ -207,8 +207,8 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 30,
-        "som_width": 30,
+        "som_height": 20,
+        "som_width": 20,
         "map_type": "hex"
     }    
 
@@ -280,7 +280,7 @@ def detect_extremes(df_orig: pd.DataFrame,
     return extremes
 
 
-def generate_maps(som, data, output_path, settings):
+def generate_maps(som, data, preprocess_file,output_path, settings):
     # parametr mřížky
     map_type = settings.get("map_type", "square")
 
@@ -300,12 +300,17 @@ def generate_maps(som, data, output_path, settings):
     )
 
     # 3) Component‑plane pro každou dimenzi
+    # Načteme hlavičku CSV souboru pro názvy sloupců
+    df = pd.read_csv(preprocess_file, delimiter=';', nrows=0)
+    column_names = df.columns.tolist()
+    
     for dim in range(som.dim):
         generate_component_plane(
             som,
             component=dim,
             output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
-            map_type=map_type
+            map_type=map_type,
+            column_name=column_names[dim] if dim < len(column_names) else None
         )
 
     # 4) Cluster‑map

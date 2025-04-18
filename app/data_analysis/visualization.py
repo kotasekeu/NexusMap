@@ -111,9 +111,18 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
 
 
 def generate_component_plane(som, component: int, output_file: str,
-                             map_type: str = 'square', cmap: str = 'coolwarm'):
+                             map_type: str = 'square', cmap: str = 'coolwarm',
+                             column_name: str = None):
     """
     Komponentní rovina pro zvolenou dimenzi váhových vektorů.
+    
+    Args:
+        som: Instance SOM
+        component: Index dimenze
+        output_file: Cesta k výstupnímu souboru
+        map_type: Typ mapy ('square' nebo 'hex')
+        cmap: Barevná mapa
+        column_name: Název sloupce pro legendu
     """
     check_folder(output_file)
     m, n, dim = som.m, som.n, som.dim
@@ -124,7 +133,9 @@ def generate_component_plane(som, component: int, output_file: str,
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=plane.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
     
-    fig.colorbar(sc, ax=ax, label=f'Component {component}')
+    # Použijeme název sloupce pro legendu, pokud je zadán
+    legend_label = column_name if column_name else f'Component {component}'
+    fig.colorbar(sc, ax=ax, label=legend_label)
     ax.set_aspect('equal')
     ax.axis('off')
     plt.tight_layout()
@@ -135,7 +146,7 @@ def generate_component_plane(som, component: int, output_file: str,
 def generate_cluster_map(som, clusters: dict, output_file: str,
                          map_type: str = 'square', palette: list = None):
     """
-    Přiřadí každé buňce barvu podle jejího clusteru.
+    Přiřadí každé buňce barvu podle jejího clusteru a zobrazí pozici každého prvku.
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -152,8 +163,12 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(8,8))
 
-    element_size = get_size_of_point(m,n,map_type)    
+    element_size = get_size_of_point(m,n,map_type) * 1.6
     sc = ax.scatter(X, Y, c=labels.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+    for i in range(m):
+        for j in range(n):
+            ax.text(X[i*n+j], Y[i*n+j], f'({i},{j})', ha='center', va='center', size=6)
+    # fig.colorbar(sc, ax=ax, label='Cluster')
     ax.set_aspect('equal')
     ax.axis('off')
     plt.tight_layout()
@@ -180,7 +195,7 @@ def generate_distance_map(som, data: np.ndarray, output_file: str,
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=dist_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-    fig.colorbar(sc, ax=ax, label='Avg quantization error')
+    fig.colorbar(sc, ax=ax, label='Průměrná kvantizační chyba')
     ax.set_aspect('equal')
     ax.axis('off')
     plt.tight_layout()
