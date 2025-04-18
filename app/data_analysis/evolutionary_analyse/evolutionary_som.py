@@ -264,10 +264,12 @@ def evaluate_individual(ind):
         radius_decay_type=ind["radius_decay_type"],
         batch_growth_type=ind["batch_growth_type"],
         growth_g=ind["growth_g"],
-        random_seed=ind["random_seed"]
+        random_seed=ind["random_seed"],
+        normalize_weights_flag=False,
+        
     )
 
-    som.train(data[:epochs])
+    som.train(data)
     score = evaluate_som_quality(som, data[:epochs])
     duration = time.time() - start_time
     uid = get_uid(ind)

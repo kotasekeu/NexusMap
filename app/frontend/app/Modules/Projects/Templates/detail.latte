@@ -31,7 +31,7 @@
 									<div class="card mt-4">
 										<div class="card-body">
 											<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
-											<p><strong>Analýza dokončena:</strong> {if $projectDetail->analysis_done == 1}Ano{else}Ne{/if}</p>
+											<p><strong>Analýza dokončena:</strong> {if $projectDetail->status == 1}Ano{else}Ne{/if}</p>
 											<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
 
 											{$projectDetail->result_id} odkaz na výsledek

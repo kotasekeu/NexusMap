@@ -7,7 +7,7 @@ class KohonenSOM:
                  radius=None, min_radius=0.1,
                  num_batches=10, min_batch_percent=0.1, max_batch_percent=5,
                  lr_decay_type='exp-drop', radius_decay_type='exp-drop', batch_growth_type='exp-growth',
-                 random_seed=None, growth_g=15.0):
+                 random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex'):
         if random_seed is not None:
             np.random.seed(random_seed)
 
@@ -28,6 +28,11 @@ class KohonenSOM:
         self.batch_growth_type = batch_growth_type
 
         self.growth_g = growth_g
+        self.epoch_multiplier = epoch_multiplier
+        self.map_type = map_type
+
+        # pokud chcete defaultně normalizovat, změňte na True
+        self.normalize_weights_flag = normalize_weights_flag    
 
         self.weights = np.random.rand(m, n, dim)
         self.normalize_weights()
@@ -62,7 +67,7 @@ class KohonenSOM:
 
     def train(self, data):
         total_samples = data.shape[0]
-        total_epochs = total_samples
+        total_epochs = int(total_samples * self.epoch_multiplier)
 
         for epoch in range(total_epochs):
             batch_percent = self.get_batch_percent(epoch, total_epochs)
@@ -85,30 +90,39 @@ class KohonenSOM:
                     bmu_idx = self.find_bmu(sample)
                     self.update_weights(sample, bmu_idx, current_lr, current_radius)
 
-            if epoch % 100 == 0:
-                # log_message(f"Epocha {epoch}/{total_epochs}")
-                # log_message(f"Zpracovaných vzorků: {total_samples_to_process}")
-                # log_message(f"LR: {current_lr:.6f} | Radius: {current_radius:.4f} | Samples per batch: {samples_per_batch}")
-                # log_message(f"Decay: LR={self.lr_decay_type}, Radius={self.radius_decay_type}, Batch={self.batch_growth_type}")
-                # log_message(f"% vzorků z celku: {batch_percent:.4f}%")
+            if self.normalize_weights_flag:
+                self.normalize_weights()
+
+            if epoch % 1000 == 0:
+                errors = [np.linalg.norm(sample - self.weights[self.find_bmu(sample)]) for sample in data]
+                q_error = np.mean(errors)
+                log_message(f"Epoch {epoch}/{total_epochs}: quantization error {q_error:.6f}")
                 log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}")
 
     def find_bmu(self, sample):
-        min_dist = float('inf')
-        bmu_idx = None
-        for i in range(self.m):
-            for j in range(self.n):
-                dist = np.linalg.norm(sample - self.weights[i, j])
-                if dist < min_dist:
-                    min_dist = dist
-                    bmu_idx = (i, j)
-        return bmu_idx
+        # vektorová implementace hledání BMU
+        flat = self.weights.reshape(-1, self.dim)  # (m*n, dim)
+        diffs = flat - sample  # broadcast
+        dists = np.linalg.norm(diffs, axis=1)
+        idx = np.argmin(dists)
+        return divmod(idx, self.n)  # (i, j)
 
     def update_weights(self, sample, bmu_idx, learning_rate, radius):
         for i in range(self.m):
             for j in range(self.n):
-                distance_to_bmu = np.linalg.norm(np.array([i, j]) - np.array(bmu_idx))
+                distance_to_bmu = self.grid_distance((i, j), bmu_idx)
                 if distance_to_bmu <= radius:
                     influence = np.exp(-distance_to_bmu ** 2 / (2 * (radius ** 2)))
                     self.weights[i, j] += influence * learning_rate * (sample - self.weights[i, j])
-        self.normalize_weights()
+
+    def grid_distance(self, a: tuple[int,int], b: tuple[int,int]) -> float:
+        i1, j1 = a;  i2, j2 = b
+        if self.map_type == 'square':
+            return math.hypot(i1 - i2, j1 - j2)
+        # pro hex použijeme axial souřadnice (q = j, r = i):
+        q1, r1 = j1, i1
+        q2, r2 = j2, i2
+        # cube coords: x=q, z=r, y=-x-z
+        x1, z1 = q1, r1;  y1 = -x1 - z1
+        x2, z2 = q2, r2;  y2 = -x2 - z2
+        return (abs(x1 - x2) + abs(y1 - y2) + abs(z1 - z2)) / 2
