@@ -20,14 +20,7 @@ def log_message(message: str) -> None:
     with open(log_file, "a") as log:
         log.write(f"{current_time} {message}\n")
 
-# # not needed yet
-# def read_csv(file_path: str) -> list:
-#     """Reads a CSV file and returns the data as a list."""
-#     pass
-#
-# def save_csv(data: list, file_path: str) -> None:
-#     """Saves a list of data to a CSV file."""
-#     pass
+
 def clear_files(uid_hash: str) -> None:
     """Moves all files and the visualization directory in the directory for the given uid_hash to a new directory named backup-{timestamp}, except for the input.csv file."""
     from datetime import datetime

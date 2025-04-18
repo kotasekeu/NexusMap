@@ -20,7 +20,6 @@ def validate_input_file(input_path: str, settings: dict) -> bool:
     return True
 
 
-
 def normalize_data(input_path: str, output_path: str, settings: dict) -> None:
     """Normalizuje data z input.csv do preprocess.csv podle vybraných sloupců a typu dat."""
     df = pd.read_csv(input_path, delimiter=';')

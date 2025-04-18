@@ -93,7 +93,7 @@ class KohonenSOM:
             if self.normalize_weights_flag:
                 self.normalize_weights()
 
-            if epoch % 1000 == 0:
+            if epoch % 100 == 0:
                 errors = [np.linalg.norm(sample - self.weights[self.find_bmu(sample)]) for sample in data]
                 q_error = np.mean(errors)
                 log_message(f"Epoch {epoch}/{total_epochs}: quantization error {q_error:.6f}")

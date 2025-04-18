@@ -54,14 +54,16 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         batch_growth_type=som_settings.get("batch_growth_type", "exp-growth"),
         random_seed=som_settings.get("random_seed", 42),
         growth_g=som_settings.get("growth_g", 15.0),
-        map_type=som_settings.get("map_type", "hex")
+        normalize_weights_flag=som_settings.get("normalize_weights_flag", False),
+        epoch_multiplier=som_settings.get("epoch_multiplier", 1),
+        map_type=som_settings.get("map_type", "hex")        
     ) 
 
     # Trénování SOM
     som.train(data)
 
     # Uložení vstupních dat
-    np.savetxt(f"{output_path}/data.csv", data, delimiter=",")
+    np.savetxt(f"{output_path}/data.csv", data, delimiter=";")
 
     # Uložení naučených vah
     np.save(f"{output_path}/weights.npy", som.weights)
@@ -72,6 +74,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
 
     # Uložíme shluky
     cluster_file = f"{output_path}/clusters.json"
+
     extract_and_save_clusters(
         som,
         data,
@@ -89,8 +92,8 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
     stats = compute_group_statistics(df_orig,
                                     settings["legend_column"],
                                     settings["analysis_columns"])
-
-    # detekovat extrémy s prahovou hodnotou např. 2σ
+    
+    #detekovat extrémy s prahovou hodnotou např. 2σ
     extremes = detect_extremes(df_orig,
                             clusters,
                             stats,
@@ -98,7 +101,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
                             legend_column=settings["legend_column"],
                             analysis_columns=settings["analysis_columns"],
                             primary_id=settings["primary_id"])
-
+    
     # uložit výsledek
     with open(f"{output_path}/extremes.json", "w", encoding="utf-8") as f:
         json.dump(extremes, f, indent=4)
@@ -113,25 +116,22 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
 
 
 
-
-
-
-
-
-
-    # # 2) vykreslíme a uložíme statickou mapu
+    # stary zpusob generovani map
+    # # # 2) vykreslíme a uložíme statickou mapu
     # image_file = f"{output_path}/heatmap.jpg"
     # render_static_map(
     #     som,
     #     data,
-    #     df_norm,
+    #     df_orig,
     #     image_file,
     #     legend_column="country",
     #     legend_title="název legendy"
     # )
 
-    # Generování heatmapy
-    generate_heatmap(som, data, output_path)
+    # # Generování heatmapy
+    # generate_heatmap(som, data, output_path)
+  
+
 
 def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: str, primary_id: str):
     """Uloží JSON shluků: klíč 'i_j' → seznam primárních ID vzorků (jako čisté Python int)."""
@@ -139,12 +139,16 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: 
     for idx, sample in enumerate(data):
         i, j = som.find_bmu(sample)
         key = f"{i}_{j}"
+        
         # převést numpy.int64 na Python int
-        pid_raw = df_orig.iloc[idx][primary_id]
+        pid_raw = df_orig.iloc[idx][primary_id]  # použije správný index
+
+        # pid_raw = df_orig.iloc[idx][primary_id]
         pid = int(pid_raw)
         clusters.setdefault(key, []).append(pid)
     with open(cluster_filename, 'w', encoding='utf-8') as f:
         json.dump(clusters, f, indent=4)        
+
 
 def render_static_map(som, data: np.ndarray, df, output_image: str,
                       legend_column: str, legend_title: str, figsize=(12,12)):
@@ -203,9 +207,9 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 20,
-        "som_width": 20,
-        "map_type": "square"
+        "som_height": 30,
+        "som_width": 30,
+        "map_type": "hex"
     }    
 
     train_and_analyze_som(preprocess_file, kohonen_settings, settings,output_path, uid_hash)
@@ -224,7 +228,7 @@ def compute_group_statistics(df_orig: pd.DataFrame,
     Vrací slovník: { group_value: { col: (mean, std) } }.
     """
     stats = {}
-    grouped = df_orig.groupby(group_by)[analysis_columns]
+    grouped = df_orig.groupby(group_by)[analysis_columns]    
     agg = grouped.agg(['mean', 'std'])
     for key, row in agg.iterrows():
         stats[key] = {col: (row[(col, 'mean')], row[(col, 'std')]) for col in analysis_columns}

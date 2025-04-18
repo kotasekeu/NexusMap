@@ -34,26 +34,50 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
     """
     Unified Distance Matrix: vykreslí průměrné vzdálenosti mezi sousedy neuronů.
     """
+    # Kontroluje, zda existuje složka pro výstupní soubor
     check_folder(output_file)
-    m, n = som.m, som.n
+    # Získá rozměry mřížky SOM
+    m, n = som.m, som.n    
+    # Přetváří váhy SOM do 3D pole pro snadnější přístup
     weights = som.weights.reshape(m, n, -1)
+    # Inicializuje pole pro uložení průměrných vzdáleností
     u = np.zeros((m, n))
+    # Iteruje přes všechny neurony v mřížce
     for i in range(m):
         for j in range(n):
+            # Inicializuje seznam sousedních neuronů
             neigh = []
+            # Iteruje přes všechny čtyři sousedy (nahoru, dolů, doleva, doprava)
             for di, dj in ((1,0),(-1,0),(0,1),(0,-1)):
+                # Vypočítává pozice sousedního neuronu
                 ni, nj = i+di, j+dj
+                # Kontroluje, zda sousední neuron leží uvnitř mřížky
                 if 0 <= ni < m and 0 <= nj < n:
+                    # Vypočítává vzdálenost mezi dvěma sousedními neurony
                     neigh.append(np.linalg.norm(weights[i,j] - weights[ni,nj]))
+            # Vypočítává průměrnou vzdálenost od sousedních neuronů
             u[i,j] = np.mean(neigh) if neigh else 0
+    # Generuje souřadnice center neuronů podle typu mřížky
     X, Y = _grid_coordinates(m, n, map_type)
+    # Vytváří novou figuru a osy pro vykreslení
     fig, ax = plt.subplots(figsize=(8,8))
-    sc = ax.scatter(X, Y, c=u.flatten(), s=500 if map_type=='hex' else 200, cmap=cmap)
+
+    
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=u.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+    
+    # Přidává barevnou škálu s popiskem
     fig.colorbar(sc, ax=ax, label='U-Matrix distance')
+    # Nastavuje poměr stran vykreslované oblasti na 'equal' pro správné zobrazení mřížky
     ax.set_aspect('equal')
+    # ax.set_aspect('auto', adjustable='datalim')
+    # Skrývá osy
     ax.axis('off')
+    # Upravuje layout pro lepší viditelnost
     plt.tight_layout()
+    # Ukládá vykreslenou figuru do souboru
     plt.savefig(output_file)
+    # Zavírá aktuální figuru pro uvolnění paměti
     plt.close()
 
 
@@ -74,7 +98,10 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
 
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(8,8))
-    sc = ax.scatter(X, Y, c=vals, s=vals*10 + 20, cmap=cmap)
+
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+
     fig.colorbar(sc, ax=ax, label='Hits')
     ax.set_aspect('equal')
     ax.axis('off')
@@ -93,7 +120,10 @@ def generate_component_plane(som, component: int, output_file: str,
     plane = som.weights.reshape(-1, dim)[:, component].reshape(m, n)
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(8,8))
-    sc = ax.scatter(X, Y, c=plane.flatten(), s=500 if map_type=='hex' else 200, cmap=cmap)
+
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=plane.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+    
     fig.colorbar(sc, ax=ax, label=f'Component {component}')
     ax.set_aspect('equal')
     ax.axis('off')
@@ -121,7 +151,9 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
         cmap = plt.colors.ListedColormap(palette)
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(8,8))
-    sc = ax.scatter(X, Y, c=labels.flatten(), s=500 if map_type=='hex' else 200, cmap=cmap)
+
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=labels.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
     ax.set_aspect('equal')
     ax.axis('off')
     plt.tight_layout()
@@ -145,7 +177,9 @@ def generate_distance_map(som, data: np.ndarray, output_file: str,
         dist_map = np.divide(dist_map, counts, out=np.zeros_like(dist_map), where=counts>0)
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(8,8))
-    sc = ax.scatter(X, Y, c=dist_map.flatten(), s=500 if map_type=='hex' else 200, cmap=cmap)
+
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=dist_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
     fig.colorbar(sc, ax=ax, label='Avg quantization error')
     ax.set_aspect('equal')
     ax.axis('off')
@@ -157,3 +191,10 @@ def check_folder(output_file: str):
     folder = os.path.dirname(output_file)
     if not os.path.exists(folder):
         os.makedirs(folder)
+
+def get_size_of_point(m,n,map_type):
+    if map_type == 'hex':    
+        point_size = 355000 / (max(m,n) ** 2.25)
+    else:
+        point_size = 280000 / (max(m,n) ** 2.3)
+    return point_size
