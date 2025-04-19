@@ -81,40 +81,9 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
     plt.close()
 
 
-def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
-                     map_type: str = 'hex', cmap: str = 'Blues'):
-    """
-    Heatmap návštěvnosti neuronů: velikost/barva bodu podle četnosti vzorků.
-    """
-    check_folder(output_file)
-    m, n = som.m, som.n
-    counts = {(i,j): 0 for i in range(m) for j in range(n)}
-    for sample in data:
-        i, j = som.find_bmu(sample)
-        counts[(i,j)] += 1    
-
-    # hodnoty counts v pořadí i=0..m-1, j=0..n-1
-    vals = np.array([counts[(i,j)] for i in range(m) for j in range(n)])
-    # print(vals)
-    # sys.exit()  
-
-    X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(20,12))
-
-    element_size = get_size_of_point(m,n,map_type)    
-    sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-
-    fig.colorbar(sc, ax=ax, label='Hits')
-    ax.set_aspect('equal')
-    ax.axis('off')
-    ax.margins(0.08)
-    plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')    
-    plt.close()
-
-
 def generate_hit_map(som, data: np.ndarray, output_file: str,
-                     map_type: str = 'square', cmap: str = 'Blues'):
+                     map_type: str = 'square', cmap: str = 'Blues',
+                     show_numbers: bool = False):
     """
     Heatmap návštěvnosti neuronů: velikost/barva bodu podle četnosti vzorků.
     """
@@ -133,6 +102,12 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+
+    if show_numbers:
+        for i in range(m):
+            for j in range(n):
+                if counts[(i,j)] != 0:
+                    ax.text(X[i*n+j], Y[i*n+j], str(counts[(i,j)]), ha='center', va='center', color='red')
 
     fig.colorbar(sc, ax=ax, label='Hits')
     ax.set_aspect('equal')
@@ -257,6 +232,11 @@ def plot_pie_map_from_json(
     X, Y = _grid_coordinates(m, n, map_type)
 
     fig, ax = plt.subplots(figsize=(20, 12))
+    
+    # Přidání základního rastru světle šedou barvou
+    element_size = get_size_of_point(m,n,map_type)
+    ax.scatter(X, Y, c='#FBFBFB', s=element_size, marker='h' if map_type == 'hex' else 's')
+    
     for pos, cnts in data['counts'].items():
         i, j = map(int, pos.split('_'))
         idx = i * n + j
@@ -292,11 +272,11 @@ def plot_pie_map_from_json(
                     edgecolor='white'
                 )
                 ax.add_patch(wedge)
-                angle -= 360 * f  
+                angle -= 360 * f      
 
     cat_map  = data['categories']              
     cat_keys = sorted(cat_map.keys(), key=int)
-    labels   = [cat_map[k] for k in cat_keys]
+    labels   = [cat_map[k] for k in cat_keys]    
 
     labels = [data['categories'][k] for k in cat_keys]
     handles = [
@@ -331,9 +311,14 @@ def check_folder(output_file: str):
 
 def get_size_of_point(m,n,map_type):
     if map_type == 'hex':    
-        point_size = 9500
+        point_size = 900 
+        #point_size = 2300 20x20
+        #point_size = 10000 10x10
     else:
-        point_size = 280000 / (max(m,n) ** 2.3)
+        #point_size = 1100 20x20
+        #point_size = 450 30x30
+        #point_size = 5500 10x10
+        point_size = 5500
     return point_size
 
 
@@ -355,14 +340,9 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         som,
         data,
         f"{output_path}/visualization/hit_map_{map_type}.png",
-        map_type=map_type
-    )
-
-    generate_hit_map_with_numbers(
-        som,
-        data,
-        f"{output_path}/visualization/hit_map_with_numbers_{map_type}.png",
-        map_type=map_type
+        map_type,
+        'Blues',
+        True
     )
 
     # 3) Component‑plane pro každou dimenzi

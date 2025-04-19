@@ -165,10 +165,11 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 9,
-        "som_width": 9,
-        "map_type": "square",
-        "normalize_weights_flag": True        
+        "som_height": 10,
+        "som_width": 10,
+        "map_type": "hex",        
+        "normalize_weights_flag": False,
+        "epoch_multiplier": 50
     }    
 
     train_and_analyze_som(preprocess_file, kohonen_settings, settings,output_path, uid_hash)
