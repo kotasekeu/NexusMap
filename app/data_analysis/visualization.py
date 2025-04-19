@@ -7,6 +7,9 @@ from matplotlib.patches import Rectangle, RegularPolygon
 from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 import sys
+import pandas as pd
+from matplotlib.patches import Wedge
+import json
 
 def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
     """
@@ -62,80 +65,19 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
     # Generuje souřadnice center neuronů podle typu mřížky
     X, Y = _grid_coordinates(m, n, map_type)
     # Vytváří novou figuru a osy pro vykreslení
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(20,12)) #20x12
 
     
-    element_size = get_size_of_point(m,n,map_type)    
-    sc = ax.scatter(X, Y, c=u.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-    
-    # Přidává barevnou škálu s popiskem
+    element_size = get_size_of_point(m,n,map_type)
+    sc = ax.scatter(X, Y, c=u.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')   
+
     fig.colorbar(sc, ax=ax, label='U-Matrix distance')
-    # Nastavuje poměr stran vykreslované oblasti na 'equal' pro správné zobrazení mřížky
     ax.set_aspect('equal')
-    # ax.set_aspect('auto', adjustable='datalim')
-    # Skrývá osy
     ax.axis('off')
-    # Upravuje layout pro lepší viditelnost
+    ax.margins(0.08)
     plt.tight_layout()
-    # Ukládá vykreslenou figuru do souboru
-    plt.savefig(output_file)
-    # Zavírá aktuální figuru pro uvolnění paměti
+    plt.savefig(output_file, bbox_inches='tight')
     plt.close()
-
-# def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
-#                      map_type: str = 'hex', cmap: str = 'Blues'):
-#     """
-#     Hex‑hitmap: bílý okraj + barevné jádro podle četnosti,
-#     číslo hitů uprostřed každé buňky.
-#     """
-#     # spočítat hits
-#     m, n = som.m, som.n
-#     counts = {(i,j): 0 for i in range(m) for j in range(n)}
-#     for v in data:
-#         i,j = som.find_bmu(v)
-#         counts[(i,j)] += 1
-
-#     # připrav barvení
-#     vals = np.array(list(counts.values()))
-#     norm = Normalize(vmin=0, vmax=vals.max())
-#     sm = ScalarMappable(norm=norm, cmap=cmap)
-
-#     # souřadnice
-#     X, Y = _grid_coordinates(m, n, map_type)  # máte už
-#     fig, ax = plt.subplots(figsize=(8,8))
-#     ax.set_aspect('equal')
-#     ax.axis('off')
-
-#     # velikost hexagonu
-#     size = get_size_of_point(m, n, map_type)  # máte už
-#     hex_radius = np.sqrt(size/np.pi)  # přepočet ze scatter size
-
-#     for (x,y), ((i,j), cnt) in zip(zip(X,Y), counts.items()):
-#         # bílý okraj
-#         outer = RegularPolygon(
-#             (x, y), numVertices=6, radius=hex_radius*1.05,
-#             facecolor='white', edgecolor='gray', lw=1)
-#         ax.add_patch(outer)
-
-#         # barevné jádro
-#         color = sm.to_rgba(cnt)
-#         inner = RegularPolygon(
-#             (x, y), numVertices=6, radius=hex_radius*0.9,
-#             facecolor=color, edgecolor=None)
-#         ax.add_patch(inner)
-
-#         # text
-#         if cnt>0:
-#             ax.text(x, y, str(cnt),
-#                     ha='center', va='center',
-#                     fontsize=8, color='black')
-
-#     # legenda (colorbar)
-#     sm.set_array(vals)
-#     cbar = fig.colorbar(sm, ax=ax, shrink=0.7, label='Hits')
-#     plt.tight_layout()
-#     plt.savefig(output_file, dpi=150)
-#     plt.close()
 
 
 def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
@@ -148,16 +90,15 @@ def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
     counts = {(i,j): 0 for i in range(m) for j in range(n)}
     for sample in data:
         i, j = som.find_bmu(sample)
-        counts[(i,j)] += 1
-
-    print(counts)
-    sys.exit()
+        counts[(i,j)] += 1    
 
     # hodnoty counts v pořadí i=0..m-1, j=0..n-1
     vals = np.array([counts[(i,j)] for i in range(m) for j in range(n)])
+    # print(vals)
+    # sys.exit()  
 
     X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
@@ -165,8 +106,9 @@ def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
     fig.colorbar(sc, ax=ax, label='Hits')
     ax.set_aspect('equal')
     ax.axis('off')
+    ax.margins(0.08)
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, bbox_inches='tight')    
     plt.close()
 
 
@@ -186,7 +128,7 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
     vals = np.array([counts[(i,j)] for i in range(m) for j in range(n)])
 
     X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
@@ -194,8 +136,9 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
     fig.colorbar(sc, ax=ax, label='Hits')
     ax.set_aspect('equal')
     ax.axis('off')
+    ax.margins(0.08)
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, bbox_inches='tight')
     plt.close()
 
 
@@ -217,7 +160,7 @@ def generate_component_plane(som, component: int, output_file: str,
     m, n, dim = som.m, som.n, som.dim
     plane = som.weights.reshape(-1, dim)[:, component].reshape(m, n)
     X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=plane.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
@@ -227,8 +170,9 @@ def generate_component_plane(som, component: int, output_file: str,
     fig.colorbar(sc, ax=ax, label=legend_label)
     ax.set_aspect('equal')
     ax.axis('off')
+    ax.margins(0.08)
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, bbox_inches='tight')
     plt.close()
 
 
@@ -250,9 +194,9 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
     else:
         cmap = plt.colors.ListedColormap(palette)
     X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(20,12))
 
-    element_size = get_size_of_point(m,n,map_type) * 1.6
+    element_size = get_size_of_point(m,n,map_type)
     sc = ax.scatter(X, Y, c=labels.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
     for i in range(m):
         for j in range(n):
@@ -260,8 +204,9 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
     # fig.colorbar(sc, ax=ax, label='Cluster')
     ax.set_aspect('equal')
     ax.axis('off')
+    ax.margins(0.08)
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, bbox_inches='tight')
     plt.close()
 
 def generate_distance_map(som, data: np.ndarray, output_file: str,
@@ -280,25 +225,86 @@ def generate_distance_map(som, data: np.ndarray, output_file: str,
     with np.errstate(divide='ignore', invalid='ignore'):
         dist_map = np.divide(dist_map, counts, out=np.zeros_like(dist_map), where=counts>0)
     X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=dist_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
     fig.colorbar(sc, ax=ax, label='Průměrná kvantizační chyba')
     ax.set_aspect('equal')
     ax.axis('off')
+    ax.margins(0.08)
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, bbox_inches='tight')
     plt.close()
+
+
+def generate_pie_map(
+    som, data: np.ndarray, labels: np.ndarray, categories: list,
+    output_file: str, map_type: str = 'hex', cmap: str = 'tab10',
+    radius: float = 100
+):
+    """
+    Na každé buňce vykreslí koláčový graf z rozložení labelů (max ~10 kategorií).
+    """
+    check_folder(output_file)
+    m, n = som.m, som.n
+    # initialize counts per neuron per category
+    counts = {
+        (i, j): {cat: 0 for cat in categories}
+        for i in range(m) for j in range(n)
+    }
+    for sample, lbl in zip(data, labels):
+        i, j = som.find_bmu(sample)
+        counts[(i, j)][lbl] += 1
+
+    X, Y = _grid_coordinates(m, n, map_type)
+    fig, ax = plt.subplots(figsize=(20, 12))
+    cmap = plt.get_cmap(cmap)
+    cat_idx = {cat: idx for idx, cat in enumerate(categories)}
+
+    for k, ((i, j), cnts) in enumerate(counts.items()):
+        print(f"k: {k}, i: {i}, j: {j}, cnts: {cnts}")
+        total = sum(cnts.values())
+        if total == 0:
+            continue
+        x, y = X[k], Y[k]
+        start = 90
+        for cat, c in cnts.items():
+            print(f"cat: {cat}, c: {c}")
+            if c == 0:
+                continue
+            frac = c / total
+            wedge = Wedge(
+                center=(x, y), r=radius,
+                theta1=start, theta2=start - 360 * frac,
+                facecolor=cmap(cat_idx[cat] / len(categories)),
+                edgecolor='white'
+            )
+            ax.add_patch(wedge)
+            start -= 360 * frac
+
+    ax.set_aspect('equal')
+    ax.axis('off')
+    ax.margins(0.08)
+    plt.tight_layout()
+    plt.savefig(output_file, bbox_inches='tight')
+    plt.close()
+
+
+
 
 def check_folder(output_file: str):
     folder = os.path.dirname(output_file)
     if not os.path.exists(folder):
         os.makedirs(folder)
 
+
+
+
+
 def get_size_of_point(m,n,map_type):
     if map_type == 'hex':    
-        point_size = 355000 / (max(m,n) ** 2.25)
+        point_size = 9500
     else:
         point_size = 280000 / (max(m,n) ** 2.3)
     return point_size
@@ -362,3 +368,22 @@ def generate_maps(som, data, preprocess_file,output_path, settings):
         f"{output_path}/visualization/distance_map_{map_type}.png",
         map_type=map_type
     )
+
+
+    mapy = {0.0:'setosa', 0.5:'versicolor', 1.0:'virginica'}
+    df = pd.read_csv(preprocess_file, delimiter=';')
+    labels = df['Species'].map(mapy).values
+   
+    categories = ['setosa','versicolor','virginica']
+
+    generate_pie_map(
+        som,
+        data,
+        labels,
+        categories,
+        f"{output_path}/visualization/pie_map_{map_type}.png",
+        map_type=map_type,
+        cmap='tab10',
+        radius=0.4
+    )
+    print(f"Pie map saved to {output_path}/visualization/pie_map_{map_type}.png")

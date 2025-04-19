@@ -1,7 +1,6 @@
 import sys
 from database import fetch_project, update_project_status
 from preprocess import validate_input_file, normalize_data
-from output import generate_heatmap
 from utils import log_message, set_uid_hash, clear_files
 from kohonen import KohonenSOM
 import pandas as pd
@@ -107,30 +106,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         json.dump(extremes, f, indent=4)
 
 
-
-
-
-
     generate_maps(som, data, preprocess_file, output_path, som_settings)
-
-
-
-
-    # stary zpusob generovani map
-    # # # 2) vykreslíme a uložíme statickou mapu
-    # image_file = f"{output_path}/heatmap.jpg"
-    # render_static_map(
-    #     som,
-    #     data,
-    #     df_orig,
-    #     image_file,
-    #     legend_column="country",
-    #     legend_title="název legendy"
-    # )
-
-    # # Generování heatmapy
-    # generate_heatmap(som, data, output_path)
-  
 
 
 def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: str, primary_id: str):
@@ -148,39 +124,6 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: 
         clusters.setdefault(key, []).append(pid)
     with open(cluster_filename, 'w', encoding='utf-8') as f:
         json.dump(clusters, f, indent=4)        
-
-
-def render_static_map(som, data: np.ndarray, df, output_image: str,
-                      legend_column: str, legend_title: str, figsize=(12,12)):
-    """Vykreslí body do JPG/PNG a uloží statickou mapu s legendou."""
-    plt.figure(figsize=figsize)
-    unique_vals = df[legend_column].unique()
-    cmap = plt.get_cmap('hsv', len(unique_vals))
-    colors = {v: cmap(i) for i, v in enumerate(unique_vals)}
-
-    # vykreslení bodů
-    for idx, sample in enumerate(data):
-        i, j = som.find_bmu(sample)
-        x = i + np.random.rand() * 0.9
-        y = j + np.random.rand() * 0.9
-        c = colors[df[legend_column].iloc[idx]]
-        plt.plot(x, y, 'o', color=c, markersize=3)
-
-    plt.xlim(0, som.m)
-    plt.ylim(0, som.n)
-    plt.grid(True)
-
-    # legenda
-    handles = [Line2D([0], [0], marker='o', color='w',
-                      markerfacecolor=colors[val], markersize=8, label=val)
-               for val in unique_vals]
-    plt.legend(handles=handles, title=legend_title, bbox_to_anchor=(1.05, 1), loc='upper left')
-
-    plt.tight_layout()
-    plt.savefig(output_image)
-    plt.close()
-
-
 
 # hlavní metoda co řídí všechno
 def process_project(uid_hash: str) -> None:
@@ -207,9 +150,9 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     kohonen_settings = {
-        "som_height": 20,
-        "som_width": 20,
-        "map_type": "hex"
+        "som_height": 9,
+        "som_width": 9,
+        "map_type": "square"
     }    
 
     train_and_analyze_som(preprocess_file, kohonen_settings, settings,output_path, uid_hash)
