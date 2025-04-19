@@ -4,7 +4,9 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import RegularPolygon
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle, RegularPolygon
-
+from matplotlib.cm import ScalarMappable
+from matplotlib.colors import Normalize
+import sys
 
 def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
     """
@@ -78,6 +80,93 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
     # Ukládá vykreslenou figuru do souboru
     plt.savefig(output_file)
     # Zavírá aktuální figuru pro uvolnění paměti
+    plt.close()
+
+# def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
+#                      map_type: str = 'hex', cmap: str = 'Blues'):
+#     """
+#     Hex‑hitmap: bílý okraj + barevné jádro podle četnosti,
+#     číslo hitů uprostřed každé buňky.
+#     """
+#     # spočítat hits
+#     m, n = som.m, som.n
+#     counts = {(i,j): 0 for i in range(m) for j in range(n)}
+#     for v in data:
+#         i,j = som.find_bmu(v)
+#         counts[(i,j)] += 1
+
+#     # připrav barvení
+#     vals = np.array(list(counts.values()))
+#     norm = Normalize(vmin=0, vmax=vals.max())
+#     sm = ScalarMappable(norm=norm, cmap=cmap)
+
+#     # souřadnice
+#     X, Y = _grid_coordinates(m, n, map_type)  # máte už
+#     fig, ax = plt.subplots(figsize=(8,8))
+#     ax.set_aspect('equal')
+#     ax.axis('off')
+
+#     # velikost hexagonu
+#     size = get_size_of_point(m, n, map_type)  # máte už
+#     hex_radius = np.sqrt(size/np.pi)  # přepočet ze scatter size
+
+#     for (x,y), ((i,j), cnt) in zip(zip(X,Y), counts.items()):
+#         # bílý okraj
+#         outer = RegularPolygon(
+#             (x, y), numVertices=6, radius=hex_radius*1.05,
+#             facecolor='white', edgecolor='gray', lw=1)
+#         ax.add_patch(outer)
+
+#         # barevné jádro
+#         color = sm.to_rgba(cnt)
+#         inner = RegularPolygon(
+#             (x, y), numVertices=6, radius=hex_radius*0.9,
+#             facecolor=color, edgecolor=None)
+#         ax.add_patch(inner)
+
+#         # text
+#         if cnt>0:
+#             ax.text(x, y, str(cnt),
+#                     ha='center', va='center',
+#                     fontsize=8, color='black')
+
+#     # legenda (colorbar)
+#     sm.set_array(vals)
+#     cbar = fig.colorbar(sm, ax=ax, shrink=0.7, label='Hits')
+#     plt.tight_layout()
+#     plt.savefig(output_file, dpi=150)
+#     plt.close()
+
+
+def generate_hit_map_with_numbers(som, data: np.ndarray, output_file: str,
+                     map_type: str = 'hex', cmap: str = 'Blues'):
+    """
+    Heatmap návštěvnosti neuronů: velikost/barva bodu podle četnosti vzorků.
+    """
+    check_folder(output_file)
+    m, n = som.m, som.n
+    counts = {(i,j): 0 for i in range(m) for j in range(n)}
+    for sample in data:
+        i, j = som.find_bmu(sample)
+        counts[(i,j)] += 1
+
+    print(counts)
+    sys.exit()
+
+    # hodnoty counts v pořadí i=0..m-1, j=0..n-1
+    vals = np.array([counts[(i,j)] for i in range(m) for j in range(n)])
+
+    X, Y = _grid_coordinates(m, n, map_type)
+    fig, ax = plt.subplots(figsize=(8,8))
+
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+
+    fig.colorbar(sc, ax=ax, label='Hits')
+    ax.set_aspect('equal')
+    ax.axis('off')
+    plt.tight_layout()
+    plt.savefig(output_file)
     plt.close()
 
 
@@ -213,3 +302,63 @@ def get_size_of_point(m,n,map_type):
     else:
         point_size = 280000 / (max(m,n) ** 2.3)
     return point_size
+
+
+
+
+def generate_maps(som, data, preprocess_file,output_path, settings):
+    # parametr mřížky
+    map_type = settings.get("map_type", "square")
+
+    # 1) U‑Matrix
+    generate_u_matrix(
+        som,
+        f"{output_path}/visualization/u_matrix_{map_type}.png",
+        map_type=map_type
+    )
+
+    # 2) Hit‑mapa
+    generate_hit_map(
+        som,
+        data,
+        f"{output_path}/visualization/hit_map_{map_type}.png",
+        map_type=map_type
+    )
+
+    generate_hit_map_with_numbers(
+        som,
+        data,
+        f"{output_path}/visualization/hit_map_with_numbers_{map_type}.png",
+        map_type=map_type
+    )
+
+    # 3) Component‑plane pro každou dimenzi
+    # Načteme hlavičku CSV souboru pro názvy sloupců
+    df = pd.read_csv(preprocess_file, delimiter=';', nrows=0)
+    column_names = df.columns.tolist()
+    
+    for dim in range(som.dim):
+        generate_component_plane(
+            som,
+            component=dim,
+            output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
+            map_type=map_type,
+            column_name=column_names[dim] if dim < len(column_names) else None
+        )
+
+    # 4) Cluster‑map
+    clusters = json.load(open(f"{output_path}/clusters.json", encoding="utf-8"))
+    generate_cluster_map(
+        som,
+        clusters,
+        f"{output_path}/visualization/cluster_map_{map_type}.png",
+        map_type=map_type
+    )
+
+    # 5) Distance‑map (prům. kvantizační chyba)
+    generate_distance_map(
+        som,
+        data,
+        f"{output_path}/visualization/distance_map_{map_type}.png",
+        map_type=map_type
+    )

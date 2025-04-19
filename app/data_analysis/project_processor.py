@@ -9,7 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import json
 from matplotlib.lines import Line2D
-from visualization import generate_u_matrix, generate_hit_map, generate_component_plane, generate_cluster_map, generate_distance_map 
+from visualization import generate_maps
 
 # vytahneme data z databaze podle uid
 def get_project_detail(uid_hash: str) -> dict:
@@ -278,57 +278,6 @@ def detect_extremes(df_orig: pd.DataFrame,
                     extremes['by_cluster'][cl_key] = outliers.astype(int).tolist()
 
     return extremes
-
-
-def generate_maps(som, data, preprocess_file,output_path, settings):
-    # parametr mřížky
-    map_type = settings.get("map_type", "square")
-
-    # 1) U‑Matrix
-    generate_u_matrix(
-        som,
-        f"{output_path}/visualization/u_matrix_{map_type}.png",
-        map_type=map_type
-    )
-
-    # 2) Hit‑mapa
-    generate_hit_map(
-        som,
-        data,
-        f"{output_path}/visualization/hit_map_{map_type}.png",
-        map_type=map_type
-    )
-
-    # 3) Component‑plane pro každou dimenzi
-    # Načteme hlavičku CSV souboru pro názvy sloupců
-    df = pd.read_csv(preprocess_file, delimiter=';', nrows=0)
-    column_names = df.columns.tolist()
-    
-    for dim in range(som.dim):
-        generate_component_plane(
-            som,
-            component=dim,
-            output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
-            map_type=map_type,
-            column_name=column_names[dim] if dim < len(column_names) else None
-        )
-
-    # 4) Cluster‑map
-    clusters = json.load(open(f"{output_path}/clusters.json", encoding="utf-8"))
-    generate_cluster_map(
-        som,
-        clusters,
-        f"{output_path}/visualization/cluster_map_{map_type}.png",
-        map_type=map_type
-    )
-
-    # 5) Distance‑map (prům. kvantizační chyba)
-    generate_distance_map(
-        som,
-        data,
-        f"{output_path}/visualization/distance_map_{map_type}.png",
-        map_type=map_type
-    )
 
 
 if __name__ == "__main__":
