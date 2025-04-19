@@ -1,5 +1,0 @@
-# config.neon
-includes:
-	- common.neon
-	- services.neon
-	- local.neon
