@@ -8,7 +8,8 @@ from matplotlib.cm import ScalarMappable
 from matplotlib.colors import Normalize
 import sys
 import pandas as pd
-from matplotlib.patches import Wedge
+from matplotlib.patches import Wedge, Circle, Patch
+from collections import defaultdict, Counter
 import json
 
 def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
@@ -238,50 +239,76 @@ def generate_distance_map(som, data: np.ndarray, output_file: str,
     plt.close()
 
 
-def generate_pie_map(
-    som, data: np.ndarray, labels: np.ndarray, categories: list,
-    output_file: str, map_type: str = 'hex', cmap: str = 'tab10',
-    radius: float = 100
+def plot_pie_map_from_json(
+    som,
+    json_file: str,
+    output_file: str,
+    map_type: str = 'hex',
+    cmap: str = 'tab20b',
+    radius: float = 0.4
 ):
-    """
-    Na každé buňce vykreslí koláčový graf z rozložení labelů (max ~10 kategorií).
-    """
-    check_folder(output_file)
-    m, n = som.m, som.n
-    # initialize counts per neuron per category
-    counts = {
-        (i, j): {cat: 0 for cat in categories}
-        for i in range(m) for j in range(n)
-    }
-    for sample, lbl in zip(data, labels):
-        i, j = som.find_bmu(sample)
-        counts[(i, j)][lbl] += 1
+    with open(json_file, 'r', encoding='utf-8') as f:
+        data = json.load(f)
 
-    X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(20, 12))
+    cat_keys = sorted(data['categories'].keys(), key=int)
     cmap = plt.get_cmap(cmap)
-    cat_idx = {cat: idx for idx, cat in enumerate(categories)}
 
-    for k, ((i, j), cnts) in enumerate(counts.items()):
-        print(f"k: {k}, i: {i}, j: {j}, cnts: {cnts}")
-        total = sum(cnts.values())
+    m, n = som.m, som.n
+    X, Y = _grid_coordinates(m, n, map_type)
+
+    fig, ax = plt.subplots(figsize=(20, 12))
+    for pos, cnts in data['counts'].items():
+        i, j = map(int, pos.split('_'))
+        idx = i * n + j
+        x, y = X[idx], Y[idx]
+        total = sum(cnts[k] for k in cat_keys)
         if total == 0:
             continue
-        x, y = X[k], Y[k]
-        start = 90
-        for cat, c in cnts.items():
-            print(f"cat: {cat}, c: {c}")
-            if c == 0:
-                continue
-            frac = c / total
-            wedge = Wedge(
-                center=(x, y), r=radius,
-                theta1=start, theta2=start - 360 * frac,
-                facecolor=cmap(cat_idx[cat] / len(categories)),
+
+        # spočítat podíly
+        fracs = [cnts[k] / total for k in cat_keys]
+        nonzero = [f for f in fracs if f > 0]
+
+        if len(nonzero) == 1:
+            # jediná kategorie → plný kruh
+            k0 = fracs.index(1.0)
+            circ = Circle(
+                (x, y), radius,
+                facecolor=cmap(k0 / len(cat_keys)),
                 edgecolor='white'
             )
-            ax.add_patch(wedge)
-            start -= 360 * frac
+            ax.add_patch(circ)
+        else:
+            # více segmentů
+            angle = 90
+            for k0, f in enumerate(fracs):
+                if f <= 0:
+                    continue
+                wedge = Wedge(
+                    (x, y), radius,
+                    theta1=angle,
+                    theta2=angle - 360 * f,
+                    facecolor=cmap(k0 / len(cat_keys)),
+                    edgecolor='white'
+                )
+                ax.add_patch(wedge)
+                angle -= 360 * f  
+
+    cat_map  = data['categories']              
+    cat_keys = sorted(cat_map.keys(), key=int)
+    labels   = [cat_map[k] for k in cat_keys]
+
+    labels = [data['categories'][k] for k in cat_keys]
+    handles = [
+        Patch(facecolor=plt.get_cmap(cmap)(i/len(cat_keys)), label=labels[i])
+        for i in range(len(labels))
+    ]
+    ax.legend(
+        handles=handles,
+        bbox_to_anchor=(1.02, 1),
+        loc='upper left',
+        borderaxespad=0
+    )
 
     ax.set_aspect('equal')
     ax.axis('off')
@@ -312,9 +339,9 @@ def get_size_of_point(m,n,map_type):
 
 
 
-def generate_maps(som, data, preprocess_file,output_path, settings):
+def generate_maps(som, data, preprocess_file,output_path, som_settings, settings):
     # parametr mřížky
-    map_type = settings.get("map_type", "square")
+    map_type = som_settings.get("map_type", "square")
 
     # 1) U‑Matrix
     generate_u_matrix(
@@ -368,22 +395,11 @@ def generate_maps(som, data, preprocess_file,output_path, settings):
         f"{output_path}/visualization/distance_map_{map_type}.png",
         map_type=map_type
     )
-
-
-    mapy = {0.0:'setosa', 0.5:'versicolor', 1.0:'virginica'}
-    df = pd.read_csv(preprocess_file, delimiter=';')
-    labels = df['Species'].map(mapy).values
-   
-    categories = ['setosa','versicolor','virginica']
-
-    generate_pie_map(
-        som,
-        data,
-        labels,
-        categories,
-        f"{output_path}/visualization/pie_map_{map_type}.png",
-        map_type=map_type,
-        cmap='tab10',
-        radius=0.4
-    )
-    print(f"Pie map saved to {output_path}/visualization/pie_map_{map_type}.png")
+  
+    for column_name in settings['categorical_column']:
+        plot_pie_map_from_json(
+            som,
+            f"{output_path}/pie_data_{column_name}.json",
+            f"{output_path}/visualization/pie_map_{column_name}.png",
+            map_type
+        )

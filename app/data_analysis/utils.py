@@ -31,7 +31,7 @@ def clear_files(uid_hash: str) -> None:
     if os.path.exists(directory):
         for filename in os.listdir(directory):
             file_path = os.path.join(directory, filename)
-            if filename != "input.csv":
+            if filename not in ["input.csv"]:
                 if os.path.isdir(file_path) and filename == "visualization":
                     try:
                         shutil.move(file_path, backup_dir)

@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import json
 from matplotlib.lines import Line2D
 from visualization import generate_maps
+import os
+from collections import defaultdict, Counter,OrderedDict
 
 # vytahneme data z databaze podle uid
 def get_project_detail(uid_hash: str) -> dict:
@@ -81,7 +83,14 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         cluster_file,
         settings["primary_id"]
     )
-    
+
+    extract_and_save_pie_data(
+        som,
+        data,
+        df_orig,
+        settings["categorical_column"],
+        output_dir=f"{output_path}/"
+    )
 
     # načíst data
     df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=';')
@@ -106,7 +115,15 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         json.dump(extremes, f, indent=4)
 
 
-    generate_maps(som, data, preprocess_file, output_path, som_settings)
+    # extract_and_save_pie_data_from_clusters(
+    #     df_orig,
+    #     f"{output_path}/clusters.json",
+    #     settings['categorical_column'],
+    #     f"{output_path}/",
+    #     settings['primary_id']
+    # )
+
+    generate_maps(som, data, preprocess_file, output_path, som_settings, settings)
 
 
 def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: str, primary_id: str):
@@ -118,8 +135,6 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: 
         
         # převést numpy.int64 na Python int
         pid_raw = df_orig.iloc[idx][primary_id]  # použije správný index
-
-        # pid_raw = df_orig.iloc[idx][primary_id]
         pid = int(pid_raw)
         clusters.setdefault(key, []).append(pid)
     with open(cluster_filename, 'w', encoding='utf-8') as f:
@@ -152,7 +167,8 @@ def process_project(uid_hash: str) -> None:
     kohonen_settings = {
         "som_height": 9,
         "som_width": 9,
-        "map_type": "square"
+        "map_type": "square",
+        "normalize_weights_flag": True        
     }    
 
     train_and_analyze_som(preprocess_file, kohonen_settings, settings,output_path, uid_hash)
@@ -221,6 +237,96 @@ def detect_extremes(df_orig: pd.DataFrame,
                     extremes['by_cluster'][cl_key] = outliers.astype(int).tolist()
 
     return extremes
+
+def extract_and_save_pie_data(
+    som,
+    data: np.ndarray,
+    df_orig,
+    categorical_columns: list,
+    output_dir: str
+):
+    """
+    Pro každý sloupec v categorical_columns:
+      1) načte hodnoty z df_orig,
+      2) spočítá pro každý neuron (i,j) počty jednotlivých kategorií,
+      3) uloží JSON: seznam kategorií + counts per 'i_j'.
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    m, n = som.m, som.n
+
+    for col in categorical_columns:
+        # unikátní kategorie v původním DF (př.: ['setosa','versicolor','virginica'])
+        categories = df_orig[col].dropna().unique().tolist()
+        cat_map = {i+1: cat for i, cat in enumerate(categories)}
+
+        pie_counts = defaultdict(Counter)
+
+        numeric_counts = {}
+        for idx, x in enumerate(data):
+            i, j = som.find_bmu(x)
+            key = f"{i}_{j}"
+            label = df_orig.iloc[idx][col]
+            pie_counts[key][label] += 1
+
+        numeric_counts = {
+            key: {i+1: cnts.get(cat, 0) for i, cat in enumerate(categories)}
+            for key, cnts in pie_counts.items()
+        }
+
+        out = {
+            "categories": cat_map,
+            "counts": numeric_counts
+        }
+        fn = os.path.join(output_dir, f"pie_data_{col}.json")
+        with open(fn, 'w', encoding='utf-8') as f:
+            json.dump(out, f, indent=2, ensure_ascii=False)
+
+
+def extract_and_save_pie_data_from_clusters(
+    df_orig,
+    cluster_file: str,
+    categorical_columns: list,
+    output_dir: str,
+    primary_id: str
+):
+    """
+    Pro každý sloupec v categorical_columns:
+      • Načte clusters.json: { "i_j": [pid1,pid2,…], … }
+      • Pro každý klastr spočítá Counter kategorií podle df_orig[primary_id]→df_orig[col]
+      • Uloží JSON s číselnými klíči kategorií i counts
+    """
+    os.makedirs(output_dir, exist_ok=True)
+    # nahrání klastrů
+    with open(cluster_file, 'r', encoding='utf-8') as f:
+        clusters = json.load(f)
+
+    # pro každou kategorii připravíme mapu pid→label
+    pid_to_row = {int(row[primary_id]): row for _, row in df_orig.iterrows()}
+
+    for col in categorical_columns:
+        # zjistíme unikátní kategorie a vytvarujeme mapu 1→název
+        cats = sorted(df_orig[col].dropna().unique().tolist())
+        cat_map = OrderedDict((str(i+1), cats[i]) for i in range(len(cats)))
+
+        counts_out = {}
+        for pos, pid_list in clusters.items():
+            ctr = Counter()
+            for pid in pid_list:
+                label = pid_to_row[pid][col]
+                ctr[label] += 1
+            # převedeme na číselné klíče
+            counts_out[pos] = {
+                str(i+1): ctr.get(cats[i], 0)
+                for i in range(len(cats))
+            }
+
+        out = {
+            "categories": cat_map,
+            "counts": counts_out
+        }
+        fn = os.path.join(output_dir, f"pie_data_{col}.json")
+        with open(fn, 'w', encoding='utf-8') as f:
+            json.dump(out, f, indent=2, ensure_ascii=False)
 
 
 if __name__ == "__main__":
