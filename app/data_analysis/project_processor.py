@@ -96,7 +96,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
     df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=';')
     clusters = json.load(open(cluster_file))
 
-    # spočítat statistiky podle zemí
+    # spočítat statistiky podle sloupců
     stats = compute_group_statistics(df_orig,
                                     settings["legend_column"],
                                     settings["analysis_columns"])
@@ -151,28 +151,40 @@ def process_project(uid_hash: str) -> None:
 
     # Načtení detailů projektu
     project = get_project_detail(uid_hash)
-    settings = load_project_settings(project)
+    data_settings = load_project_settings(project)
 
     # Kontrola vstupního souboru
     input_file = f"/userfiles/{uid_hash}/input.csv"
-    if not validate_input_file(input_file, settings):
+    if not validate_input_file(input_file, data_settings):
         log_message(f"Neplatný vstupní soubor pro projekt {uid_hash}.")
         sys.exit(1)
 
     # Předzpracování dat
     preprocess_file = f"/userfiles/{uid_hash}/preprocess.csv"
-    normalize_data(input_file, preprocess_file, settings)
+    normalize_data(input_file, preprocess_file, data_settings)
 
     output_path = f"/userfiles/{uid_hash}/"
-    kohonen_settings = {
+    som_settings = {
         "som_height": 10,
         "som_width": 10,
-        "map_type": "hex",        
+        "map_type": "square",        
         "normalize_weights_flag": False,
-        "epoch_multiplier": 50
+        "epoch_multiplier": 1000,
+        "max_batch_percent": 100,
+        "min_batch_percent": 100,
+        "learning_rate": 0.9,
+        "min_learning_rate": 0.1,
+        "radius": 5,
+        "min_radius": 0.1,
+        "num_batches": 1,
+        "lr_decay_type": 'linear-drop',
+        "radius_decay_type": 'linear-drop',
+        "batch_growth_type": 'exp-growth',
+        "random_seed": 42,
+        "growth_g": 15.0,
     }    
 
-    train_and_analyze_som(preprocess_file, kohonen_settings, settings,output_path, uid_hash)
+    train_and_analyze_som(preprocess_file, som_settings, data_settings,output_path, uid_hash)
 
     # Aktualizace stavu projektu v databázi
     # update_project_status(uid_hash, 1) odkomentovat, v prubehu testovani by se nepoustela analyza znovu
@@ -182,11 +194,7 @@ def process_project(uid_hash: str) -> None:
 
 def compute_group_statistics(df_orig: pd.DataFrame,
                              group_by: str,
-                             analysis_columns: list[str]) -> dict[str, dict[str, tuple[float, float]]]:
-    """
-    Pro každý unikátní klíč ve sloupci group_by spočítá průměr a směrodatnou odchylku pro zadané sloupce.
-    Vrací slovník: { group_value: { col: (mean, std) } }.
-    """
+                             analysis_columns: list[str]) -> dict[str, dict[str, tuple[float, float]]]:    
     stats = {}
     grouped = df_orig.groupby(group_by)[analysis_columns]    
     agg = grouped.agg(['mean', 'std'])
@@ -202,14 +210,6 @@ def detect_extremes(df_orig: pd.DataFrame,
                     legend_column: str,
                     analysis_columns: list[str],
                     primary_id: str) -> dict:
-    """
-    Detekuje extrémní vzorky podle globálních skupin (legend_column) a uvnitř clusterů.
-    Vrací slovník:
-      {
-        'by_group': { group_value: [primary_id, ...], ... },
-        'by_cluster': { cluster_key: [primary_id, ...], ... }
-      }
-    """
     extremes = {'by_group': {}, 'by_cluster': {}}
 
     # Extrémy podle globálního členění

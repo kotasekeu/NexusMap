@@ -192,14 +192,25 @@ def generate_distance_map(som, data: np.ndarray, output_file: str,
     """
     check_folder(output_file)
     m, n = som.m, som.n
+    
+    # Výpočet kvantizační chyby pro každý neuron
     dist_map = np.zeros((m, n))
     counts = np.zeros((m, n))
+    
     for sample in data:
         i, j = som.find_bmu(sample)
         dist_map[i, j] += np.linalg.norm(sample - som.weights[i, j])
         counts[i, j] += 1
+    
+    # Průměrná kvantizační chyba pro každý neuron
     with np.errstate(divide='ignore', invalid='ignore'):
         dist_map = np.divide(dist_map, counts, out=np.zeros_like(dist_map), where=counts>0)
+    
+    # Normalizace hodnot do rozsahu [0,1]
+    max_dist = np.max(dist_map)
+    if max_dist > 0:
+        dist_map = dist_map / max_dist
+    
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
 
@@ -311,14 +322,23 @@ def check_folder(output_file: str):
 
 def get_size_of_point(m,n,map_type):
     if map_type == 'hex':    
-        point_size = 900 
-        #point_size = 2300 20x20
-        #point_size = 10000 10x10
+        if m == 10:
+            point_size = 10000
+        elif m == 20:
+            point_size = 2300
+        elif m == 30:
+            point_size = 900
+        else:
+            point_size = 2300  # výchozí hodnota pro hex
     else:
-        #point_size = 1100 20x20
-        #point_size = 450 30x30
-        #point_size = 5500 10x10
-        point_size = 5500
+        if m == 10:
+            point_size = 5500
+        elif m == 20:
+            point_size = 1100
+        elif m == 30:
+            point_size = 450
+        else:
+            point_size = 1100  # výchozí hodnota pro square
     return point_size
 
 

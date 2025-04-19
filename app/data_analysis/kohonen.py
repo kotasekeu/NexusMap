@@ -66,13 +66,17 @@ class KohonenSOM:
         return self.get_decay_value(t, N, self.min_batch_percent, self.max_batch_percent, self.batch_growth_type)
 
     def train(self, data):
+        log_message(f"Epocha|počet zpracovanych vektorů celkem|počet vektorů zpracovaných v batch|radius|lr|q error")
         total_samples = data.shape[0]
         total_epochs = int(total_samples * self.epoch_multiplier)
+        total_weight_updates = 0  # celkový počet aktualizací vah
+        total_processed_samples = 0  # celkový počet zpracovaných vzorků
 
         for epoch in range(total_epochs):
             batch_percent = self.get_batch_percent(epoch, total_epochs)
             total_samples_to_process = math.ceil(total_samples * batch_percent / 100)
             samples_per_batch = math.ceil(total_samples_to_process / self.num_batches)
+            total_processed_samples += (samples_per_batch * self.num_batches)
 
             for batch_idx in range(self.num_batches):
                 start_idx = batch_idx * (total_samples // self.num_batches)
@@ -89,15 +93,19 @@ class KohonenSOM:
                 for sample in batch_data:
                     bmu_idx = self.find_bmu(sample)
                     self.update_weights(sample, bmu_idx, current_lr, current_radius)
+                    total_weight_updates += 1  # počítáme aktualizace vah
 
-            if self.normalize_weights_flag:
-                self.normalize_weights()
+                    if self.normalize_weights_flag:
+                        self.normalize_weights()
 
             if epoch % 100 == 0:
                 errors = [np.linalg.norm(sample - self.weights[self.find_bmu(sample)]) for sample in data]
                 q_error = np.mean(errors)
-                log_message(f"Epoch {epoch}/{total_epochs}: quantization error {q_error:.6f}")
-                log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}")
+                log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{q_error:.6f}")
+
+        # Výpis souhrnných informací na konci trénování
+        print(f"\nSouhrn trénování:")
+        print(f"Celkový počet aktualizací vah: {total_weight_updates}")
 
     def find_bmu(self, sample):
         # vektorová implementace hledání BMU
