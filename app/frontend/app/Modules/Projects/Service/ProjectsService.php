@@ -73,4 +73,86 @@ class ProjectsService extends BaseService
 		);
 	}
 
+	public function getProjectFiles(int $customer_id, string $uid_hash, ?string $type = null): array
+	{
+		if ($type === null) {
+			return [
+				'visualization' => $this->getProjectVisualizations($customer_id, $uid_hash),
+				'csv' => $this->getProjectCsvFiles($customer_id, $uid_hash),
+				'json' => $this->getProjectJsonFiles($customer_id, $uid_hash),
+			];
+		} 
+		switch ($type) {
+			case 'csv':
+				return ['csv' => $this->getProjectCsvFiles($customer_id, $uid_hash)];
+				break;
+			case 'json':
+				return ['json' => $this->getProjectJsonFiles($customer_id, $uid_hash)];
+				break;
+			case 'visualization':
+				return ['visualization' => $this->getProjectVisualizations($customer_id, $uid_hash)];
+				break;
+			default:
+				throw new \Exception('Neplatný typ souboru.');
+		}
+	}
+
+	private function getProjectVisualizations(int $customer_id, string $uid_hash): array
+	{			
+		$visualizationDir = WWW_DIR . '/userFiles/' . $uid_hash . '/visualization';
+		if (!is_dir($visualizationDir)) {
+			return [];
+		}
+
+		$files = scandir($visualizationDir);
+		$visualizations = [];
+		foreach ($files as $file) {
+			if ($file === '.' || $file === '..') {
+				continue;
+			}
+			$prefix = explode('_', $file)[0];
+			$visualizations[$prefix][] = $file;
+		}
+		
+		krsort($visualizations);
+		return $visualizations;
+	}
+
+	private function getProjectCsvFiles(int $customer_id, string $uid_hash): array
+	{			
+		$csvDir = WWW_DIR . '/userFiles/' . $uid_hash . '/csv';
+		if (!is_dir($csvDir)) {
+			return [];
+		}
+
+		$files = scandir($csvDir);
+		$csvFiles = [];
+		foreach ($files as $file) {
+			if ($file === '.' || $file === '..') {
+				continue;
+			}
+			$csvFiles[] = $file;
+		}
+		
+		return $csvFiles;
+	}
+
+	private function getProjectJsonFiles(int $customer_id, string $uid_hash): array
+	{			
+		$jsonDir = WWW_DIR . '/userFiles/' . $uid_hash . '/json';
+		if (!is_dir($jsonDir)) {
+			return [];
+		}
+
+		$files = scandir($jsonDir);
+		$jsonFiles = [];
+		foreach ($files as $file) {
+			if ($file === '.' || $file === '..') {
+				continue;
+			}
+			$jsonFiles[] = $file;
+		}
+		
+		return $jsonFiles;
+	}
 }

@@ -43,7 +43,12 @@ class ProjectsPresenter extends BasePresenter
 		}
 
 		$this->getTemplate()->projectDetail = $projectDetail;
+
+		$this->getTemplate()->projectFiles = $this->projectsService->getProjectFiles($this->getUser()->getId(), $projectDetail->uid_hash);
+
+		$this->getTemplate()->projectVisualizations = $this->projectsService->getProjectFiles($this->getUser()->getId(), $projectDetail->uid_hash, "visualization");
 	}
+
 
 	public function renderCreate()
 	{

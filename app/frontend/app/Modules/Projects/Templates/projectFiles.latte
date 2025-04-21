@@ -3,42 +3,104 @@
 		<div class="card-header">
 			<div class="file-manager">
 				<h5 class="mt-4 mb-2">Soubory </h5>
-				<ul class="d-flex flex-row files-content">
-					<li class="folder-box d-flex align-items-center">
-						<div class="d-flex align-items-center files-list">
-							<div class="flex-shrink-0 file-left">
-								<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/input.csv" target="_blank">
-									<i class="f-22 fa fa-file-excel-o font-primary"></i>
-								</a>
-							</div>
-							<div class="flex-grow-1 ms-3">
-								<h6>
-									<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/input.csv" target="_blank">
-										Vstupní CSV
-									</a>
-								</h6>
-								<p>7 Hour ago, 2.0 MB</p>
-							</div>
-						</div>
-					</li>
-					<li class="folder-box d-flex align-items-center">
-						<div class="d-flex align-items-center files-list">
-							<div class="flex-shrink-0 file-left">
-								<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/processed.csv" target="_blank">
-									<i class="f-22 fa fa-file-excel-o font-success"></i>
-								</a>
-							</div>
-							<div class="flex-grow-1 ms-3">
-								<h6>
-									<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/processed.csv" target="_blank">
-										Zpracované CSV
-									</a>
-								</h6>
-								<p>7 Hour ago, 2.0 MB</p>
+				<div class="row">
+					<div class="col-md-12">
+						<div class="box">
+							<h6>CSV - datové soubory</h6>
+							<div class="row">
+								{foreach $projectFiles['csv'] as $csvFile}
+									<div class="col-md-4">
+										<div class="file-box d-flex align-items-center">
+											<div class="flex-shrink-0 file-left">
+												<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/csv/{$csvFile}" target="_blank" download>
+													<i class="f-22 fa fa-file-excel-o font-primary"></i>
+												</a>
+											</div>
+											<div class="flex-grow-1 ms-3">
+												<h6>
+													<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/csv/{$csvFile}" target="_blank" download>
+														{$csvFile}
+													</a>
+												</h6>
+												<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/csv/{$csvFile}" target="_blank" download>
+													<button type="button" class="btn btn-primary">Stáhnout</button>
+												</a>
+											</div>
+										</div>
+									</div>
+									{if $iterator->counter % 3 == 0 && !$iterator->last}
+										</div>
+										<div class="row">
+									{/if}
+								{/foreach}
 							</div>
 						</div>
-					</li>
-				</ul>
+					</div>
+					<div class="col-md-12">
+						<div class="box">
+							<h6>Json - konfigurační soubory</h6>
+							<div class="row">
+								{foreach $projectFiles['json'] as $jsonFile}
+									<div class="col-md-4">
+										<div class="file-box d-flex align-items-center">
+											<div class="flex-shrink-0 file-left">
+												<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/json/{$jsonFile}" target="_blank" download>
+													<i class="f-22 fa fa-file-code-o font-success"></i>
+												</a>
+											</div>
+											<div class="flex-grow-1 ms-3">
+												<h6>
+													<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/json/{$jsonFile}" target="_blank" download>
+														{$jsonFile}
+													</a>
+												</h6>
+												<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/json/{$jsonFile}" target="_blank" download>
+													<button type="button" class="btn btn-primary">Stáhnout</button>
+												</a>
+											</div>
+										</div>
+									</div>
+									{if $iterator->counter % 3 == 0 && !$iterator->last}
+										</div>
+										<div class="row">
+									{/if}
+								{/foreach}
+							</div>
+						</div>
+					</div>
+					{* <div class="col-md-12">
+						<div class="box">
+							<h6>Vizualizace - mapy</h6>
+							<div class="row">
+								{foreach $projectFiles['visualization'] as $type => $files}
+									{foreach $files as $file}
+										<div class="col-md-4">
+											<div class="file-box d-flex align-items-center">
+												<div class="flex-shrink-0 file-left">
+													<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" target="_blank">
+														<i class="f-22 fa fa-file-image-o font-info"></i>
+													</a>
+												</div>
+												<div class="flex-grow-1 ms-3">
+													<h6>
+														<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" target="_blank">
+															{$file}
+														</a>
+													</h6>
+													<p>Download</p>
+												</div>
+											</div>
+										</div>
+										{if $iterator->counter % 3 == 0 && !$iterator->last}
+											</div>
+											<div class="row">
+										{/if}
+									{/foreach}
+								{/foreach}
+							</div>
+						</div>
+					</div> *}
+				</div>
 			</div>
 		</div>
 	</div>

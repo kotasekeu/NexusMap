@@ -351,7 +351,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     # 1) U‑Matrix
     generate_u_matrix(
         som,
-        f"{output_path}/visualization/u_matrix_{map_type}.png",
+        f"{output_path}/visualization/u-matrix_{map_type}.png",
         map_type=map_type
     )
 
