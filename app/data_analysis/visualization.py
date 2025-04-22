@@ -308,7 +308,71 @@ def plot_pie_map_from_json(
     plt.savefig(output_file, bbox_inches='tight')
     plt.close()
 
+def generate_heatmap(
+    som,
+    data: np.ndarray,
+    output_file: str,
+    map_type: str = 'square',
+    cmap: str = 'Blues',
+    show_numbers: bool = False
+):
+    """
+    Klasická heatmapa návštěvnosti neuronů:
+      • čtvercová: imshow(mat)
+      • hexagonální: hex-patch podle counts
+    """
+    check_folder(output_file)
+    m, n = som.m, som.n
 
+    # spočítat counts
+    counts = np.zeros((m, n), dtype=int)
+    for sample in data:
+        i, j = som.find_bmu(sample)
+        counts[i, j] += 1
+
+    # normalizace barev
+    norm = Normalize(vmin=counts.min(), vmax=counts.max())
+    fig, ax = plt.subplots(figsize=(20, 12))
+
+    if map_type == 'square':
+        # otočit, aby řádek 0 byl nahoře
+        mat = counts[::-1, :]
+        im = ax.imshow(mat, cmap=cmap, norm=norm)
+        if show_numbers:
+            for i in range(m):
+                for j in range(n):
+                    cnt = counts[m-1-i, j]
+                    if cnt:
+                        ax.text(j, i, cnt, ha='center', va='center', color='white')
+
+    elif map_type == 'hex':
+        # hexagonální mřížka
+        X, Y = _grid_coordinates(m, n, 'hex')
+        for idx, ((i, j), cnt) in enumerate(np.ndenumerate(counts)):
+            x, y = X[idx], Y[idx]
+            color = plt.get_cmap(cmap)(norm(cnt))
+            hexagon = RegularPolygon(
+                (x, y), numVertices=6, radius=0.5,
+                facecolor=color, edgecolor='white'
+            )
+            ax.add_patch(hexagon)
+            if show_numbers and cnt:
+                ax.text(x, y, cnt, ha='center', va='center', color='white')
+        im = plt.cm.ScalarMappable(norm=norm, cmap=cmap)
+        ax.set_xlim(X.min() - 0.6, X.max() + 0.6)
+        ax.set_ylim(Y.min() - 0.6, Y.max() + 0.6)
+
+    else:
+        raise ValueError("Unsupported map_type: choose 'square' or 'hex'")
+
+    # společný colorbar
+    fig.colorbar(im, ax=ax, label='Hits')
+    ax.set_aspect('equal')
+    ax.axis('off')
+    ax.margins(0.08)
+    plt.tight_layout()
+    plt.savefig(output_file, bbox_inches='tight')
+    plt.close()
 
 
 def check_folder(output_file: str):
@@ -403,3 +467,11 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
             f"{output_path}/visualization/pie_map_{column_name}.png",
             map_type
         )
+
+    #6) Heatmap
+    generate_heatmap(
+        som,
+        data,
+        f"{output_path}/visualization/heatmap_{map_type}.png",
+        map_type=map_type
+    )

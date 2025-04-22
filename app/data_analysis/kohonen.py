@@ -7,7 +7,7 @@ class KohonenSOM:
                  radius=None, min_radius=0.1,
                  num_batches=10, min_batch_percent=0.1, max_batch_percent=5,
                  lr_decay_type='exp-drop', radius_decay_type='exp-drop', batch_growth_type='exp-growth',
-                 random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex'):
+                 random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex', min_q_error=None):
         if random_seed is not None:
             np.random.seed(random_seed)
 
@@ -33,6 +33,8 @@ class KohonenSOM:
 
         # pokud chcete defaultně normalizovat, změňte na True
         self.normalize_weights_flag = normalize_weights_flag    
+
+        self.min_q_error = min_q_error
 
         self.weights = np.random.rand(m, n, dim)
         self.normalize_weights()
@@ -71,6 +73,9 @@ class KohonenSOM:
         total_epochs = int(total_samples * self.epoch_multiplier)
         total_weight_updates = 0  # celkový počet aktualizací vah
         total_processed_samples = 0  # celkový počet zpracovaných vzorků
+        best_q_error = float('inf')  # nejlepší dosažená kvantizační chyba
+        no_improvement_count = 0  # počet epoch bez zlepšení
+        patience = 10  # počet epoch bez zlepšení před ukončením
 
         for epoch in range(total_epochs):
             batch_percent = self.get_batch_percent(epoch, total_epochs)
@@ -93,19 +98,36 @@ class KohonenSOM:
                 for sample in batch_data:
                     bmu_idx = self.find_bmu(sample)
                     self.update_weights(sample, bmu_idx, current_lr, current_radius)
-                    total_weight_updates += 1  # počítáme aktualizace vah
+                    total_weight_updates += 1
 
                     if self.normalize_weights_flag:
                         self.normalize_weights()
 
             if epoch % 100 == 0:
+                assert self.weights[self.find_bmu(sample)].shape == sample.shape
                 errors = [np.linalg.norm(sample - self.weights[self.find_bmu(sample)]) for sample in data]
                 q_error = np.mean(errors)
                 log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{q_error:.6f}")
 
+                # Kontrola dosažení limitní kvantizační chyby
+                if self.min_q_error is not None and q_error <= self.min_q_error:
+                    log_message(f"Dosažena limitní kvantizační chyba {self.min_q_error}. Ukončuji trénování.")
+                    break
+
+                # Kontrola zlepšení a early stopping
+                if q_error < best_q_error:
+                    best_q_error = q_error
+                    no_improvement_count = 0
+                else:
+                    no_improvement_count += 1
+                    if no_improvement_count >= patience:
+                        log_message(f"Žádné zlepšení po {patience} epochách. Ukončuji trénování.")
+                        break
+
         # Výpis souhrnných informací na konci trénování
         print(f"\nSouhrn trénování:")
         print(f"Celkový počet aktualizací vah: {total_weight_updates}")
+        print(f"Nejlepší dosažená kvantizační chyba: {best_q_error:.6f}")
 
     def find_bmu(self, sample):
         # vektorová implementace hledání BMU

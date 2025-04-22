@@ -24,9 +24,9 @@
                             <div class="tab-pane fade show active" id="top-home" role="tabpanel" aria-labelledby="top-home-tab">
                                 <div class="row">
                                     {if ! empty($projects)}
-{*                                        {foreach $projects as $project}*}
-                                            {include ./project.latte} {*, projectDetail => $project *}
-{*                                        {/foreach}*}
+                                        {foreach $projects as $project}
+                                            {include ./project.latte, projectDetail => $project}
+                                        {/foreach}
                                     {else}
                                         <div class="alert alert-info">
                                             <p>Žádné projekty nebyly nalezeny.</p>

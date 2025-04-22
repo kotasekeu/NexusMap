@@ -35,8 +35,8 @@ class ProjectsService extends BaseService
 
 	private function prepareProject(Row $project)
 	{
-		$project->settings = json_decode($project->som_settings);
-		unset($project->som_settings);
+		$project->som_settings 		= empty($project->som_settings) ? null : json_decode($project->som_settings);
+		$project->project_settings	= empty($project->project_settings) ? null : json_decode($project->project_settings);
 
 		return $project;
 	}

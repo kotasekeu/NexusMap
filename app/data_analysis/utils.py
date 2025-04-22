@@ -24,6 +24,7 @@ def log_message(message: str) -> None:
 def clear_files(uid_hash: str) -> None:
     """Moves all files and the visualization directory in the directory for the given uid_hash to a new directory named backup-{timestamp}, except for the input.csv file."""
     from datetime import datetime
+    print(f"čištění souborů pro {uid_hash}")
     directory = f"/userfiles/{uid_hash}"
     backup_dir = f"/userfiles/{uid_hash}/backup-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
     if not os.path.exists(backup_dir):

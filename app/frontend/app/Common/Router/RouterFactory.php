@@ -31,9 +31,6 @@ final class RouterFactory
 			$router->addRoute($key, $item);
 		}
 
-		$router->addRoute('projekty/', 'Modules:Projects:default');
-		$router->addRoute('login/', 'Modules:Login:default');
-
 		$router->addRoute('<presenter>/<action>/[<id>]', [
 			'presenter' => 'Modules:Dashboard',
 			'action' => 'default',

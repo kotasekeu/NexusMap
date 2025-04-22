@@ -34,10 +34,17 @@
 											<p><strong>Analýza dokončena:</strong> <span class="badge {if $projectDetail->status == 1}badge-success{else}badge-warning{/if}">{if $projectDetail->status == 1}Ano{else}Ne{/if}</span></p>
 											<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
 
-
-											{foreach $projectDetail->settings as $key => $value}
-												<p><strong>{$key}:</strong> {if is_array($value)}{implode(', ', $value)}{else}{$value}{/if}</p>
-											{/foreach}
+											{if ! empty($projectDetail->som_settings)}
+												{foreach $projectDetail->som_settings as $key => $value}
+													{dump $value}
+													<p><strong>{$key}:</strong> {if is_array($value)}{implode(', ', $value)}{else}{$value}{/if}</p>
+												{/foreach}
+											{/if}
+											{if ! empty($projectDetail->project_settings)}
+												{foreach $projectDetail->project_settings as $key => $value}
+													<p><strong>{$key}:</strong> {if is_array($value)}{implode(', ', $value)}{else}{$value}{/if}</p>
+												{/foreach}
+											{/if}
 										</div>
 									</div>
 
@@ -51,15 +58,12 @@
 												{foreach $projectFiles['visualization'] as $type => $files}
 													{foreach $files as $file}
 														<div class="col-md-4">
-																<h5>{$type}</h5>
-																
-																	<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" class="thumbnail">
-																			<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" alt="{$type} visualisation" class="img-fluid">
-																	</a>
-																
+															<h5>{$type}</h5>
+															<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" class="thumbnail">
+																	<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" alt="{$type} visualisation" class="img-fluid">
+															</a>
 														</div>
 													{/foreach}
-
 												{/foreach}
 											</div>
 										</div>
