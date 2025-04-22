@@ -1,16 +1,18 @@
 import numpy as np
 import os
 import matplotlib.pyplot as plt
-from matplotlib.patches import RegularPolygon
 from matplotlib.collections import PatchCollection
-from matplotlib.patches import Rectangle, RegularPolygon
+from matplotlib.patches import Rectangle, RegularPolygon, Wedge, Circle, Patch
 from matplotlib.cm import ScalarMappable
-from matplotlib.colors import Normalize
+from matplotlib.colors import Normalize, ListedColormap
 import sys
 import pandas as pd
-from matplotlib.patches import Wedge, Circle, Patch
 from collections import defaultdict, Counter
 import json
+from scipy.stats import gaussian_kde
+from scipy.spatial.distance import cdist
+
+
 
 def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
     """
@@ -375,6 +377,232 @@ def generate_heatmap(
     plt.close()
 
 
+def generate_density_contour_map(
+    som,
+    data: np.ndarray,
+    output_file: str,
+    map_type: str = 'hex',
+    levels: int = 10,
+    bandwidth: float = None,
+    cmap: str = 'viridis'
+):
+    """Kernel density estimation a izolinie na mapě."""
+    check_folder(output_file)
+    m,n = som.m, som.n
+    # souřadnice všech BMU pro každý vzorek
+    coords = []
+    X,Y = _grid_coordinates(m,n,map_type)
+    for x in data:
+        i,j = som.find_bmu(x)
+        idx = i*n + j
+        coords.append((X[idx],Y[idx]))
+    coords = np.array(coords).T  # shape (2,N)
+    # KDE
+    kde = gaussian_kde(coords, bw_method=bandwidth)
+    # grid centrálních bodů
+    grid = np.vstack([X.ravel(), Y.ravel()])
+    Z = kde(grid).reshape(X.shape)
+    # vykreslení
+    fig,ax = plt.subplots(figsize=(12,8))
+    if map_type=='hex':
+        for xi, yi, zi in zip(X, Y, Z.ravel()):
+            hexagon = RegularPolygon(
+                xy=(xi, yi),
+                numVertices=6,
+                radius=0.5,
+                facecolor=plt.get_cmap(cmap)(zi / Z.max()),
+                edgecolor='white'
+            )
+        #    hexagon = RegularPolygon(
+        #         (xi, yi), 6, 0.5,
+        #         facecolor=plt.get_cmap(cmap)(zi/Z.max()),
+        #         edgecolor='white'
+        #     )
+            ax.add_patch(hexagon)
+    else:
+        mat = Z[::-1].reshape(m,n)
+        ax.imshow(mat, cmap=cmap, origin='upper')
+    cs = ax.contour(
+        X.reshape(m,n), Y.reshape(m,n), Z.reshape(m,n),
+        levels=levels, colors='k', linewidths=0.5
+    )
+    ax.set_aspect('equal'); ax.axis('off')
+    plt.tight_layout(); plt.savefig(output_file, bbox_inches='tight'); plt.close()
+
+def generate_class_probability_map(
+    som,
+    data: np.ndarray,
+    labels: np.ndarray,
+    categories: list,
+    output_file: str,
+    map_type: str = 'hex',
+    cmap: str = 'tab10'
+):
+    """Každý neuron barevně podle nejpravděpodobnější třídy, alpha podle p."""
+    check_folder(output_file)
+    m,n = som.m, som.n
+    counts = { (i,j):{cat:0 for cat in categories} for i in range(m) for j in range(n) }
+    for x,lbl in zip(data,labels):
+        i,j = som.find_bmu(x)
+        counts[(i,j)][lbl]+=1
+    X,Y = _grid_coordinates(m,n,map_type)
+    fig,ax = plt.subplots(figsize=(12,8))
+    cmap_obj = ListedColormap(plt.get_cmap(cmap).colors[:len(categories)])
+    for (i,j),cnts in counts.items():
+        total = sum(cnts.values()); 
+        if total==0: continue
+        # třída a pravděpodobnost
+        best = max(cnts, key=cnts.get)
+        p = cnts[best]/total
+        idx = categories.index(best)
+        xi, yi = X[i*n+j], Y[i*n+j]
+        hexagon = RegularPolygon(
+            (xi, yi), 6, 0.5,
+            facecolor=cmap_obj(idx),
+            alpha=p, edgecolor='white'
+        )
+        ax.add_patch(hexagon)
+    handles = [Patch(facecolor=cmap_obj(i), label=categories[i]) for i in range(len(categories))]
+    ax.legend(handles, bbox_to_anchor=(1.02,1), loc='upper left', borderaxespad=0)
+    ax.set_aspect('equal'); ax.axis('off')
+    plt.tight_layout(); plt.savefig(output_file, bbox_inches='tight'); plt.close()
+
+def generate_topology_preservation_map(
+    som,
+    data: np.ndarray,
+    output_file: str,
+    map_type: str = 'hex',
+    neighbour_steps: int = 1,
+    cmap: str = 'magma'
+):
+    """Lokální topographic error per neuron."""
+    check_folder(output_file)
+    m,n = som.m, som.n
+    # flatten váhy
+    W = som.weights.reshape(m*n, -1)
+    # pro každý vzorek zjistit dva nejbližší neurony
+    top_err = { (i,j):[] for i in range(m) for j in range(n) }
+    for x in data:
+        # dist k všem
+        d = cdist(W, x.reshape(1,-1)).ravel()
+        b1,b2 = np.argsort(d)[:2]
+        i1,j1 = divmod(b1,n); i2,j2 = divmod(b2,n)
+        # adjacency
+        if abs(i1-i2)+abs(j1-j2) > neighbour_steps:
+            top_err[(i1,j1)].append(1)
+        else:
+            top_err[(i1,j1)].append(0)
+    # průměrná chyba
+    vals = np.array([ np.mean(top_err[(i,j)]) if top_err[(i,j)] else 0
+                  for i in range(m) for j in range(n) ])
+    X,Y = _grid_coordinates(m,n,map_type)
+    fig,ax = plt.subplots(figsize=(12,8))
+    norm=Normalize(0,1); cmap_obj=plt.get_cmap(cmap)
+    for idx,(i,j) in enumerate([(i,j) for i in range(m) for j in range(n)]):
+        xi, yi = X[idx],Y[idx]; v=vals[idx]
+        hexagon = RegularPolygon(
+            xy=(xi, yi),
+            numVertices=6,
+            radius=0.5,
+            facecolor=cmap_obj(norm(v)),
+            edgecolor='white'
+        )
+        ax.add_patch(hexagon)
+    fig.colorbar(plt.cm.ScalarMappable(norm=norm,cmap=cmap),ax=ax,label='Topo‑error')
+    ax.set_aspect('equal'); ax.axis('off')
+    plt.tight_layout(); plt.savefig(output_file,bbox_inches='tight'); plt.close()
+
+def generate_component_correlation_map(
+    som,
+    data: np.ndarray,
+    df_orig,
+    output_file: str,
+    features: tuple,
+    corr_method: str = 'pearson',
+    map_type: str = 'hex',
+    cmap: str = 'coolwarm'
+):
+    """Korelace dvou featur na úrovni každého neuronu."""
+    check_folder(output_file)
+    m,n = som.m, som.n
+    bins = { (i,j): [] for i in range(m) for j in range(n) }
+    for x,row in zip(data, df_orig.to_dict('records')):
+        i,j = som.find_bmu(x)
+        bins[(i,j)].append((row[features[0]], row[features[1]]))
+    corr = []
+    for i in range(m):
+        for j in range(n):
+            pts = bins[(i,j)]
+            if len(pts)>1:
+                arr=np.array(pts)
+                corr.append( np.corrcoef(arr[:,0],arr[:,1])[0,1] )
+            else:
+                corr.append(0)
+    corr = np.nan_to_num(corr)
+    X,Y=_grid_coordinates(m,n,map_type)
+    fig,ax=plt.subplots(figsize=(12,8))
+    norm=Normalize(vmin=-1,vmax=1); cmap_obj=plt.get_cmap(cmap)
+    for idx,v in enumerate(corr):
+        xi,yi=X[idx],Y[idx]
+        # hexagon=RegularPolygon((xi,yi),6,0.5,facecolor=cmap_obj(norm(v)),edgecolor='white')
+        hexagon = RegularPolygon(
+            xy=(xi, yi),
+            numVertices=6,
+            radius=0.5,
+            facecolor=cmap_obj(norm(v)),
+            edgecolor='white'
+        )
+        ax.add_patch(hexagon)
+    fig.colorbar(plt.cm.ScalarMappable(norm=norm,cmap=cmap),ax=ax,label=f"Corr {features[0]}∼{features[1]}")
+    ax.set_aspect('equal'); ax.axis('off')
+    plt.tight_layout(); plt.savefig(output_file,bbox_inches='tight'); plt.close()
+
+def generate_feature_combination_map(
+    som,
+    data: np.ndarray,
+    df_orig,
+    output_file: str,
+    features: tuple,
+    map_type: str = 'hex'
+):
+    """RGB mapa z průměrů tří featur."""
+    check_folder(output_file)
+    m,n = som.m, som.n
+    bins = { (i,j): [] for i in range(m) for j in range(n) }
+    for x,row in zip(data, df_orig.to_dict('records')):
+        i,j = som.find_bmu(x)
+        bins[(i,j)].append((row[f],row[g],row[h]) 
+                           for f,g,h in [features])
+    # spočítat průměry
+    rgb = []
+    for i in range(m):
+        for j in range(n):
+            vals = np.array(list(bins[(i,j)]))
+            if vals.size:
+                mean = vals.mean(axis=0)
+            else:
+                mean = np.zeros(3)
+            rgb.append(mean)
+    # normalizovat kanály zvlášť
+    rgba = np.vstack(rgb)
+    mins=rgba.min(axis=0); maxs=rgba.max(axis=0)
+    normed = (rgba - mins)/(maxs-mins)
+    X,Y=_grid_coordinates(m,n,map_type)
+    fig,ax=plt.subplots(figsize=(12,8))
+    for idx,(r,g,b) in enumerate(normed):
+        xi,yi=X[idx],Y[idx]
+        hexagon = RegularPolygon(
+            xy=(xi, yi),
+            numVertices=6,
+            radius=0.5,
+            facecolor=(r,g,b),
+            edgecolor='white'
+        )
+        ax.add_patch(hexagon)
+    ax.set_aspect('equal'); ax.axis('off')
+    plt.tight_layout(); plt.savefig(output_file,bbox_inches='tight'); plt.close()
+
+
 def check_folder(output_file: str):
     folder = os.path.dirname(output_file)
     if not os.path.exists(folder):
@@ -474,4 +702,59 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         data,
         f"{output_path}/visualization/heatmap_{map_type}.png",
         map_type=map_type
+    )
+
+    # 4) Density/Contour map  
+    generate_density_contour_map(
+        som,
+        data,
+        f"{output_path}/visualization/density_map_hex.png",
+        map_type='hex',
+        levels=12,          # počet izoliníí
+        bandwidth=1.0,      # šířka kernelu
+        cmap='viridis'
+    )
+
+    # 5) Class‑Probability / Confidence map  
+    # generate_class_probability_map(
+    #     som,
+    #     data,
+    #     labels,             # 1D pole kategorií pro každý vzorek
+    #     categories,         # seznam unikátních kategorií
+    #     f"{output_path}/visualization/class_probability_map_hex.png",
+    #     map_type='hex',
+    #     cmap='plasma'
+    # )
+
+    # 6) Topology Preservation map  
+    generate_topology_preservation_map(
+        som,
+        data,
+        f"{output_path}/visualization/topology_preservation_map_hex.png",
+        map_type='hex',
+        neighbour_steps=1,  # vzdálenost sousedů v mřížce
+        cmap='magma'
+    )
+
+    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=';', nrows=0)
+    # 7) Component Correlation map  
+    generate_component_correlation_map(
+        som,
+        data,
+        df_orig,
+        f"{output_path}/visualization/component_correlation_map_hex.png",
+        features=('SepalLengthCm', 'PetalWidthCm'),
+        corr_method='pearson',
+        map_type='hex',
+        cmap='coolwarm'
+    )
+
+    # 8) Feature Combination plane  
+    generate_feature_combination_map(
+        som,
+        data,
+        df_orig,
+        f"{output_path}/visualization/feature_combination_map_hex.png",        
+        features=('SepalLengthCm','PetalLengthCm','PetalWidthCm'),
+        map_type='hex'
     )

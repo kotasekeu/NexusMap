@@ -165,8 +165,8 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     som_settings = {
-        "som_height": 10,
-        "som_width": 10,
+        "som_height": 20,
+        "som_width": 20,
         "map_type": "square",        
         "normalize_weights_flag": False,
         "epoch_multiplier": 1000,
