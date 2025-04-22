@@ -77,7 +77,7 @@ CONFIG = {
     "input_dim": 6,
 
     # Velikost výstupní mapy (šířka, výška)
-    "map_size": (30, 30),
+    "map_size": [(30, 30), (20, 20)],
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
     "epoch_multiplier": 1.0

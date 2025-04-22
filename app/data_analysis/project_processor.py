@@ -44,7 +44,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         m=som_settings["som_height"],
         n=som_settings["som_width"],
         dim=data.shape[1],
-        radius=som_settings.get("initial_sigma", max(som_settings["som_height"], som_settings["som_width"]) / 2),
+        radius=som_settings.get("radius", max(som_settings["som_height"], som_settings["som_width"]) / 2),
         learning_rate=som_settings.get("learning_rate", 0.9),
         min_learning_rate=som_settings.get("min_learning_rate", 0.1),
         num_batches=som_settings.get("num_batches", 10),
@@ -57,7 +57,8 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         growth_g=som_settings.get("growth_g", 15.0),
         normalize_weights_flag=som_settings.get("normalize_weights_flag", False),
         epoch_multiplier=som_settings.get("epoch_multiplier", 1),
-        map_type=som_settings.get("map_type", "hex")        
+        map_type=som_settings.get("map_type", "hex"),
+        min_q_error=som_settings.get("min_q_error", None)
     ) 
 
     # Trénování SOM
@@ -115,13 +116,13 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         json.dump(extremes, f, indent=4)
 
 
-    # extract_and_save_pie_data_from_clusters(
-    #     df_orig,
-    #     f"{output_path}/clusters.json",
-    #     settings['categorical_column'],
-    #     f"{output_path}/",
-    #     settings['primary_id']
-    # )
+    extract_and_save_pie_data_from_clusters(
+        df_orig,
+        f"{output_path}/clusters.json",
+        settings['categorical_column'],
+        f"{output_path}/",
+        settings['primary_id']
+    )
 
     generate_maps(som, data, preprocess_file, output_path, som_settings, settings)
 
@@ -165,13 +166,13 @@ def process_project(uid_hash: str) -> None:
 
     output_path = f"/userfiles/{uid_hash}/"
     som_settings = {
-        "som_height": 20,
-        "som_width": 20,
+        "som_height": 10,
+        "som_width": 10,
         "map_type": "square",        
         "normalize_weights_flag": False,
-        "epoch_multiplier": 1000,
-        "max_batch_percent": 10,
-        "min_batch_percent": 1,
+        "epoch_multiplier": 10,
+        "max_batch_percent": 100,
+        "min_batch_percent": 100,
         "learning_rate": 0.9,
         "min_learning_rate": 0.1,
         "radius": 5,
@@ -182,6 +183,7 @@ def process_project(uid_hash: str) -> None:
         "batch_growth_type": 'exp-growth',
         "random_seed": 42,
         "growth_g": 15.0,
+        "min_q_error": 0.05
     }    
 
     train_and_analyze_som(preprocess_file, som_settings, data_settings,output_path, uid_hash)
@@ -334,7 +336,6 @@ if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Použití: python3 project_processor.py <uid_hash>")
         sys.exit(1)    
-
 
     uid_hash = sys.argv[1]
     clear_files(uid_hash)

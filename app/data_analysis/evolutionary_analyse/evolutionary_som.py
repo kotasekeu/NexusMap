@@ -16,22 +16,22 @@ from sklearn.datasets import make_blobs
 from kohonen import KohonenSOM
 from sklearn.metrics import pairwise_distances_argmin_min
 from multiprocessing import Pool, cpu_count
+import sys
 
 # --- Nastavení parametrů evolučního algoritmu ---
 POPULATION_SIZE = CONFIG["population_size"]
 GENERATIONS = CONFIG["generations"]
 
-def random_config(param_space):
+def random_config():
     """
     Vytvoří náhodnou konfiguraci (jedince) na základě zadaného prostoru parametrů.
     Pokud má parametr více variant (seznam), vybere jednu náhodně.
     Pokud je hodnota pevná, použije se přímo.
 
-    :param param_space: Slovník s názvy parametrů a jejich možnými hodnotami (list nebo konstanta)
     :return: Slovník s jednou kompletní konfigurací pro evoluci
     """
     config = {}
-    for key, value in param_space.items():
+    for key, value in CONFIG.items():
         if isinstance(value, list):
             config[key] = random.choice(value)  # Výběr jedné varianty z možných
         else:
@@ -52,7 +52,7 @@ def mutate(config, param_space):
         config[key] = random.choice(param_space[key])
     return config
 
-def run_evolution(param_space):
+def run_evolution():
     """
     Hlavní smyčka evolučního algoritmu. Provádí optimalizaci v několika generacích:
     - Náhodně vytvoří populaci
@@ -63,22 +63,24 @@ def run_evolution(param_space):
 
     :param param_space: Prostor všech parametrů, které se mají optimalizovat
     """
-    population_size = CONFIG["population_size"]
-    generations = CONFIG["generations"]
-
-    total_evaluations = CONFIG["generations"] * CONFIG["population_size"]
+    
+    total_evaluations = GENERATIONS * POPULATION_SIZE
     current_eval = 0
     # Zaloguj celkový počet evaluací
     log_progress(0, total_evaluations)
 
-    population = [random_config(param_space) for _ in range(population_size)]
-
-    for gen in range(generations):
-        print(f"Generace {gen + 1}/{generations}")
+    # vygeneruje náhodné nastavení pro každou populaci
+    population = [random_config() for _ in range(POPULATION_SIZE)]
+    
+    for gen in range(GENERATIONS):
+        print(f"Generace {gen + 1}/{GENERATIONS}")
         
         with Pool(processes=cpu_count()) as pool:
+            print(f"{pool}")
             scored = pool.map(evaluate_individual, population)
 
+
+        sys.exit()
         for score, ind, duration in scored:
             current_eval += 1
             log_progress(current_eval, total_evaluations)                   
@@ -198,7 +200,7 @@ def get_or_generate_data(sample_size: int, input_dim: int):
         return np.load(file_path)
 
     # Pokud neexistuje, vygenerujeme a uložíme
-    data, _ = make_blobs(n_samples=sample_size, n_features=input_dim, centers=5, random_state=42)
+    data, _ = make_blobs(n_samples=sample_size, n_features=input_dim, centers=5, random_state=CONFIG["random_seed"])
     np.save(file_path, data)
     log_message("SYSTEM", f"Vygenerována nová data: {file_name}")
     return data
@@ -250,9 +252,14 @@ def evaluate_individual(ind):
     data = get_or_generate_data(sample_size, input_dim)
     epochs = int(sample_size * ind["epoch_multiplier"])
     map_width, map_height = ind["map_size"]
+    print(f"{map_width}")
+    print(f"{map_height}")
+    sys.exit()
 
     som = KohonenSOM(
-        m=map_width, n=map_height, dim=input_dim,
+        m=map_width, 
+        n=map_height, 
+        dim=input_dim,
         learning_rate=ind["learning_rate"],
         min_learning_rate=ind["min_learning_rate"],
         radius=ind["radius"],
@@ -269,6 +276,13 @@ def evaluate_individual(ind):
         
     )
 
+
+# self, m, n, dim, learning_rate=0.9, min_learning_rate=0.1,
+#                  radius=None, min_radius=0.1,
+#                  num_batches=10, min_batch_percent=0.1, max_batch_percent=5,
+#                  lr_decay_type='exp-drop', radius_decay_type='exp-drop', batch_growth_type='exp-growth',
+#                  random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex', min_q_error=None    
+
     som.train(data)
     score = evaluate_som_quality(som, data[:epochs])
     duration = time.time() - start_time
@@ -282,4 +296,4 @@ def evaluate_individual(ind):
 # --- Spuštění algoritmu ---
 if __name__ == "__main__":
     clear_files(CONFIG["uid_prefix"])
-    run_evolution(CONFIG)
+    run_evolution()
