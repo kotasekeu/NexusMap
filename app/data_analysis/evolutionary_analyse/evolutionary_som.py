@@ -213,9 +213,16 @@ def evaluate_som_quality(som, data):
     :param data: Vstupní data, která byla použita při tréninku
     :return: Průměrná eukleidovská vzdálenost (float)
     """
+    # Převedení vah SOM do plochého tvaru pro výpočet vzdáleností
     weights_flat = som.weights.reshape(-1, som.dim)
-    _, dists = pairwise_distances_argmin_min(data, weights_flat)
-    return np.mean(dists)
+    
+    # Nalezení nejbližších neuronů (BMU) a jejich vzdáleností pro každý vzorek
+    bmu_indices, distances = pairwise_distances_argmin_min(data, weights_flat)
+    
+    # Výpočet průměrné kvantizační chyby
+    quantization_error = np.mean(distances)
+    
+    return quantization_error
 
 def log_final_best(uid, config, score, duration):
     """
@@ -251,10 +258,7 @@ def evaluate_individual(ind):
     input_dim = ind["input_dim"]
     data = get_or_generate_data(sample_size, input_dim)
     epochs = int(sample_size * ind["epoch_multiplier"])
-    map_width, map_height = ind["map_size"]
-    print(f"{map_width}")
-    print(f"{map_height}")
-    sys.exit()
+    map_width, map_height = ind["map_size"]    
 
     som = KohonenSOM(
         m=map_width, 
@@ -270,21 +274,16 @@ def evaluate_individual(ind):
         lr_decay_type=ind["lr_decay_type"],
         radius_decay_type=ind["radius_decay_type"],
         batch_growth_type=ind["batch_growth_type"],
-        growth_g=ind["growth_g"],
         random_seed=ind["random_seed"],
-        normalize_weights_flag=False,
-        
+        growth_g=ind["growth_g"],        
+        normalize_weights_flag=ind["normalize_weights_flag"],
+        epoch_multiplier=ind["epoch_multiplier"],
+        map_type=ind["map_type"],
+        min_q_error=ind["min_q_error"],
     )
 
-
-# self, m, n, dim, learning_rate=0.9, min_learning_rate=0.1,
-#                  radius=None, min_radius=0.1,
-#                  num_batches=10, min_batch_percent=0.1, max_batch_percent=5,
-#                  lr_decay_type='exp-drop', radius_decay_type='exp-drop', batch_growth_type='exp-growth',
-#                  random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex', min_q_error=None    
-
     som.train(data)
-    score = evaluate_som_quality(som, data[:epochs])
+    score = evaluate_som_quality(som, data)
     duration = time.time() - start_time
     uid = get_uid(ind)
 

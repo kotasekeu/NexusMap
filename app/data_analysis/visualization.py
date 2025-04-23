@@ -9,6 +9,7 @@ import sys
 import pandas as pd
 from collections import defaultdict, Counter
 import json
+from sklearn.metrics import pairwise_distances_argmin_min
 
 def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
     """
@@ -195,9 +196,13 @@ def generate_distance_map(som, data: np.ndarray, output_file: str,
     dist_map = np.zeros((m, n))
     counts = np.zeros((m, n))
     
-    for sample in data:
-        i, j = som.find_bmu(sample)
-        dist_map[i, j] += np.linalg.norm(sample - som.weights[i, j])
+    # Vektorizovaný výpočet vzdáleností
+    weights_flat = som.weights.reshape(-1, som.dim)
+    bmu_indices, distances = pairwise_distances_argmin_min(data, weights_flat)
+    
+    # Rozdělení vzdáleností podle neuronů
+    for idx, (i, j) in enumerate(bmu_indices):
+        dist_map[i, j] += distances[idx]
         counts[i, j] += 1
     
     # Průměrná kvantizační chyba pro každý neuron

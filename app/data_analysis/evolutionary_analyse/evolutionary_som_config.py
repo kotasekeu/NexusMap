@@ -80,5 +80,14 @@ CONFIG = {
     "map_size": [(30, 30), (20, 20)],
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
-    "epoch_multiplier": 1.0
+    "epoch_multiplier": 1.0,
+
+    # Minimální kvalita mapy (Q-error)
+    "min_q_error": [0.01, 0.05, 0.1],
+
+    # Typ mapy
+    "map_type": ["square", "hex"],
+
+    # Normalizace vah
+    "normalize_weights_flag": [True, False],
 }

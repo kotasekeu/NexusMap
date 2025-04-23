@@ -1,6 +1,8 @@
 import numpy as np
 import math
 from utils import log_message
+from sklearn.metrics import pairwise_distances_argmin_min
+from collections import defaultdict
 
 class KohonenSOM:
     def __init__(self, m, n, dim, learning_rate=0.9, min_learning_rate=0.1,
@@ -70,12 +72,9 @@ class KohonenSOM:
 
     def calculate_mqe(self, data):
         """Vypočítá Mean Quantization Error (MQE) pro daná data."""
-        total_error = 0
-        for sample in data:
-            bmu_idx = self.find_bmu(sample)
-            error = np.linalg.norm(sample - self.weights[bmu_idx])
-            total_error += error
-        return total_error / len(data)
+        weights_flat = self.weights.reshape(-1, self.dim)
+        _, distances = pairwise_distances_argmin_min(data, weights_flat)
+        return np.mean(distances)
 
     def train(self, data):
         log_message(f"Epocha|počet zpracovanych vektorů celkem|počet vektorů zpracovaných v batch|radius|lr|MQE")
@@ -112,6 +111,9 @@ class KohonenSOM:
 
                     if self.normalize_weights_flag:
                         self.normalize_weights()        
+
+            q_error = self.compute_quantization_error(data, codebook_vectors, bmu_indexes, (self.m, self.n))
+            print(f"q_error: {q_error}")
 
             # Kontrola dosažení limitní MQE
             current_mqe = self.calculate_mqe(data)
@@ -165,3 +167,43 @@ class KohonenSOM:
         x1, z1 = q1, r1;  y1 = -x1 - z1
         x2, z2 = q2, r2;  y2 = -x2 - z2
         return (abs(x1 - x2) + abs(y1 - y2) + abs(z1 - z2)) / 2
+    
+    def compute_quantization_error(data, codebook_vectors, bmu_indexes, som_shape):
+        """
+        Vypočítá kvantizační chybu pro jednotlivé neurony a celkovou chybu pro dataset.
+
+        Parameters:
+        - data: np.ndarray of shape (n_samples, n_features) – vstupní vzory
+        - codebook_vectors: np.ndarray of shape (n_neurons, n_features) – váhové vektory neuronů
+        - bmu_indexes: np.ndarray of shape (n_samples,) – index každého neuronu přiřazeného vstupnímu vzoru
+        - som_shape: tuple – tvar mřížky SOM (např. (10, 10))
+
+        Returns:
+        - neuron_error_map: np.ndarray of shape som_shape – kvantizační chyba na každý neuron
+        - total_qe: float – průměrná kvantizační chyba pro celý dataset
+        """
+        n_neurons = codebook_vectors.shape[0]
+        neuron_errors = defaultdict(list)
+
+        # Pro každé x spočítáme vzdálenost k jeho BMU
+        distances = []
+        for x, bmu in zip(data, bmu_indexes):
+            dist = np.linalg.norm(x - codebook_vectors[bmu])
+            distances.append(dist)
+            neuron_errors[bmu].append(dist)
+
+        # Kvantizační chyba pro každý neuron (průměr vzdáleností všech jemu přiřazených vzorů)
+        neuron_error_map = np.zeros(n_neurons)
+        for i in range(n_neurons):
+            if neuron_errors[i]:
+                neuron_error_map[i] = np.mean(neuron_errors[i])
+            else:
+                neuron_error_map[i] = 0.0
+
+        # Změníme do mřížky SOM tvaru (např. 10x10)
+        neuron_error_map = neuron_error_map.reshape(som_shape)
+
+        # Celková kvantizační chyba pro dataset
+        total_qe = np.mean(distances)
+
+        return neuron_error_map, total_qe
