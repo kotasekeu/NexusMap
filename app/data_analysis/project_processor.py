@@ -24,6 +24,15 @@ def get_project_detail(uid_hash: str) -> dict:
 def load_project_settings(project: dict) -> dict:
     try:
         import json
+        settings = json.loads(project["project_settings"])
+        return settings
+    except (KeyError, ValueError) as e:
+        log_message(f"Chyba při načítání nastavení projektu: {e}")
+        sys.exit(1)
+
+def load_som_settings(project: dict) -> dict:
+    try:
+        import json
         settings = json.loads(project["som_settings"])
         return settings
     except (KeyError, ValueError) as e:
@@ -34,45 +43,29 @@ def load_project_settings(project: dict) -> dict:
 #def load_som_settings(project: dict) -> dict:
 
 
-def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: dict,output_path: str, uid_hash: str) -> None:
+def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_settings: dict,output_path: str, uid_hash: str) -> None:
     """Trénuje SOM a generuje výstupy."""
     # Načtení předzpracovaných dat
-    data = pd.read_csv(preprocess_file, delimiter=';').values
+    data = pd.read_csv(preprocess_file, delimiter=',').values
 
-    # Inicializace SOM je zde kontrola existence konkrétních nastavení tak aby nedošlo k chybějícímu atributu
-    som = KohonenSOM(
-        m=som_settings["som_height"],
-        n=som_settings["som_width"],
+    # Inicializace SOM
+    som = KohonenSOM(        
         dim=data.shape[1],
-        radius=som_settings.get("radius", max(som_settings["som_height"], som_settings["som_width"]) / 2),
-        learning_rate=som_settings.get("learning_rate", 0.9),
-        min_learning_rate=som_settings.get("min_learning_rate", 0.1),
-        num_batches=som_settings.get("num_batches", 10),
-        min_batch_percent=som_settings.get("min_batch_percent", 0.1),
-        max_batch_percent=som_settings.get("max_batch_percent", 5),
-        lr_decay_type=som_settings.get("lr_decay_type", "linear-drop"),
-        radius_decay_type=som_settings.get("radius_decay_type", "linear-drop"),
-        batch_growth_type=som_settings.get("batch_growth_type", "exp-growth"),
-        random_seed=som_settings.get("random_seed", 42),
-        growth_g=som_settings.get("growth_g", 15.0),
-        normalize_weights_flag=som_settings.get("normalize_weights_flag", False),
-        epoch_multiplier=som_settings.get("epoch_multiplier", 1),
-        map_type=som_settings.get("map_type", "hex"),
-        min_q_error=som_settings.get("min_q_error", None)
+        **som_settings
     ) 
 
     # Trénování SOM
     som.train(data)
 
     # Uložení vstupních dat
-    np.savetxt(f"{output_path}/data.csv", data, delimiter=";")
+    np.savetxt(f"{output_path}/data.csv", data, delimiter=",")
 
     # Uložení naučených vah
     np.save(f"{output_path}/weights.npy", som.weights)
 
 
     # Načteme původní DataFrame s primárním klíčem
-    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=';')
+    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=',')
 
     # Uložíme shluky
     cluster_file = f"{output_path}/clusters.json"
@@ -82,34 +75,34 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
         data,
         df_orig,
         cluster_file,
-        settings["primary_id"]
+        project_settings["primary_id"]
     )
 
     extract_and_save_pie_data(
         som,
         data,
         df_orig,
-        settings["categorical_column"],
+        project_settings["categorical_column"],
         output_dir=f"{output_path}/"
     )
 
     # načíst data
-    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=';')
+    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=',')
     clusters = json.load(open(cluster_file))
 
     # spočítat statistiky podle sloupců
     stats = compute_group_statistics(df_orig,
-                                    settings["legend_column"],
-                                    settings["analysis_columns"])
+                                    project_settings["legend_column"],
+                                    project_settings["analysis_columns"])
     
     #detekovat extrémy s prahovou hodnotou např. 2σ
     extremes = detect_extremes(df_orig,
                             clusters,
                             stats,
-                            threshold=settings.get("std_threshold", 2),
-                            legend_column=settings["legend_column"],
-                            analysis_columns=settings["analysis_columns"],
-                            primary_id=settings["primary_id"])
+                            threshold=project_settings.get("std_threshold", 2),
+                            legend_column=project_settings["legend_column"],
+                            analysis_columns=project_settings["analysis_columns"],
+                            primary_id=project_settings["primary_id"])
     
     # uložit výsledek
     with open(f"{output_path}/extremes.json", "w", encoding="utf-8") as f:
@@ -119,12 +112,12 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, settings: di
     extract_and_save_pie_data_from_clusters(
         df_orig,
         f"{output_path}/clusters.json",
-        settings['categorical_column'],
+        project_settings['categorical_column'],
         f"{output_path}/",
-        settings['primary_id']
+        project_settings['primary_id']
     )
 
-    generate_maps(som, data, preprocess_file, output_path, som_settings, settings)
+    generate_maps(som, data, preprocess_file, output_path, som_settings, project_settings)
 
 
 def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: str, primary_id: str):
@@ -152,44 +145,25 @@ def process_project(uid_hash: str) -> None:
 
     # Načtení detailů projektu
     project = get_project_detail(uid_hash)
-    data_settings = load_project_settings(project)
+    project_settings = load_project_settings(project)
+    som_settings = load_som_settings(project)
 
     # Kontrola vstupního souboru
     input_file = f"/userfiles/{uid_hash}/input.csv"
-    if not validate_input_file(input_file, data_settings):
+    if not validate_input_file(input_file, project_settings):
         log_message(f"Neplatný vstupní soubor pro projekt {uid_hash}.")
         sys.exit(1)
 
     # Předzpracování dat
     preprocess_file = f"/userfiles/{uid_hash}/preprocess.csv"
-    normalize_data(input_file, preprocess_file, data_settings)
+    normalize_data(input_file, preprocess_file, project_settings)
 
     output_path = f"/userfiles/{uid_hash}/"
-    som_settings = {
-        "som_height": 10,
-        "som_width": 10,
-        "map_type": "square",        
-        "normalize_weights_flag": False,
-        "epoch_multiplier": 10,
-        "max_batch_percent": 100,
-        "min_batch_percent": 100,
-        "learning_rate": 0.9,
-        "min_learning_rate": 0.1,
-        "radius": 5,
-        "min_radius": 0.1,
-        "num_batches": 1,
-        "lr_decay_type": 'linear-drop',
-        "radius_decay_type": 'linear-drop',
-        "batch_growth_type": 'exp-growth',
-        "random_seed": 42,
-        "growth_g": 15.0,
-        "min_q_error": 0.05
-    }    
 
-    train_and_analyze_som(preprocess_file, som_settings, data_settings,output_path, uid_hash)
+    train_and_analyze_som(preprocess_file, som_settings, project_settings,output_path, uid_hash)
 
     # Aktualizace stavu projektu v databázi
-    # update_project_status(uid_hash, 1) odkomentovat, v prubehu testovani by se nepoustela analyza znovu
+    # update_project_status(uid_hash, 1) -------- odkomentovat, v prubehu testovani by se nepoustela analyza znovu
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 

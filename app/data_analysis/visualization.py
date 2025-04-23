@@ -184,50 +184,6 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
     plt.savefig(output_file, bbox_inches='tight')
     plt.close()
 
-def generate_distance_map(som, data: np.ndarray, output_file: str,
-                          map_type: str = 'square', cmap: str = 'magma'):
-    """
-    Zobrazení průměrné kvantizační chyby na neuron.
-    """
-    check_folder(output_file)
-    m, n = som.m, som.n
-    
-    # Výpočet kvantizační chyby pro každý neuron
-    dist_map = np.zeros((m, n))
-    counts = np.zeros((m, n))
-    
-    # Vektorizovaný výpočet vzdáleností
-    weights_flat = som.weights.reshape(-1, som.dim)
-    bmu_indices, distances = pairwise_distances_argmin_min(data, weights_flat)
-    
-    # Rozdělení vzdáleností podle neuronů
-    for idx, (i, j) in enumerate(bmu_indices):
-        dist_map[i, j] += distances[idx]
-        counts[i, j] += 1
-    
-    # Průměrná kvantizační chyba pro každý neuron
-    with np.errstate(divide='ignore', invalid='ignore'):
-        dist_map = np.divide(dist_map, counts, out=np.zeros_like(dist_map), where=counts>0)
-    
-    # Normalizace hodnot do rozsahu [0,1]
-    max_dist = np.max(dist_map)
-    if max_dist > 0:
-        dist_map = dist_map / max_dist
-    
-    X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(20,12))
-
-    element_size = get_size_of_point(m,n,map_type)    
-    sc = ax.scatter(X, Y, c=dist_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-    fig.colorbar(sc, ax=ax, label='Průměrná kvantizační chyba')
-    ax.set_aspect('equal')
-    ax.axis('off')
-    ax.margins(0.08)
-    plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
-    plt.close()
-
-
 def plot_pie_map_from_json(
     som,
     json_file: str,
@@ -317,10 +273,6 @@ def check_folder(output_file: str):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-
-
-
-
 def get_size_of_point(m,n,map_type):
     if map_type == 'hex':    
         if m == 10:
@@ -342,7 +294,31 @@ def get_size_of_point(m,n,map_type):
             point_size = 1100  # výchozí hodnota pro square
     return point_size
 
+def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, output_file: str,
+                                       map_type: str = 'square', cmap: str = 'magma'):
+    """
+    Zobrazení průměrné kvantizační chyby na neuron z předpočítané mapy chyb.
+    """
+    check_folder(output_file)
+    m, n = som.m, som.n
+    
+    # Normalizace hodnot do rozsahu [0,1]
+    max_dist = np.max(neuron_error_map)
+    if max_dist > 0:
+        neuron_error_map = neuron_error_map / max_dist
+    
+    X, Y = _grid_coordinates(m, n, map_type)
+    fig, ax = plt.subplots(figsize=(20,12))
 
+    element_size = get_size_of_point(m,n,map_type)    
+    sc = ax.scatter(X, Y, c=neuron_error_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+    fig.colorbar(sc, ax=ax, label='Průměrná kvantizační chyba (compute_quantization_error)')
+    ax.set_aspect('equal')
+    ax.axis('off')
+    ax.margins(0.08)
+    plt.tight_layout()
+    plt.savefig(output_file, bbox_inches='tight')
+    plt.close()
 
 
 def generate_maps(som, data, preprocess_file,output_path, som_settings, settings):
@@ -389,11 +365,14 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         map_type=map_type
     )
 
-    # 5) Distance‑map (prům. kvantizační chyba)
-    generate_distance_map(
+    # 5) Distance‑map (prům. kvantizační chyba) - původní metoda
+    codebook_vectors = som.weights.reshape(-1, som.dim)
+    bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
+    neuron_error_map, _ = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))
+    generate_distance_map_from_error_map(
         som,
-        data,
-        f"{output_path}/visualization/distance_map_{map_type}.png",
+        neuron_error_map,
+        f"{output_path}/visualization/distance_map_computed_{map_type}.png",
         map_type=map_type
     )
   

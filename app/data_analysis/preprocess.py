@@ -6,7 +6,7 @@ def validate_input_file(input_path: str, settings: dict) -> bool:
     """Ověří správnost vstupního CSV souboru."""
     try:
         # Načtení souboru bez datových typů
-        df = pd.read_csv(input_path, delimiter=';', nrows=1)
+        df = pd.read_csv(input_path, delimiter=',', nrows=1)
     except Exception as e:
         print(f"Chyba při načítání souboru: {e}")
         return False
@@ -22,7 +22,7 @@ def validate_input_file(input_path: str, settings: dict) -> bool:
 
 def normalize_data(input_path: str, output_path: str, settings: dict) -> None:
     """Normalizuje data z input.csv do preprocess.csv podle vybraných sloupců a typu dat."""
-    df = pd.read_csv(input_path, delimiter=';')
+    df = pd.read_csv(input_path, delimiter=',')
     cols = settings["selected_columns"]
     data = df[cols].copy()
 
@@ -56,4 +56,4 @@ def normalize_data(input_path: str, output_path: str, settings: dict) -> None:
     scaled = scaler.fit_transform(processed.values)
     normalized_df = pd.DataFrame(scaled, columns=cols)
 
-    normalized_df.to_csv(output_path, index=False, sep=';')
+    normalized_df.to_csv(output_path, index=False, sep=',')

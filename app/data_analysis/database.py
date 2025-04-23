@@ -31,7 +31,6 @@ def fetch_project(uid_hash):
         # Ensure all open resources are closed.
         cursor.close()
         db.close()
-
     return result
 
 def update_project_status(uid_hash, status):

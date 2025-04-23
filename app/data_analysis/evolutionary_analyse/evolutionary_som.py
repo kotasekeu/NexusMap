@@ -19,10 +19,8 @@ from multiprocessing import Pool, cpu_count
 import sys
 
 # --- Nastavení parametrů evolučního algoritmu ---
-POPULATION_SIZE = CONFIG["population_size"]
-GENERATIONS = CONFIG["generations"]
 
-def random_config():
+def random_config(param_space):
     """
     Vytvoří náhodnou konfiguraci (jedince) na základě zadaného prostoru parametrů.
     Pokud má parametr více variant (seznam), vybere jednu náhodně.
@@ -31,7 +29,7 @@ def random_config():
     :return: Slovník s jednou kompletní konfigurací pro evoluci
     """
     config = {}
-    for key, value in CONFIG.items():
+    for key, value in param_space.items():
         if isinstance(value, list):
             config[key] = random.choice(value)  # Výběr jedné varianty z možných
         else:
@@ -52,7 +50,7 @@ def mutate(config, param_space):
         config[key] = random.choice(param_space[key])
     return config
 
-def run_evolution():
+def run_evolution(param_space):
     """
     Hlavní smyčka evolučního algoritmu. Provádí optimalizaci v několika generacích:
     - Náhodně vytvoří populaci
@@ -63,37 +61,32 @@ def run_evolution():
 
     :param param_space: Prostor všech parametrů, které se mají optimalizovat
     """
-    
     total_evaluations = GENERATIONS * POPULATION_SIZE
     current_eval = 0
     # Zaloguj celkový počet evaluací
     log_progress(0, total_evaluations)
 
     # vygeneruje náhodné nastavení pro každou populaci
-    population = [random_config() for _ in range(POPULATION_SIZE)]
+    population = [random_config(param_space) for _ in range(POPULATION_SIZE)]    
     
     for gen in range(GENERATIONS):
         print(f"Generace {gen + 1}/{GENERATIONS}")
         
         with Pool(processes=cpu_count()) as pool:
-            print(f"{pool}")
             scored = pool.map(evaluate_individual, population)
 
+        # for score, ind, duration, total_weight_updates in scored:
+        #     current_eval += 1
+        #     log_progress(current_eval, total_evaluations)                   
 
-        sys.exit()
-        for score, ind, duration in scored:
-            current_eval += 1
-            log_progress(current_eval, total_evaluations)                   
-
-        # --- Výběr nejlepší konfigurace ---
-        scored.sort(key=lambda x: x[0], reverse=True)
+        scored.sort(key=lambda x: x[0], reverse=False)
         best = scored[0]
-        print(f" Nejlepší skóre: {best[0]:.6f} | Čas: {best[2]:.2f} s")
+        print(f" Nejlepší skóre: {best[0]:.8f} | Čas: {best[2]:.4f} s | Upraveno vah:{best[3]}")
 
         # --- Výběr a generace nové populace ---
-        top = [ind for _, ind, _ in scored[:population_size // 2]]
+        top = [ind for _, ind, _, _ in scored[:POPULATION_SIZE // 2]]
         next_gen = top[:]
-        while len(next_gen) < population_size:
+        while len(next_gen) < POPULATION_SIZE:
             parent = random.choice(top)
             child = mutate(copy.deepcopy(parent), param_space)
             next_gen.append(child)
@@ -109,7 +102,7 @@ def get_uid(config):
     :return: Zkrácený MD5 hash (8 znaků) jako unikátní identifikátor.
     """    
     config_str = str(sorted(config.items()))
-    return hashlib.md5(config_str.encode()).hexdigest()[:8]
+    return hashlib.md5(config_str.encode()).hexdigest()
 
 def log_message(uid, message):
     """
@@ -125,7 +118,7 @@ def log_message(uid, message):
     with open(log_path, "a") as f:
         f.write(f"[{now}] [{uid}] {message}\n")
 
-def log_result_to_csv(uid, config, score, duration):
+def log_result_to_csv(uid, config, score, duration, total_weight_updates):
     """
     Zapíše výsledky jedné konfigurace do CSV včetně skóre a doby výpočtu.
 
@@ -140,11 +133,11 @@ def log_result_to_csv(uid, config, score, duration):
 
     file_exists = os.path.isfile(csv_path)
     with open(csv_path, mode="a", newline="") as f:
-        fieldnames = ['uid', 'score', 'duration'] + list(config.keys())
+        fieldnames = ['uid', 'score', 'duration', 'total_weight_updates'] + list(config.keys())
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         if not file_exists:
             writer.writeheader()
-        row = {'uid': uid, 'score': score, 'duration': duration, **config}
+        row = {'uid': uid, 'score': score, 'duration': duration, 'total_weight_updates': total_weight_updates, **config}
         writer.writerow(row)
 
 def log_progress(current, total):
@@ -257,42 +250,43 @@ def evaluate_individual(ind):
     sample_size = ind["sample_size"]
     input_dim = ind["input_dim"]
     data = get_or_generate_data(sample_size, input_dim)
-    epochs = int(sample_size * ind["epoch_multiplier"])
     map_width, map_height = ind["map_size"]    
 
     som = KohonenSOM(
+        dim=input_dim,
         m=map_width, 
         n=map_height, 
-        dim=input_dim,
-        learning_rate=ind["learning_rate"],
-        min_learning_rate=ind["min_learning_rate"],
-        radius=ind["radius"],
-        min_radius=ind["min_radius"],
-        num_batches=ind["num_batches"],
-        min_batch_percent=ind["min_batch_percent"],
-        max_batch_percent=ind["max_batch_percent"],
-        lr_decay_type=ind["lr_decay_type"],
-        radius_decay_type=ind["radius_decay_type"],
-        batch_growth_type=ind["batch_growth_type"],
-        random_seed=ind["random_seed"],
-        growth_g=ind["growth_g"],        
-        normalize_weights_flag=ind["normalize_weights_flag"],
-        epoch_multiplier=ind["epoch_multiplier"],
-        map_type=ind["map_type"],
-        min_q_error=ind["min_q_error"],
+        **{k: v for k, v in ind.items() if k not in ['sample_size', 'input_dim', 'map_size']}   
     )
 
     som.train(data)
-    score = evaluate_som_quality(som, data)
+    
+    # codebook_vectors = som.weights.reshape(-1, som.dim)
+    # bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
+    # neuron_error_map, total_qe = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))    
+
     duration = time.time() - start_time
     uid = get_uid(ind)
 
-    log_message(uid, f"Konfigurace vyhodnocena – kvantizační chyba: {score:.6f}, čas: {duration:.2f}s")
-    log_result_to_csv(uid, ind, score, duration)
-    return (score, copy.deepcopy(ind), duration)
+    # print(f"Upraveno vah:{som.total_weight_updates}")
+    # print(f"MQE: {som.best_mqe:.8f}")
+    # print(f"Doba trvání: {duration:.2f}s")
+    # print(f"--------------------------------")
+    log_message(uid, f"Konfigurace vyhodnocena – kvantizační chyba: {som.best_mqe:.8f}, čas: {duration:.2f}s")
+    log_result_to_csv(uid, ind, som.best_mqe, duration, som.total_weight_updates)
+
+    return (som.best_mqe, copy.deepcopy(ind), duration, som.total_weight_updates)
 
 
 # --- Spuštění algoritmu ---
 if __name__ == "__main__":
     clear_files(CONFIG["uid_prefix"])
-    run_evolution()
+    POPULATION_SIZE = CONFIG["population_size"]
+    GENERATIONS = CONFIG["generations"]    
+
+    som_config = CONFIG.copy()
+    som_config.pop("population_size", None)
+    som_config.pop("generations", None)
+    som_config.pop("uid_prefix", None)
+
+    run_evolution(som_config)

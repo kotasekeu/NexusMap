@@ -25,69 +25,72 @@
 CONFIG = {
     # Nastavení evolučního algoritmu
     # Velikost populace v každé generaci
-    "population_size": 10,       
+    "population_size": 20,
 
     # Počet generací
-    "generations": 5,        
+    "generations": 5,
 
     # Předpona pro identifikátor konfigurace
     "uid_prefix": "evolution",
 
     # Parametry Kohonenova SOM
     # Počáteční learning rate – určuje rychlost učení na začátku tréninku
-    "learning_rate": [0.9, 0.6, 0.3],
+    "learning_rate": [0.9, 0.5, 0.3],
 
     # Minimální learning rate – dolní mez pro útlum learning rate
-    "min_learning_rate": [0.4, 0.25, 0.01],
+    "min_learning_rate": [0.3, 0.1, 0.05],
 
     # Počáteční poloměr sousedství – pokud není zadán, určuje se automaticky
-    "radius": 10,
+    "radius": [10.0, 5.0, 2.0],
 
     # Minimální poloměr – dolní mez pro útlum radiusu během tréninku
-    "min_radius": [0.5, 0.1, 0.05],
+    "min_radius": [1.0, 0.5, 0.1],
 
     # Počet batchů v rámci jedné epochy – jak často se aktualizují váhy
     "num_batches": 10,
 
     # Minimální procento dat použitých v jednom kroku
-    "min_batch_percent": [5.0, 1.0, 0.1],
+    "min_batch_percent": [1.0, 0.5, 0.1],
 
     # Maximální procento dat použitých v jednom kroku
-    "max_batch_percent": [10.0, 5.0, 1.0],
+    "max_batch_percent": [10.0, 5.0, 2.0],
 
     # Typ útlumu learning rate – zde exponenciální pokles
-    "lr_decay_type": ["exp-drop", "linear-drop"],
+    "lr_decay_type": "linear-drop",
 
     # Typ útlumu radiusu – zde také exponenciální pokles
-    "radius_decay_type": ["exp-drop", "linear-drop"],
+    "radius_decay_type": "linear-drop",
 
     # Typ růstu počtu vzorků v čase – zde exponenciální růst
-    "batch_growth_type": ["exp-growth", "linear-growth"],
+    "batch_growth_type": "exp-growth",
 
     # Náhodné semínko pro replikovatelnost výsledků
-    "random_seed": 42,
+    "random_seed": None,
 
     # Parametr G pro růstovou funkci – ovlivňuje tvar exp-growth
     "growth_g": [15.0],
 
-    # Počet vstupních vzorků pro generovaná data
-    "sample_size": 1000,
+    # Počet vstupníh vzorků pro generovaná data
+    "sample_size": 500,
 
     # Počet vstupních atributů (rozměrů) pro generovaná data
-    "input_dim": 6,
+    "input_dim": 4,
 
     # Velikost výstupní mapy (šířka, výška)
-    "map_size": [(30, 30), (20, 20)],
+    "map_size": (20, 20),
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
-    "epoch_multiplier": 1.0,
+    "epoch_multiplier": [100.0, 50.0, 20.0, 5.0],
 
     # Minimální kvalita mapy (Q-error)
-    "min_q_error": [0.01, 0.05, 0.1],
+    "min_q_error": None,
 
     # Typ mapy
-    "map_type": ["square", "hex"],
+    "map_type": "square",
 
     # Normalizace vah
-    "normalize_weights_flag": [True, False],
+    "normalize_weights_flag": False,
+
+    # Počet epoch bez zlepšení před ukončením tréninku
+    "max_epochs_without_improvement": None
 }
