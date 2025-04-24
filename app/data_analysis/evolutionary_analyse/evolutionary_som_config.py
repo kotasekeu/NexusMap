@@ -68,7 +68,7 @@ CONFIG = {
     "random_seed": None,
 
     # Parametr G pro růstovou funkci – ovlivňuje tvar exp-growth
-    "growth_g": [25.0,15.0, 10.0],
+    "growth_g": [5.0, 10.0, 15.0, 25.0, 50.0],
 
     # Počet vstupníh vzorků pro generovaná data
     "sample_size": 500,
@@ -80,7 +80,7 @@ CONFIG = {
     "map_size": (10, 10),
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
-    "epoch_multiplier": [100.0, 50.0, 20.0, 5.0],
+    "epoch_multiplier": [5.0, 20.0, 50.0, 100.0],
 
     # Minimální kvalita mapy (Q-error)
     "min_q_error": None,
@@ -89,8 +89,8 @@ CONFIG = {
     "map_type": "square",
 
     # Normalizace vah
-    "normalize_weights_flag": False,
+    "normalize_weights_flag": [False, True],
 
     # Počet epoch bez zlepšení před ukončením tréninku
-    "max_epochs_without_improvement": None
+    "max_epochs_without_improvement": [None, 50, 100]
 }

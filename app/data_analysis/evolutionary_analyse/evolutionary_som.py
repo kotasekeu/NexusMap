@@ -20,6 +20,23 @@ import sys
 
 # --- Nastavení parametrů evolučního algoritmu ---
 
+# Váhy pro multi‐kriteriální fitness
+W_ERROR = 0.7
+W_TIME  = 0.3
+
+def crossover(parent1, parent2, param_space):
+    """
+    Uniformní křížení: pro každý parametr náhodně vybere hodnotu
+    z jednoho ze dvou rodičů.
+    """
+    child = {}
+    for key in param_space:
+        if isinstance(param_space[key], list):
+            child[key] = random.choice([parent1[key], parent2[key]])
+        else:
+            child[key] = parent1[key]
+    return child
+
 def random_config(param_space):
     """
     Vytvoří náhodnou konfiguraci (jedince) na základě zadaného prostoru parametrů.
@@ -62,37 +79,48 @@ def run_evolution(param_space):
     :param param_space: Prostor všech parametrů, které se mají optimalizovat
     """
     total_evaluations = GENERATIONS * POPULATION_SIZE
-    current_eval = 0
-    # Zaloguj celkový počet evaluací
     log_progress(0, total_evaluations)
 
-    # vygeneruje náhodné nastavení pro každou populaci
-    population = [random_config(param_space) for _ in range(POPULATION_SIZE)]    
-    
+    population = [random_config(param_space) for _ in range(POPULATION_SIZE)]
     for gen in range(GENERATIONS):
         print(f"Generace {gen + 1}/{GENERATIONS}")
-        
+
+        # vyhodnotit
         with Pool(processes=cpu_count()) as pool:
             scored = pool.map(evaluate_individual, population)
+        # scored: list of (qe, config, duration, updates)
 
-        # for score, ind, duration, total_weight_updates in scored:
-        #     current_eval += 1
-        #     log_progress(current_eval, total_evaluations)                   
+        # normalizace
+        qes = [s[0] for s in scored]
+        times = [s[2] for s in scored]
+        qe_min, qe_max   = min(qes), max(qes)
+        t_min,  t_max    = min(times), max(times)
+        # spočítat fitness pro každý jedinec
+        scored_f = []
+        for qe, cfg, dur, upd in scored:
+            ne = (qe - qe_min) / (qe_max - qe_min) if qe_max > qe_min else 0.0
+            nt = (dur - t_min) / (t_max - t_min) if t_max > t_min else 0.0
+            fit = W_ERROR*(1 - ne) + W_TIME*(1 - nt)
+            scored_f.append((fit, qe, cfg, dur, upd))
 
-        scored.sort(key=lambda x: x[0], reverse=False)
-        best = scored[0]
-        print(f" Nejlepší skóre: {best[0]:.8f} | Čas: {best[2]:.4f} s | Upraveno vah:{best[3]}")
+        # vybrat podle fitness
+        scored_f.sort(key=lambda x: x[0], reverse=True)
+        best = scored_f[0]
+        print(f" Nejlepší QE: {best[1]:.6f} | Čas: {best[3]:.2f}s | Fitness: {best[0]:.4f}")
 
-        # --- Výběr a generace nové populace ---
-        top = [ind for _, ind, _, _ in scored[:POPULATION_SIZE // 2]]
+        # selekce top 50 %
+        top = [entry[2] for entry in scored_f[:POPULATION_SIZE // 2]]
         next_gen = top[:]
+        # generace nové populace s křížením + mutací
         while len(next_gen) < POPULATION_SIZE:
-            parent = random.choice(top)
-            child = mutate(copy.deepcopy(parent), param_space)
+            p1, p2 = random.sample(top, 2)
+            child  = crossover(p1, p2, param_space)
+            child  = mutate(child, param_space)
             next_gen.append(child)
 
-        population = next_gen        
-        log_final_best(get_uid(best[1]), best[1], best[0], duration=best[2] if len(best) > 2 else 0.0)
+        population = next_gen
+        # uložit nejlepší
+        log_final_best(get_uid(best[2]), best[2], best[1], duration=best[3])
 
 def get_uid(config):
     """
