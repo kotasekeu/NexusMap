@@ -46,6 +46,7 @@ final class ProjectFormFactory
 	public function createForm(callable $onSuccess): Form
 	{
 		$form = $this->factory->create();
+
 		$form->addProtection('Platnost formuláře vypršela, obnovte stránku.');
 
 		$form->addHidden('project_id');

@@ -7,32 +7,65 @@ Tento nástroj slouží k automatické optimalizaci parametrů Kohonenovy neuron
 ## 📁 Struktura projektu
 
 - `evolutionary_som.py` – hlavní skript pro spuštění evoluce
-- `evolutionary_som_config.py` – konfigurace parametrového prostoru
-- `kohonen_24_04_17.py` – implementace Kohonenovy sítě
-- `/userfiles/evolution/` – adresář pro výsledky, zálohy, cache a logy
+- `evolutionary_som_config.py` – výchozí konfigurace parametrového prostoru
+- `./reports/` – adresář pro výsledky, zálohy, cache a logy. Adresář je vytvořen:
+  - V adresáři vstupního souboru (pokud je zadán)
+  - V aktuálním adresáři (pokud není zadán vstupní soubor)
 
 ---
 
 ## ⚙️ Spuštění
 
-1. Uprav `evolutionary_som_config.py` podle potřeby:
-   - počet generací (`generations`)
-   - velikost populace (`population_size`)
-   - varianty parametrů (`param_space`)
-   - vstupní rozměry (`sample_size`, `input_dim`)
-   - další nastavení
+1. Vytvoř vlastní konfigurační soubor (volitelné):
+   ```json
+   {
+       "population_size": 20,
+       "generations": 10,
+       "uid_prefix": "my_experiment",
+       "learning_rate": [0.9, 0.8, 0.7],
+       "min_learning_rate": [0.3, 0.2, 0.1],
+       "radius": [10.0, 5.0, 2.0],
+       "min_radius": [1.0, 0.5, 0.2],
+       "num_batches": 10,
+       "min_batch_percent": [1.0, 0.5, 0.2],
+       "max_batch_percent": [10.0, 5.0, 2.0],
+       "lr_decay_type": ["linear-drop", "exp-drop"],
+       "radius_decay_type": ["linear-drop", "exp-drop"],
+       "batch_growth_type": ["exp-growth", "linear-growth"],
+       "random_seed": null,
+       "growth_g": [5.0, 10.0, 15.0],
+       "sample_size": 500,
+       "input_dim": 4,
+       "map_size": [20, 20],
+       "epoch_multiplier": [1.0, 5.0, 10.0],
+       "min_q_error": null,
+       "map_type": "square",
+       "normalize_weights_flag": [false, true],
+       "max_epochs_without_improvement": null
+   }
+   ```
 
-2. Spusť skript:
+2. Spusť skript s volitelnými parametry:
 
 ```bash
+# Základní spuštění s výchozí konfigurací
 python evolutionary_som.py
+# Výstupy budou v ./reports/
+
+# Spuštění s vlastním konfiguračním souborem
+python evolutionary_som.py --config config.json
+# Výstupy budou v ./reports/
+
+# Spuštění s vlastním vstupním souborem a konfigurací
+python evolutionary_som.py --input data.csv --config config.json
+# Výstupy budou v ./data/reports/
 ```
 
 ---
 
 ## 📊 Výstupy
 
-Výstupy běhu jsou ukládány do `/userfiles/evolution/`:
+Výstupy běhu jsou ukládány do složky `reports` v příslušném adresáři:
 
 | Soubor                    | Popis                                                         |
 |---------------------------|---------------------------------------------------------------|
@@ -49,8 +82,9 @@ Výstupy běhu jsou ukládány do `/userfiles/evolution/`:
 
 - **Kvantizační chyba** – čím menší, tím lepší
 - **Doba výpočtu** – sekundová doba výpočtu jedné konfigurace
-
-Volitelně lze sledovat i poměr `chyba / čas`.
+- **Fitness funkce** – kombinace chyby a času s váhami:
+  - W_ERROR = 0.7 (váha pro kvantizační chybu)
+  - W_TIME = 0.3 (váha pro dobu výpočtu)
 
 ---
 
@@ -59,16 +93,27 @@ Volitelně lze sledovat i poměr `chyba / čas`.
 - ✅ Paralelní zpracování (využití více jader)
 - ✅ Automatické zálohování výsledků
 - ✅ Jednoduchá správa dat (cache podle vstupních parametrů)
+- ✅ Podpora vlastních vstupních dat
 - ✅ Rozšiřitelnost o další metriky a metody optimalizace
 
 ---
 
 ## 🔁 Jak funguje evoluce
 
-- Vytvoření počáteční náhodné populace
-- Vyhodnocení všech konfigurací
-- Výběr nejlepší poloviny + mutace
-- Opakování po zadaný počet generací
+1. **Inicializace**:
+   - Vytvoření počáteční náhodné populace
+   - Načtení vstupních dat (soubor nebo generovaná data)
+
+2. **Hodnocení generace**:
+   - Paralelní vyhodnocení všech konfigurací
+   - Výpočet fitness pro každého jedince
+   - Normalizace chyb a časů pro srovnatelnost
+
+3. **Selekce a reprodukce**:
+   - Výběr nejlepší poloviny populace
+   - Uniformní křížení vybraných jedinců
+   - Mutace nových konfigurací
+   - Opakování po zadaný počet generací
 
 ---
 
@@ -76,10 +121,13 @@ Volitelně lze sledovat i poměr `chyba / čas`.
 
 - Pokud chceš testovat pouze jeden parametr, nech ostatní fixní
 - UID konfigurací slouží pro dohledání konkrétního výsledku napříč soubory
+- Vstupní data lze zadat buď jako CSV soubor, nebo se automaticky vygenerují
+- Pro replikovatelnost výsledků lze nastavit `random_seed`
 
 ---
 
-## 🧼 Reset mezi běhy
+## 🔄 Reset mezi běhy
 
 - Při každém spuštění se staré výsledky přesunou do `backup-*`
 - Zachovává se pouze `input.csv`, pokud existuje
+- Cache vygenerovaných dat se zachovává pro opakované použití

@@ -3,6 +3,7 @@ import math
 from utils import log_message
 from sklearn.metrics import pairwise_distances_argmin_min
 from collections import defaultdict
+import sys
 
 class KohonenSOM:
     def __init__(self, dim, m, n, learning_rate=0.9, min_learning_rate=0.1,

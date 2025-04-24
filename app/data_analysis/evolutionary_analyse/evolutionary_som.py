@@ -17,12 +17,64 @@ from kohonen import KohonenSOM
 from sklearn.metrics import pairwise_distances_argmin_min
 from multiprocessing import Pool, cpu_count
 import sys
+from project_processor import normalize_data
+import pandas as pd
+import argparse
+from utils import set_uid_hash
+import json
 
 # --- Nastavení parametrů evolučního algoritmu ---
 
 # Váhy pro multi‐kriteriální fitness
 W_ERROR = 0.7
 W_TIME  = 0.3
+
+# --- Globální proměnné ---
+INPUT_FILE = None
+NORMALIZED_DATA = None
+WORKING_DIR = None
+
+def get_working_directory(input_file: str = None) -> str:
+    """
+    Určí pracovní adresář na základě vstupního souboru nebo aktuálního adresáře.
+    
+    :param input_file: Cesta k vstupnímu souboru (volitelné)
+    :return: Cesta k pracovnímu adresáři
+    """
+    if input_file:
+        # Pokud je zadán vstupní soubor, použij jeho adresář
+        base_dir = os.path.dirname(os.path.abspath(input_file))
+    else:
+        # Jinak použij adresář, ze kterého je spouštěn skript
+        base_dir = os.getcwd()
+    
+    # Vytvoř složku reports v určeném adresáři
+    reports_dir = os.path.join(base_dir, "reports")
+    os.makedirs(reports_dir, exist_ok=True)
+    
+    return reports_dir
+
+def load_config(config_path: str = None):
+    """
+    Načte konfiguraci z JSON souboru nebo použije výchozí CONFIG.
+    
+    :param config_path: Cesta k JSON konfiguračnímu souboru
+    :return: Načtená konfigurace
+    """
+    if config_path:
+        if not os.path.exists(config_path):
+            print(f"Chyba: Konfigurační soubor {config_path} neexistuje.")
+            sys.exit(1)
+            
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+        except json.JSONDecodeError as e:
+            print(f"Chyba: Konfigurační soubor {config_path} není validní JSON: {e}")
+            sys.exit(1)
+            
+        return config
+    return CONFIG
 
 def crossover(parent1, parent2, param_space):
     """
@@ -78,9 +130,6 @@ def run_evolution(param_space):
 
     :param param_space: Prostor všech parametrů, které se mají optimalizovat
     """
-    total_evaluations = GENERATIONS * POPULATION_SIZE
-    log_progress(0, total_evaluations)
-
     population = [random_config(param_space) for _ in range(POPULATION_SIZE)]
     for gen in range(GENERATIONS):
         print(f"Generace {gen + 1}/{GENERATIONS}")
@@ -88,7 +137,6 @@ def run_evolution(param_space):
         # vyhodnotit
         with Pool(processes=cpu_count()) as pool:
             scored = pool.map(evaluate_individual, population)
-        # scored: list of (qe, config, duration, updates)
 
         # normalizace
         qes = [s[0] for s in scored]
@@ -139,9 +187,7 @@ def log_message(uid, message):
     :param uid: Identifikátor konfigurace nebo "SYSTEM"
     :param message: Text zprávy pro log
     """    
-    log_dir = f"/userfiles/{CONFIG['uid_prefix']}"
-    os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, "log.txt")
+    log_path = os.path.join(WORKING_DIR, "log.txt")
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(log_path, "a") as f:
         f.write(f"[{now}] [{uid}] {message}\n")
@@ -155,9 +201,7 @@ def log_result_to_csv(uid, config, score, duration, total_weight_updates):
     :param score: Výsledná kvantizační chyba
     :param duration: Doba trvání zpracování (v sekundách)
     """    
-    log_dir = f"/userfiles/{CONFIG['uid_prefix']}"
-    os.makedirs(log_dir, exist_ok=True)
-    csv_path = os.path.join(log_dir, "results.csv")
+    csv_path = os.path.join(WORKING_DIR, "results.csv")
 
     file_exists = os.path.isfile(csv_path)
     with open(csv_path, mode="a", newline="") as f:
@@ -175,9 +219,7 @@ def log_progress(current, total):
     :param current: Počet již vyhodnocených konfigurací
     :param total: Celkový počet konfigurací (generace × velikost populace)
     """    
-    log_dir = f"/userfiles/{CONFIG['uid_prefix']}"
-    os.makedirs(log_dir, exist_ok=True)
-    progress_path = os.path.join(log_dir, "progress.log")
+    progress_path = os.path.join(WORKING_DIR, "progress.log")
     with open(progress_path, "a") as f:
         f.write(f"{current}/{total} dokončeno\n")
 
@@ -188,15 +230,13 @@ def clear_files(uid_hash: str) -> None:
 
     :param uid_hash: Název složky (prefix), obvykle např. "evolution"
     """
-    from datetime import datetime
-    directory = f"/userfiles/{uid_hash}"
-    if not os.path.exists(directory):
+    if not os.path.exists(WORKING_DIR):
         return
-    backup_dir = os.path.join(directory, f"backup-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
+    backup_dir = os.path.join(WORKING_DIR, f"backup-{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}")
     os.makedirs(backup_dir, exist_ok=True)
-    for filename in os.listdir(directory):
+    for filename in os.listdir(WORKING_DIR):
         if filename != "input.csv":
-            file_path = os.path.join(directory, filename)
+            file_path = os.path.join(WORKING_DIR, filename)
             if os.path.isfile(file_path):
                 try:
                     shutil.move(file_path, backup_dir)
@@ -212,9 +252,8 @@ def get_or_generate_data(sample_size: int, input_dim: int):
     :param input_dim: Počet vstupních atributů (dimenzí)
     :return: Numpy matice dat ve tvaru (sample_size, input_dim)
     """
-    uid_prefix = CONFIG["uid_prefix"]
     file_name = f"data_{sample_size}x{input_dim}.npy"
-    file_path = f"/userfiles/{uid_prefix}/{file_name}"
+    file_path = os.path.join(WORKING_DIR, file_name)
 
     # Pokud existuje, načteme
     if os.path.exists(file_path):
@@ -255,9 +294,7 @@ def log_final_best(uid, config, score, duration):
     :param score: Výsledné skóre (kvantizační chyba)
     :param duration: Čas zpracování konfigurace
     """
-    log_dir = f"/userfiles/{CONFIG['uid_prefix']}"
-    os.makedirs(log_dir, exist_ok=True)
-    best_path = os.path.join(log_dir, "final_best.txt")
+    best_path = os.path.join(WORKING_DIR, "final_best.txt")
     with open(best_path, "a") as f:
         f.write(f"UID: {uid}\n")
         f.write(f"Score (quantization error): {score:.6f}\n")
@@ -265,6 +302,23 @@ def log_final_best(uid, config, score, duration):
         f.write("Parameters:\n")
         for k, v in config.items():
             f.write(f"  {k}: {v}\n")
+
+def load_input_data(input_file: str) -> np.ndarray:
+    """
+    Načte a normalizuje data z externího CSV souboru.
+    
+    :param input_file: Cesta k vstupnímu CSV souboru
+    :return: Normalizovaná data jako numpy array
+    """
+    global NORMALIZED_DATA
+    
+    if NORMALIZED_DATA is not None:
+        return NORMALIZED_DATA
+        
+    preprocess_file = normalize_data(input_file, {})
+    NORMALIZED_DATA = pd.read_csv(preprocess_file, delimiter=',').values
+    log_message("SYSTEM", f"Načtena a normalizována data z externího souboru: {input_file}")
+    return NORMALIZED_DATA
 
 def evaluate_individual(ind):
     """
@@ -277,24 +331,26 @@ def evaluate_individual(ind):
 
     sample_size = ind["sample_size"]
     input_dim = ind["input_dim"]
-    data = get_or_generate_data(sample_size, input_dim)
     map_width, map_height = ind["map_size"]    
 
+    # Načtení dat - buď z externího souboru nebo generovaná
+    if INPUT_FILE:
+        data = load_input_data(INPUT_FILE)
+    else:
+        data = get_or_generate_data(sample_size, input_dim)
+
     som = KohonenSOM(
-        dim=input_dim,
+        dim=data.shape[1],        
         m=map_width, 
         n=map_height, 
         **{k: v for k, v in ind.items() if k not in ['sample_size', 'input_dim', 'map_size']}   
-    )
+    )    
 
     som.train(data)
     
-    # codebook_vectors = som.weights.reshape(-1, som.dim)
-    # bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
-    # neuron_error_map, total_qe = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))    
-
     duration = time.time() - start_time
     uid = get_uid(ind)
+    set_uid_hash(uid)
 
     # print(f"Upraveno vah:{som.total_weight_updates}")
     # print(f"MQE: {som.best_mqe:.8f}")
@@ -308,11 +364,30 @@ def evaluate_individual(ind):
 
 # --- Spuštění algoritmu ---
 if __name__ == "__main__":
-    clear_files(CONFIG["uid_prefix"])
-    POPULATION_SIZE = CONFIG["population_size"]
-    GENERATIONS = CONFIG["generations"]    
+    # Zpracování argumentů příkazové řádky
+    parser = argparse.ArgumentParser(description='Evoluční optimalizace Kohonenovy sítě')
+    parser.add_argument('-i', '--input', help='Cesta k vstupnímu CSV souboru')
+    parser.add_argument('-c', '--config', help='Cesta k vlastnímu konfiguračnímu souboru')
+    args = parser.parse_args()
 
-    som_config = CONFIG.copy()
+    # Načtení konfigurace
+    config = load_config(args.config)
+
+    # Nastavení globální proměnné pro vstupní soubor
+    if args.input:
+        if not os.path.exists(args.input):
+            print(f"Chyba: Vstupní soubor {args.input} neexistuje.")
+            sys.exit(1)
+        INPUT_FILE = args.input
+
+    # Nastavení pracovního adresáře
+    WORKING_DIR = get_working_directory(INPUT_FILE)
+
+    clear_files(config["uid_prefix"])
+    POPULATION_SIZE = config["population_size"]
+    GENERATIONS = config["generations"]    
+
+    som_config = config.copy()
     som_config.pop("population_size", None)
     som_config.pop("generations", None)
     som_config.pop("uid_prefix", None)

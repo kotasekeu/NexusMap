@@ -1,6 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from utils import log_message
+import os
 
 def validate_input_file(input_path: str, settings: dict) -> bool:
     """Ověří správnost vstupního CSV souboru."""
@@ -20,14 +21,23 @@ def validate_input_file(input_path: str, settings: dict) -> bool:
     return True
 
 
-def normalize_data(input_path: str, output_path: str, settings: dict) -> None:
-    """Normalizuje data z input.csv do preprocess.csv podle vybraných sloupců a typu dat."""
+def normalize_data(input_path: str, settings: dict) -> str:
+    """Normalizuje data z input.csv do preprocess.csv podle vybraných sloupců a typu dat.
+    
+    Args:
+        input_path: Cesta k vstupnímu CSV souboru
+        settings: Slovník s nastavením pro normalizaci
+        
+    Returns:
+        str: Cesta k vytvořenému výstupnímu souboru preprocess.csv
+    """
     df = pd.read_csv(input_path, delimiter=',')
-    cols = settings["selected_columns"]
+    cols = settings.get("selected_columns", df.columns.tolist())
     data = df[cols].copy()
 
     # 1) Náhrada NaN
-    for col, repl in settings.get("nan_replacement", {}).items():
+    nan_replacement = settings.get("nan_replacement", {})
+    for col, repl in nan_replacement.items():
         if col in data:
             data[col] = data[col].fillna(repl)
 
@@ -38,7 +48,7 @@ def normalize_data(input_path: str, output_path: str, settings: dict) -> None:
         if pd.api.types.is_numeric_dtype(series):
             # číselné: převést + nahradit zbytky NaN
             num = pd.to_numeric(series, errors="coerce")
-            num = num.fillna(settings.get("nan_replacement", {}).get(col, 0))
+            num = num.fillna(nan_replacement.get(col, 0))
             processed[col] = num
         else:
             # textové: rozhodnout podle počtu unikátů
@@ -56,4 +66,8 @@ def normalize_data(input_path: str, output_path: str, settings: dict) -> None:
     scaled = scaler.fit_transform(processed.values)
     normalized_df = pd.DataFrame(scaled, columns=cols)
 
+    # Vytvoření cesty pro výstupní soubor ve stejném adresáři
+    output_path = os.path.join(os.path.dirname(input_path), "preprocess-" + os.path.basename(input_path))
     normalized_df.to_csv(output_path, index=False, sep=',')
+
+    return output_path

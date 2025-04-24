@@ -155,4 +155,80 @@ class ProjectsService extends BaseService
 		
 		return $jsonFiles;
 	}
+
+	public function getProjectConfig($projectDetail): array
+	{
+		$defaultConfig = $this->getDefaultConfig();
+		// Získání uložených nastavení z projectDetail
+		$savedConfig = [];
+		if (!empty($projectDetail->som_settings)) {
+			$savedConfig = (array)$projectDetail->som_settings;
+		}
+
+		// Spojení výchozích a uložených nastavení
+		$config = array_merge($defaultConfig, $savedConfig);		
+
+		return $config;
+	}
+
+	private function getDefaultConfig(): array
+	{
+		// Výchozí hodnoty z KohonenSOM.__init__
+		$return = [
+			'learning_rate' => 0.9,
+			'min_learning_rate' => 0.1,
+			'radius' => null,
+			'min_radius' => 0.1,
+			'num_batches' => 10,
+			'min_batch_percent' => 0.1,
+			'max_batch_percent' => 5,
+			'lr_decay_type' => 'exp-drop',
+			'radius_decay_type' => 'exp-drop',
+			'batch_growth_type' => 'exp-growth',
+			'random_seed' => null,
+			'growth_g' => 15.0,
+			'normalize_weights_flag' => false,
+			'epoch_multiplier' => 1.0,
+			'map_type' => 'hex',
+			'min_q_error' => null,
+			'max_epochs_without_improvement' => null
+		];
+	}
+
+	private function getConfigDescription(): array
+	{
+		return [
+			'learning_rate' => 'Výchozí hodnota pro učení',
+			'min_learning_rate' => 'Minimální hodnota pro učení',
+			'radius' => 'Poloměr sítě',
+			'min_radius' => 'Minimální poloměr sítě',
+			'num_batches' => 'Počet batchů',
+			'min_batch_percent' => 'Minimální procento batchů',
+			'max_batch_percent' => 'Maximální procento batchů',
+			'lr_decay_type' => 'Typ útlumu učení',
+			'radius_decay_type' => 'Typ útlumu poloměru',
+			'batch_growth_type' => 'Typ růstu batchů',
+			'random_seed' => 'Náhodné číslo',
+			'growth_g' => 'Koeficient růstu',
+			'normalize_weights_flag' => 'Normalizovat váhy',
+			'epoch_multiplier' => 'Koeficient násobení epoch',	
+			'map_type' => 'Typ mapy',
+			'min_q_error' => 'Minimální kvantizační chyba',
+			'max_epochs_without_improvement' => 'Maximální počet epoch bez zlepšení',
+		];
+	}
+
+	private function getConfigSelectValues(): array
+	{
+		return [
+			'lr_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
+			'radius_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
+			'batch_growth_type' => ['exp-growth', 'linear-growth'],
+			'map_type' => ['hex', 'rect'],
+			'lr_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
+			'radius_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
+			'batch_growth_type' => ['exp-growth', 'linear-growth'],
+			'map_size' => ['10x10', '20x20', '30x30'],
+		];
+	}
 }

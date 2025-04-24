@@ -138,6 +138,7 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: 
 def process_project(uid_hash: str) -> None:
     # Nastavení uid_hash pro logování
     set_uid_hash(uid_hash)
+    output_path = f"/userfiles/{uid_hash}/"
     
     log_message(f"Spouštím zpracování projektu s UID {uid_hash}...")
     # # Aktualizace stavu - běžící projektu v databázi
@@ -149,23 +150,19 @@ def process_project(uid_hash: str) -> None:
     som_settings = load_som_settings(project)
 
     # Kontrola vstupního souboru
-    input_file = f"/userfiles/{uid_hash}/input.csv"
+    input_file = f"{output_path}input.csv"
     if not validate_input_file(input_file, project_settings):
         log_message(f"Neplatný vstupní soubor pro projekt {uid_hash}.")
         sys.exit(1)
 
     # Předzpracování dat
-    preprocess_file = f"/userfiles/{uid_hash}/preprocess.csv"
-    normalize_data(input_file, preprocess_file, project_settings)
-
-    output_path = f"/userfiles/{uid_hash}/"
+    preprocess_file = normalize_data(input_file, project_settings)
 
     train_and_analyze_som(preprocess_file, som_settings, project_settings,output_path, uid_hash)
 
     # Aktualizace stavu projektu v databázi
     # update_project_status(uid_hash, 1) -------- odkomentovat, v prubehu testovani by se nepoustela analyza znovu
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
-
 
 
 def compute_group_statistics(df_orig: pd.DataFrame,
