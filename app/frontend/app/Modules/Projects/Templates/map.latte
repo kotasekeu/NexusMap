@@ -1,0 +1,153 @@
+{layout '../../../Common/Templates/@layout.latte'}
+
+{block content}
+<div class="page-body">
+	<div class="container-fluid">
+		<div class="page-title">
+			<div class="row">
+				<div class="col-6">
+					<h4>Mapa projektu</h4>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-12">
+				<div class="card">
+					<div class="blog-single card-body">
+						<div class="blog-box blog-details">
+							<div class="blog-details">
+								<h4>
+									#{$projectDetail->project_id} {$projectDetail->name}
+								</h4>
+								<div class="single-blog-content-top">
+									<div class="card mt-4">
+										<div class="card-body">
+											<div class="map-container" style="position: relative; width: 100%; min-height: 500px;">
+												{* Hexagonální mapa *}
+												{if $somConfig['map_type'] === 'hex'}
+													<div class="hex-map" style="position: relative; width: 100%; height: 100%;">
+														{for $i = 0; $i < $somConfig['m']; $i++}
+															{for $j = 0; $j < $somConfig['n']; $j++}
+																<div class="hex-cell" 
+																	style="position: absolute; 
+																		width: 60px; 
+																		height: 69px; 
+																		background: #f8f9fa; 
+																		border: 1px solid #dee2e6;
+																		left: {$j * 45 + ($i % 2) * 22.5}px;
+																		top: {$i * 52}px;
+																		clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+																		cursor: pointer;"
+																	data-i="{$i}"
+																	data-j="{$j}"
+																	onclick="showCellInfo(this)">
+																</div>
+															{/for}
+														{/for}
+													</div>
+												{* Čtvercová mapa *}
+												{else}
+													<div class="square-map" style="position: relative; width: 100%; height: 100%;">
+														{for $i = 0; $i < $somConfig['m']; $i++}
+															{for $j = 0; $j < $somConfig['n']; $j++}
+																<div class="square-cell" 
+																	style="position: absolute; 
+																		width: 50px; 
+																		height: 50px; 
+																		background: #f8f9fa; 
+																		border: 1px solid #dee2e6;
+																		left: {$j * 50}px;
+																		top: {$i * 50}px;
+																		cursor: pointer;"
+																	data-i="{$i}"
+																	data-j="{$j}"
+																	onclick="showCellInfo(this)">
+																</div>
+															{/for}
+														{/for}
+													</div>
+												{/if}
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+{* Popup box pro zobrazení informací o buňce *}
+<div id="cellInfoModal" class="modal fade" tabindex="-1" role="dialog">
+	<div class="modal-dialog" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title">Informace o buňce</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<p><strong>Pozice:</strong> <span id="cellPosition"></span></p>
+				<p><strong>Typ mapy:</strong> {$somConfig['map_type']}</p>
+				<p><strong>Velikost mapy:</strong> {$somConfig['m']}x{$somConfig['n']}</p>
+			</div>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript" n:syntax="off">
+function showCellInfo(element) {
+	const i = element.getAttribute('data-i');
+	const j = element.getAttribute('data-j');
+	document.getElementById('cellPosition').textContent = `[${i}, ${j}]`;
+	$('#cellInfoModal').modal('show');
+}
+</script>
+
+<style>
+.hex-cell:hover, .square-cell:hover {
+	background: #e9ecef;
+	transition: background 0.3s;
+}
+
+.modal {
+	display: none;
+	position: fixed;
+	z-index: 1000;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+	background-color: #fefefe;
+	margin: 15% auto;
+	padding: 20px;
+	border: 1px solid #888;
+	width: 80%;
+}
+
+.close {
+	color: #aaa;
+	float: right;
+	font-size: 28px;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+.close:hover {
+	color: black;
+}
+</style>
+{/block}
+
+
+

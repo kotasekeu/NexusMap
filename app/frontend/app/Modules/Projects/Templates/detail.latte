@@ -25,34 +25,103 @@
 							<div class="blog-details">
 								<h4>
 									#{$projectDetail->project_id} {$projectDetail->name}
+									<a n:href="Projects:map, $projectDetail->project_id" class="btn btn-success">Detail mapy</a>
 								</h4>
 								<div class="single-blog-content-top">
 
 									<div class="card mt-4">
 										<div class="card-body">
-											<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
-											<p><strong>Analýza dokončena:</strong> <span class="badge {if $projectDetail->status == 1}badge-success{else}badge-warning{/if}">{if $projectDetail->status == 1}Ano{else}Ne{/if}</span></p>
-											<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
+											<div class="row">
+												<div class="col-md-6">
+													<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
+													<p><strong>Analýza dokončena:</strong> <span class="badge {if $projectDetail->status == 1}badge-success{else}badge-warning{/if}">{if $projectDetail->status == 1}Ano{else}Ne{/if}</span></p>
+													<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
+													
+													{if ! empty($projectDetail->project_settings)}
+														<div class="card mt-4">
+															<div class="card-header">
+																<h5>Nastavení parametrů projektu</h5>
+															</div>
+															<div class="card-body">
+																<table class="table table-striped">
+																	<thead>
+																		<tr>
+																			<th>Popis</th>
+																			<th>Hodnota</th>
+																		</tr>
+																	</thead>
+																	<tbody>
+																		{foreach $projectDetail->project_settings as $key => $value}
+																			{continueIf ! isset($projectConfigDescription[$key])}
+																			<tr>
+																				<td><strong>{$projectConfigDescription[$key]}</strong></td>
+																				<td>
+																					{if is_array($value)}
+																						{implode(', ', $value)}
+																					{elseif is_bool($value)}
+																						{if $value}Ano{else}Ne{/if}
+																					{elseif $value === null}
+																						-
+																					{else}
+																						{$value}
+																					{/if}
+																				</td>
+																			</tr>
+																		{/foreach}
+																	</tbody>
+																</table>
+															</div>
+														</div>
+													{/if}
 
-											{if ! empty($projectDetail->som_settings)}
-												{foreach $projectDetail->som_settings as $key => $value}
-													{dump $value}
-													<p><strong>{$key}:</strong> {if is_array($value)}{implode(', ', $value)}{else}{$value}{/if}</p>
-												{/foreach}
-											{/if}
-											{if ! empty($projectDetail->project_settings)}
-												{foreach $projectDetail->project_settings as $key => $value}
-													<p><strong>{$key}:</strong> {if is_array($value)}{implode(', ', $value)}{else}{$value}{/if}</p>
-												{/foreach}
-											{/if}
+
+													
+												</div>
+												<div class="col-md-6">
+													{if ! empty($projectDetail->som_settings)}
+														<div class="card mt-4">
+															<div class="card-header">
+																<h5>Nastavení parametrů SOM</h5>
+															</div>
+															<div class="card-body">
+																<table class="table table-striped">
+																	<thead>
+																		<tr>
+																			<th>Popis</th>
+																			<th>Hodnota</th>
+																		</tr>
+																	</thead>
+																	<tbody>
+																		{foreach $somConfig as $key => $value}
+																			{continueIf ! isset($somConfigDescription[$key])}
+																			<tr>
+																				<td><strong>{$somConfigDescription[$key]}</strong></td>
+																				<td>
+																					{if is_array($value)}
+																						{implode(', ', $value)}
+																					{elseif is_bool($value)}
+																						{if $value}Ano{else}Ne{/if}
+																					{elseif $value === null}
+																						-
+																					{else}
+																						{$value}
+																					{/if}
+																				</td>
+																			</tr>
+																		{/foreach}
+																	</tbody>
+																</table>
+															</div>
+														</div>
+													{/if}
+												</div>
+											</div>
 										</div>
 									</div>
-									
+
 
 									{include ./projectFiles.latte}
-
 									{include ./projectConfigTable.latte}
-
 									<div class="card mt-4">
 										<div class="card-body">
 											<div class="row">

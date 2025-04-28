@@ -21,6 +21,7 @@ var/backup/
 #   --- odstranit jenom odklad
 var/smazat
 var/empty_module_Api
+var/*
 #   --- odstranit jenom odklad
 *.log
 *log.txt

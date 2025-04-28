@@ -45,14 +45,39 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->projectDetail = $projectDetail;
 
 		$this->getTemplate()->projectFiles = $this->projectsService->getProjectFiles($this->getUser()->getId(), $projectDetail->uid_hash);
-
 		$this->getTemplate()->projectVisualizations = $this->projectsService->getProjectFiles($this->getUser()->getId(), $projectDetail->uid_hash, "visualization");
-	}
 
+		$this->getTemplate()->somConfig = $this->projectsService->getProjectConfig($projectDetail);
+		$this->getTemplate()->somConfigDescription = $this->projectsService->getConfigDescription();
+		$this->getTemplate()->projectConfigDescription = $this->projectsService->getProjectConfigDescription();
+	}
 
 	public function renderCreate()
 	{
 		$this->getTemplate()->setFile(__DIR__.'/Templates/edit.latte');
+	}
+
+	public function renderMap(int $project_id)
+	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.');
+			$this->redirect('Projects:default');
+		}
+
+		$this->getTemplate()->projectDetail = $projectDetail;
+		$somConfig = $this->projectsService->getProjectConfig($projectDetail);
+		$this->getTemplate()->somConfig = $somConfig;
+
+		$jsonDir = WWW_DIR . '/userFiles/' . $projectDetail->uid_hash . '/json';
+
+		// $extremesData = json_decode(file_get_contents($jsonDir . '/extremes.json'), true);		
+		// $this->getTemplate()->extremesData = $extremesData;
+		// dump($extremesData);
+
+		$clustersData = json_decode(file_get_contents($jsonDir . '/clusters.json'), true);		
+		ksort($clustersData);
+		$this->getTemplate()->clustersData = $clustersData;		
 	}
 
 	public function handleDelete(int $project_id)

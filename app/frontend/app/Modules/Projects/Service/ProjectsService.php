@@ -174,7 +174,7 @@ class ProjectsService extends BaseService
 	private function getDefaultConfig(): array
 	{
 		// Výchozí hodnoty z KohonenSOM.__init__
-		$return = [
+		return [
 			'learning_rate' => 0.9,
 			'min_learning_rate' => 0.1,
 			'radius' => null,
@@ -195,9 +195,11 @@ class ProjectsService extends BaseService
 		];
 	}
 
-	private function getConfigDescription(): array
+	public function getConfigDescription(): array
 	{
 		return [
+			'm' => 'Počet řádků mapy',
+			'n' => 'Počet sloupců mapy',
 			'learning_rate' => 'Výchozí hodnota pro učení',
 			'min_learning_rate' => 'Minimální hodnota pro učení',
 			'radius' => 'Poloměr sítě',
@@ -218,7 +220,7 @@ class ProjectsService extends BaseService
 		];
 	}
 
-	private function getConfigSelectValues(): array
+	public function getConfigSelectValues(): array
 	{
 		return [
 			'lr_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
@@ -231,4 +233,20 @@ class ProjectsService extends BaseService
 			'map_size' => ['10x10', '20x20', '30x30'],
 		];
 	}
+
+
+
+	public function getProjectConfigDescription(): array
+	{
+		return [
+			"selected_columns"		=> "Vybrané sloupce pro analýzu",
+			"categorical_column"	=> "Kategorický sloupec",
+			"primary_id"			=> "Hlavní ID",
+			"analysis_columns"		=> "Sloupce pro analýzu",
+			"legend_column"			=> "Sloupec pro legendu",
+			"legend_title"			=> "Název legendy"
+		];
+	}
+
+
 }

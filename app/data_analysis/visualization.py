@@ -81,8 +81,8 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
 
 
 def generate_hit_map(som, data: np.ndarray, output_file: str,
-                     map_type: str = 'square', cmap: str = 'Blues',
-                     show_numbers: bool = False):
+                    map_type: str = 'square', cmap: str = 'Blues',
+                    show_numbers: bool = False):
     """
     Heatmap návštěvnosti neuronů: velikost/barva bodu podle četnosti vzorků.
     """
@@ -118,8 +118,8 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
 
 
 def generate_component_plane(som, component: int, output_file: str,
-                             map_type: str = 'square', cmap: str = 'coolwarm',
-                             column_name: str = None):
+                            map_type: str = 'square', cmap: str = 'coolwarm',
+                            column_name: str = None):
     """
     Komponentní rovina pro zvolenou dimenzi váhových vektorů.
     
@@ -152,7 +152,7 @@ def generate_component_plane(som, component: int, output_file: str,
 
 
 def generate_cluster_map(som, clusters: dict, output_file: str,
-                         map_type: str = 'square', palette: list = None):
+                        map_type: str = 'square', palette: list = None):
     """
     Přiřadí každé buňce barvu podle jejího clusteru a zobrazí pozici každého prvku.
     """
@@ -295,7 +295,7 @@ def get_size_of_point(m,n,map_type):
     return point_size
 
 def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, output_file: str,
-                                       map_type: str = 'square', cmap: str = 'magma'):
+                                    map_type: str = 'square', cmap: str = 'magma'):
     """
     Zobrazení průměrné kvantizační chyby na neuron z předpočítané mapy chyb.
     """
@@ -375,7 +375,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         f"{output_path}/visualization/distance_map_computed_{map_type}.png",
         map_type=map_type
     )
-  
+
     for column_name in settings['categorical_column']:
         plot_pie_map_from_json(
             som,
