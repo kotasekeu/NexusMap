@@ -9,6 +9,7 @@ use App\Common\Service\BaseCrudServiceTrait;
 use App\Modules\Projects\Repository\ProjectsRepository;
 use Dibi\Result;
 use Dibi\Row;
+use Nette\Http\FileUpload;
 use Nette\Utils\ArrayHash;
 
 class ProjectsService extends BaseService
@@ -41,6 +42,49 @@ class ProjectsService extends BaseService
 		return $project;
 	}
 
+	public function createProject(array|ArrayHash $data): int
+	{
+		$projectData = $this->prepareProjectForDb($data);
+		$input_csv = $data['input_csv'] ?? null;
+
+		$projectId = $this->projectsRepository->create($projectData);
+
+		$this->uploadInputCsv($input_csv, $projectData);
+		return $projectId;
+	}
+
+	private function uploadInputCsv(FileUpload $input_csv, array|ArrayHash $projectData): void
+	{
+		$csvDir = WWW_DIR . '/userFiles/' . $projectData['uid_hash'] . '/csv';
+		if (!is_dir($csvDir)) {
+			mkdir($csvDir, 0777, true);
+		}
+
+		$this->saveInputCsvData($input_csv, $projectData['project_id']);
+
+		$input_csv->move($csvDir.'/input.csv');
+	}
+
+	public function saveInputCsvData(FileUpload $input_csv, int $project_id): void
+	{
+		$file = new \SplFileObject($input_csv->getTemporaryFile());
+		$file->setFlags(\SplFileObject::READ_CSV);
+
+		$file->rewind();
+		$header = $file->current();
+		$file->seek(PHP_INT_MAX);
+
+		$csvData = [
+			'column_count' => count($header),
+			'column_names' => implode(',', array_map('trim', $header)),
+			'row_count' => $file->key() - 1,
+			'project_id' => $project_id,
+			'file_size' => round($input_csv->getSize() / 1024 / 1024, 2),
+		];
+
+		$this->projectsRepository->saveInputFileData($csvData);
+	}
+
 	public function saveProject(array|ArrayHash $data): int
 	{
 		return $this->saveWithTransaction(
@@ -48,6 +92,28 @@ class ProjectsService extends BaseService
 			$this->projectsRepository,
 			fn($data) => $this->prepareProjectForDb($data)
 		);
+	}
+
+	public function saveProjectSettings(array|ArrayHash $data): int
+	{
+		$project_id = intval($data->project_id);
+		unset($data->project_id);
+		$projectJsonData = json_encode($data);
+
+		$this->projectsRepository->updateProjectSettings($project_id, $this->getCustomerId(), $projectJsonData);
+
+		return $project_id;
+	}
+
+	public function saveProjectSomSettings(array|ArrayHash $data): int
+	{
+		$project_id = intval($data->project_id);
+		unset($data->project_id);
+		$somJsonData = json_encode($data);
+
+		$this->projectsRepository->updateProjectSomSettings($project_id, $this->getCustomerId(), $somJsonData);
+
+		return $project_id;
 	}
 
 	private function prepareProjectForDb(array|ArrayHash $data): array
@@ -73,6 +139,15 @@ class ProjectsService extends BaseService
 		);
 	}
 
+	public function submitProject(int $customer_id, Row $project): Result|int|null
+	{
+		if ($project->customer_id !== $customer_id) {
+			throw new \Exception('Tento zákazník nemá oprávnění k odstranění tohoto projektu.');
+		}
+
+		return $this->projectsRepository->submitProjectToAnalyze($project->project_id, $customer_id);
+	}
+
 	public function getProjectFiles(int $customer_id, string $uid_hash, ?string $type = null): array
 	{
 		if ($type === null) {
@@ -81,7 +156,7 @@ class ProjectsService extends BaseService
 				'csv' => $this->getProjectCsvFiles($customer_id, $uid_hash),
 				'json' => $this->getProjectJsonFiles($customer_id, $uid_hash),
 			];
-		} 
+		}
 		switch ($type) {
 			case 'csv':
 				return ['csv' => $this->getProjectCsvFiles($customer_id, $uid_hash)];
@@ -98,7 +173,7 @@ class ProjectsService extends BaseService
 	}
 
 	private function getProjectVisualizations(int $customer_id, string $uid_hash): array
-	{			
+	{
 		$visualizationDir = WWW_DIR . '/userFiles/' . $uid_hash . '/visualization';
 		if (!is_dir($visualizationDir)) {
 			return [];
@@ -113,13 +188,13 @@ class ProjectsService extends BaseService
 			$prefix = explode('_', $file)[0];
 			$visualizations[$prefix][] = $file;
 		}
-		
+
 		krsort($visualizations);
 		return $visualizations;
 	}
 
 	private function getProjectCsvFiles(int $customer_id, string $uid_hash): array
-	{			
+	{
 		$csvDir = WWW_DIR . '/userFiles/' . $uid_hash . '/csv';
 		if (!is_dir($csvDir)) {
 			return [];
@@ -133,12 +208,12 @@ class ProjectsService extends BaseService
 			}
 			$csvFiles[] = $file;
 		}
-		
+
 		return $csvFiles;
 	}
 
 	private function getProjectJsonFiles(int $customer_id, string $uid_hash): array
-	{			
+	{
 		$jsonDir = WWW_DIR . '/userFiles/' . $uid_hash . '/json';
 		if (!is_dir($jsonDir)) {
 			return [];
@@ -152,7 +227,7 @@ class ProjectsService extends BaseService
 			}
 			$jsonFiles[] = $file;
 		}
-		
+
 		return $jsonFiles;
 	}
 
@@ -166,7 +241,7 @@ class ProjectsService extends BaseService
 		}
 
 		// Spojení výchozích a uložených nastavení
-		$config = array_merge($defaultConfig, $savedConfig);		
+		$config = array_merge($defaultConfig, $savedConfig);
 
 		return $config;
 	}
@@ -213,7 +288,7 @@ class ProjectsService extends BaseService
 			'random_seed' => 'Náhodné číslo',
 			'growth_g' => 'Koeficient růstu',
 			'normalize_weights_flag' => 'Normalizovat váhy',
-			'epoch_multiplier' => 'Koeficient násobení epoch',	
+			'epoch_multiplier' => 'Koeficient násobení epoch',
 			'map_type' => 'Typ mapy',
 			'min_q_error' => 'Minimální kvantizační chyba',
 			'max_epochs_without_improvement' => 'Maximální počet epoch bez zlepšení',
@@ -234,8 +309,6 @@ class ProjectsService extends BaseService
 		];
 	}
 
-
-
 	public function getProjectConfigDescription(): array
 	{
 		return [
@@ -248,5 +321,22 @@ class ProjectsService extends BaseService
 		];
 	}
 
+	public function getInputFileColumns(int $project_id): array
+	{
+		$projectInputFileData = $this->getInputFileData($project_id);
 
+		return $projectInputFileData['column_names'];
+	}
+
+	public function getInputFileData(int $project_id): Row
+	{
+		$fileData = $this->projectsRepository->getInputFileData($project_id);
+
+		if (! empty($fileData['column_names'])) {
+			$fileData['column_names'] = explode(',', $fileData['column_names']);
+			$fileData['column_names'] = array_combine($fileData['column_names'],$fileData['column_names']);
+		}
+
+		return $fileData;
+	}
 }

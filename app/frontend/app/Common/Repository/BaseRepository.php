@@ -108,6 +108,16 @@ abstract class BaseRepository
 	}
 
 	/**
+	 * Create new record to specific table
+	 *
+	 */
+	public function createToTable(array|ArrayHash $data, string $tableName, string $tablePrimaryKey): void
+	{
+		$this->db->insert($tableName, $data)
+			->execute();
+	}
+
+	/**
 	 * Delete record (soft delete)
 	 * 
 	 * @param int $id Record ID

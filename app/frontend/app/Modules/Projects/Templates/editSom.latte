@@ -1,0 +1,35 @@
+{layout '../../../Common/Templates/@layout.latte'}
+
+{block content}
+<div class="page-body">
+	<div class="container-fluid">
+		<div class="row page-title">
+			<div class="col-6">
+				<h4>
+					Upravení parametrů SOM algoritmu
+				</h4>
+			</div>
+		</div>
+	</div>
+
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-12 card">
+				<div class="card-body">
+					{control editSomProjectForm}
+					<br />
+					<p>
+						Pro využití <strong>deterministického</strong> přístupu je nutné nastavit počet sekcí = 1, Minimální a maximální velikost dávky na 100% a násobitel epoch 1. <br />
+						Tím bude zaručeno, že při každé epoše budou aktualizovány váhy všech vstupních vektorů.
+					</p>
+					<p>
+						<strong>Stochastický</strong> přístup naopak přistupuje k organizaci mapy náhodným  výběrem jednoho prvku ze vstupního souboru při každém průchodu a nárůstem počtu průchodů. <br />
+						Je třeba nastavit počet sekcí = 1, min. a max. velikost dávky na 0,01% a násobitel epoch dle požadavků a rozsahu vstupního souboru. <br />
+						Zde lze dobře využít omezení maximálního počtu epoch bez zlepšení či minimální chyby jako dodatečné ukončující podmínky organizace dat.
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{/block}

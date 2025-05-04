@@ -1,0 +1,25 @@
+{layout '../../../Common/Templates/@layout.latte'}
+
+{block content}
+	<div class="page-body">
+		<div class="container-fluid">
+			<div class="row page-title">
+				<div class="col-6">
+					<h4>
+						Vytvoření projektu
+					</h4>
+				</div>
+			</div>
+		</div>
+
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-sm-12 card">
+					<div class="card-body">
+						{control createProjectForm}
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+{/block}

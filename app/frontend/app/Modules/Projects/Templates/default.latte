@@ -28,8 +28,11 @@
                                             {include ./project.latte, projectDetail => $project}
                                         {/foreach}
                                     {else}
-                                        <div class="alert alert-info">
-                                            <p>Žádné projekty nebyly nalezeny.</p>
+                                        <div>
+                                            <p class="alert alert-info">
+                                                Žádné projekty nebyly nalezeny.
+                                            </p>
+                                            <br />
                                         </div>
                                     {/if}
                                 </div>

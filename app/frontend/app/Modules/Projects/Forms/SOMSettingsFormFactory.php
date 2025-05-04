@@ -185,3 +185,25 @@
 //        return $form;
 //    }
 //}
+
+// {
+//     "m": 20,
+//     "n": 20,
+//     "learning_rate": 0.9,
+//     "min_learning_rate": 0.1,
+//     "radius": null,
+//     "min_radius": 0.1,
+//     "num_batches": 1,
+//     "min_batch_percent": 100.0,
+//     "max_batch_percent": 100.0,
+//     "lr_decay_type": "exp-drop",
+//     "radius_decay_type": "exp-drop",
+//     "batch_growth_type": "exp-growth",
+//     "random_seed": null,
+//     "growth_g": 15.0,
+//     "normalize_weights_flag": false,
+//     "epoch_multiplier": 1.0,
+//     "map_type": "hex",
+//     "min_q_error": 0.01,
+//     "max_epochs_without_improvement" : null    
+// } 

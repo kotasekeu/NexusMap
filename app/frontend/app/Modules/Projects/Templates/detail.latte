@@ -9,8 +9,11 @@
 					<h4>Detail projektu</h4>
 				</div>
 				<div class="col-md-6 project-list">
-					<a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
-					<a class="btn btn-danger" n:href="delete!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
+					{if $projectDetail->ready_to_analyze == 0}
+						<a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
+						<a class="btn btn-warning" n:href="Projects:editSom, project_id => $projectDetail->project_id"> <i data-feather="settings"> </i>Upravit nastavení SOM</a>
+					{/if}
+					<a class="btn btn-danger" n:href="delete!, project_id => $projectDetail->project_id"  onclick="return confirm('Opravdu chcete smazat tento projekt?');"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
 				</div>
 			</div>
 
@@ -25,16 +28,31 @@
 							<div class="blog-details">
 								<h4>
 									#{$projectDetail->project_id} {$projectDetail->name}
-									<a n:href="Projects:map, $projectDetail->project_id" class="btn btn-success">Detail mapy</a>
+									{if $projectDetail->status == 1}
+										<a n:href="Projects:map, $projectDetail->project_id" class="btn btn-success">Detail mapy</a>
+									{/if}
+									{if $projectDetail->ready_to_analyze == 0}
+										<a class="btn btn-warning" n:href="submit!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Spustit analýzu</a>
+									{/if}
 								</h4>
 								<div class="single-blog-content-top">
-
 									<div class="card mt-4">
 										<div class="card-body">
 											<div class="row">
 												<div class="col-md-6">
 													<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
-													<p><strong>Analýza dokončena:</strong> <span class="badge {if $projectDetail->status == 1}badge-success{else}badge-warning{/if}">{if $projectDetail->status == 1}Ano{else}Ne{/if}</span></p>
+													{if $projectDetail->status == 1}
+														<p><span class="badge badge-success">Analýza byla dokončena</span></p>
+													{/if}
+													{if $projectDetail->status == 0 && $projectDetail->ready_to_analyze == 1}
+														<p>
+															<span class="badge badge-warning">Projekt byl odeslán k analýze</span> <br />
+															<em>Hned, až na Váš projekt vyjde řada, bude analyzován a informace se zde zobrazí.</em>
+														</p>
+													{/if}
+
+
+
 													<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
 													
 													{if ! empty($projectDetail->project_settings)}

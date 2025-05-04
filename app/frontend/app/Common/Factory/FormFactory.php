@@ -14,6 +14,7 @@ final class FormFactory
 	public function create(): Form
 	{
 		$form = new Form;
+		$form->setRenderer(new FormRenderer());
 		return $form;
 	}
 }

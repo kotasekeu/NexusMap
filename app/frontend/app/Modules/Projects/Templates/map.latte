@@ -1,153 +1,118 @@
 {layout '../../../Common/Templates/@layout.latte'}
 
 {block content}
-<div class="page-body">
-	<div class="container-fluid">
-		<div class="page-title">
-			<div class="row">
-				<div class="col-6">
-					<h4>Mapa projektu</h4>
-				</div>
-			</div>
-		</div>
-	</div>
-	<div class="container-fluid">
-		<div class="row">
-			<div class="col-sm-12">
-				<div class="card">
-					<div class="blog-single card-body">
-						<div class="blog-box blog-details">
-							<div class="blog-details">
-								<h4>
-									#{$projectDetail->project_id} {$projectDetail->name}
-								</h4>
-								<div class="single-blog-content-top">
-									<div class="card mt-4">
-										<div class="card-body">
-											<div class="map-container" style="position: relative; width: 100%; min-height: 500px;">
-												{* Hexagonální mapa *}
-												{if $somConfig['map_type'] === 'hex'}
-													<div class="hex-map" style="position: relative; width: 100%; height: 100%;">
-														{for $i = 0; $i < $somConfig['m']; $i++}
-															{for $j = 0; $j < $somConfig['n']; $j++}
-																<div class="hex-cell" 
-																	style="position: absolute; 
-																		width: 60px; 
-																		height: 69px; 
-																		background: #f8f9fa; 
-																		border: 1px solid #dee2e6;
-																		left: {$j * 45 + ($i % 2) * 22.5}px;
-																		top: {$i * 52}px;
-																		clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-																		cursor: pointer;"
-																	data-i="{$i}"
-																	data-j="{$j}"
-																	onclick="showCellInfo(this)">
-																</div>
-															{/for}
-														{/for}
-													</div>
-												{* Čtvercová mapa *}
-												{else}
-													<div class="square-map" style="position: relative; width: 100%; height: 100%;">
-														{for $i = 0; $i < $somConfig['m']; $i++}
-															{for $j = 0; $j < $somConfig['n']; $j++}
-																<div class="square-cell" 
-																	style="position: absolute; 
-																		width: 50px; 
-																		height: 50px; 
-																		background: #f8f9fa; 
-																		border: 1px solid #dee2e6;
-																		left: {$j * 50}px;
-																		top: {$i * 50}px;
-																		cursor: pointer;"
-																	data-i="{$i}"
-																	data-j="{$j}"
-																	onclick="showCellInfo(this)">
-																</div>
-															{/for}
-														{/for}
-													</div>
-												{/if}
-											</div>
-										</div>
-									</div>
-								</div>
-							</div>
+	<div class="page-body">
+		<div class="container-fluid">
+			<div
+				id="map"
+				class="map"
+				style="--cells: {$size};">
+				{for $x=0; $x < $size; $x++}
+					{for $y=0; $y < $size; $y++}
+						<div class="cell">
+							{if isset($items[$x.'_'.$y])}
+								{var $cnt = $counts[$x.'_'.$y] ?? 0}
+								{var $idx = $maxCount ? (int) floor($cnt / $maxCount * (count($colors) - 1)) : 0}
+
+								<a n:href=":cellDetail, y => $y, x => $x" data-coord="{$x}_{$y}" title="položek" style="background-color:{$colors[$idx]|noescape}; color:{$idx > 5 ? 'white' : 'black'};">
+									{var $count = count($items[$x.'_'.$y])}
+									{$count}
+							{else}
+								<a class="cell" href="#nodata" data-coord="{$x}_{$y}" title="Žádná data" style="background-color:#FFFFFF;">
+							{/if}
+							</a>
 						</div>
-					</div>
+					{/for}
+				{/for}
+			</div>
+			<div id="popup-overlay" class="hidden">
+				<div id="popup-content">
+					<button id="popup-close">&times;</button>
+					<div id="popup-body"></div>
 				</div>
 			</div>
 		</div>
 	</div>
-</div>
-
-{* Popup box pro zobrazení informací o buňce *}
-<div id="cellInfoModal" class="modal fade" tabindex="-1" role="dialog">
-	<div class="modal-dialog" role="document">
-		<div class="modal-content">
-			<div class="modal-header">
-				<h5 class="modal-title">Informace o buňce</h5>
-				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
-					<span aria-hidden="true">&times;</span>
-				</button>
-			</div>
-			<div class="modal-body">
-				<p><strong>Pozice:</strong> <span id="cellPosition"></span></p>
-				<p><strong>Typ mapy:</strong> {$somConfig['map_type']}</p>
-				<p><strong>Velikost mapy:</strong> {$somConfig['m']}x{$somConfig['n']}</p>
-			</div>
-		</div>
+	<div id="popup-html" class="hidden">
+		asdfasdfasdf
 	</div>
-</div>
-
-<script type="text/javascript" n:syntax="off">
-function showCellInfo(element) {
-	const i = element.getAttribute('data-i');
-	const j = element.getAttribute('data-j');
-	document.getElementById('cellPosition').textContent = `[${i}, ${j}]`;
-	$('#cellInfoModal').modal('show');
-}
-</script>
-
-<style>
-.hex-cell:hover, .square-cell:hover {
-	background: #e9ecef;
-	transition: background 0.3s;
-}
-
-.modal {
-	display: none;
-	position: fixed;
-	z-index: 1000;
-	left: 0;
-	top: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0,0,0,0.4);
-}
-
-.modal-content {
-	background-color: #fefefe;
-	margin: 15% auto;
-	padding: 20px;
-	border: 1px solid #888;
-	width: 80%;
-}
-
-.close {
-	color: #aaa;
-	float: right;
-	font-size: 28px;
-	font-weight: bold;
-	cursor: pointer;
-}
-
-.close:hover {
-	color: black;
-}
-</style>
 {/block}
 
+{block head}
+	<style>
+		.map {
+			display: grid;
+			grid-template-columns: repeat(var(--cells), 1fr);
+			grid-template-rows:    repeat(var(--cells), 1fr);
+			width: 80vmin; height: 80vmin;
+		}
+		.cell > a {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 100%;
+			height: 100%;
+			text-decoration: none;
+			color: inherit;
+			border:1px #EEE solid;
+		}
+		.cell a:hover {
+			background-color:#DDD !important;
+		}
+		#popup-overlay {
+			position: fixed; inset: 0;
+			background: rgba(0,0,0,0.5);
+			display: flex; align-items: center; justify-content: center;
+			z-index: 1000;
+		}
+		#popup-content {
+			background: #fff;
+			border-radius: 4px;
+			width: 50vw;
+			height: 40vh;
+			max-width: 600px;
+			max-height: 400px;
+			overflow: auto;
+			position: relative;
+			padding: 1rem;
+		}
+		#popup-close {
+			position: absolute; top: 0.5rem; right: 0.5rem;
+			background: none; border: none; font-size: 1.5rem;
+			cursor: pointer;
+		}
+		.hidden { display: none !important; }
+	</style>
+{/block}
 
+{block scripts}
+	<script n:syntax="off">
+		const overlay = document.getElementById('popup-overlay');
+		const body    = document.getElementById('popup-body');
+		const close   = document.getElementById('popup-close');
 
+		document.getElementById('map').addEventListener('click', e => {
+		  const a = e.target.closest('a[href]');
+		  if (!a) return;
+		  e.preventDefault();
+		  fetch(a.href)
+			.then(r => r.text())
+			.then(html => {
+			  const parser = new DOMParser();
+			  const doc    = parser.parseFromString(html, 'text/html');
+			  const popup  = doc.getElementById('popup-html');
+			  body.innerHTML = popup ? popup.innerHTML : '';
+			  overlay.classList.remove('hidden');
+			});
+		});
+
+		close.addEventListener('click', () => {
+			overlay.classList.add('hidden');
+			body.innerHTML = '';
+		});
+
+		overlay.addEventListener('click', e => {
+			if (e.target === overlay) close.click();
+		});
+	</script>
+{/block}

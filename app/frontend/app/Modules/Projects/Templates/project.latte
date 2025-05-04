@@ -1,7 +1,11 @@
 <div class="col-xxl-4 col-lg-6 box-col-6">
 	<div class="project-box b-light1-primary">
 		{if $projectDetail->status == 0}
-			<span class="badge badge-secondary">Nový</span>
+			{if $projectDetail->ready_to_analyze == 1}
+				<span class="badge badge-primary">Spuštěno</span>
+			{else}
+				<span class="badge badge-secondary">Nový</span>
+			{/if}
 		{elseif $projectDetail->status == 1}
 			<span class="badge badge-success">Hotovo</span>
 		{elseif  $projectDetail->status == 2}
@@ -9,75 +13,57 @@
 		{/if}
 
 		<h5 class="f-w-500">
-				{$projectDetail->name}
-		</h5><a href="{plink Projects:detail, $projectDetail->project_id}" class="btn btn-secondary btn-xs">Detail</a>
+			<a href="{plink Projects:detail, $projectDetail->project_id}">{$projectDetail->name}</a>
+		</h5>
 		<p></p>
 		<div class="row details">
-			<div class="col-6"><span>Soubor - počet sloupců </span></div>
-			<div class="col-6 font-primary">12 </div>
-			<div class="col-6"> <span>Shluky</span></div>
-			<div class="col-6 font-primary">5</div>
-			<div class="col-6"> <span>Něco dalšího</span></div>
-			<div class="col-6 font-primary">7</div>
+			<div class="col-12"><strong>Soubor</strong></div>
+			<div class="col-8"><span>Dimenze (počet sloupců) </span></div>
+			<div class="col-4 text-black">{$projectDetail->column_count} </div>
+			<div class="col-8"><span>Rozměr (počet řádků) </span></div>
+			<div class="col-4 text-black">{$projectDetail->row_count} </div>
+			<div class="col-8"><span>Velikost souboru </span></div>
+			<div class="col-4 text-black">{$projectDetail->file_size} MB </div>
 		</div>
-
+		<a href="{plink Projects:detail, $projectDetail->project_id}" class="btn btn-success btn-xs">Detail</a>
 		<div class="project-status mt-4">
 			<div class="d-flex mb-0">
-				<p>100% </p>
-				<div class="flex-grow-1 text-end"><span>Hotovo</span></div>
+				{if $projectDetail->status == 0}
+					{if $projectDetail->ready_to_analyze == 1}
+						<p>10% </p>
+						<div class="flex-grow-1 text-end"><span>Spuštěno</span></div>
+					{else}
+						<p>0% </p>
+						<div class="flex-grow-1 text-end"><span>Nový</span></div>
+					{/if}
+				{elseif $projectDetail->status == 2}
+					<p>50% </p>
+					<div class="flex-grow-1 text-end"><span>Probíhá</span></div>
+				{else}
+					<p>100% </p>
+					<div class="flex-grow-1 text-end"><span>Hotovo</span></div>
+				{/if}
 			</div>
 			<div class="progress" style="height: 5px">
-				<div class="progress-bar-animated bg-primary progress-bar-striped" role="progressbar" style="width: 70%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
-				<div class="progress-bar-animated bg-success" role="progressbar" style="width: 100%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+				{if $projectDetail->status == 0}
+					{if $projectDetail->ready_to_analyze == 1}
+						<div class="progress-bar-animated bg-primary progress-bar-striped" role="progressbar" style="width: 10%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+						<div class="progress-bar-animated bg-success" role="progressbar" style="width: 0%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+					{else}
+						<div class="progress-bar-animated bg-primary progress-bar-striped" role="progressbar" style="width: 0%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+						<div class="progress-bar-animated bg-success" role="progressbar" style="width: 0%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+					{/if}
+				{elseif $projectDetail->status == 2}
+					<div class="progress-bar-animated bg-primary progress-bar-striped" role="progressbar" style="width: 50%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+					<div class="progress-bar-animated bg-success" role="progressbar" style="width: 50%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+				{else}
+					<div class="progress-bar-animated bg-success" role="progressbar" style="width: 100%" aria-valuenow="10" aria-valuemin="0" aria-valuemax="100"></div>
+				{/if}
 			</div>
 		</div>
 	</div>
 </div>
 {*
-
-<div class="col-xxl-4 col-lg-6 box-col-6">
-	<div class="project-box b-light1-primary">
-		<span class="badge badge-success">Hotovo</span>
-
-		<h5 class="f-w-500">
-			První projekt
-		</h5><a href="{plink Projects:detail, 1}" class="btn btn-secondary btn-xs">Detail</a>
-		<p></p>
-		<div class="row details">
-			<div class="col-8"><span>Počet dimenzí</span></div>
-			<div class="col-4 font-primary">6 </div>
-			<div class="col-8"><span>Počet vstupních vektorů</span></div>
-			<div class="col-4 font-primary">320 </div>
-			<div class="col-8"> <span>Mapa </span></div>
-			<div class="col-4 font-primary"> 20x20 Hex</div>
-			<div class="col-8"> <span>Délka zpracování</span></div>
-			<div class="col-4 font-primary">15,5s</div>
-			<div class="col-8"> <span>Počet průchodů/epoch</span></div>
-			<div class="col-4 font-primary">35.900</div>
-			<div class="col-8"> <span>Počet aktualizovaných vah</span></div>
-			<div class="col-4 font-primary">68.320</div>
-		</div>
-
-		<div class="project-status mt-4">
-			<div class="d-flex mb-0">
-				<p>100% </p>
-				<div class="flex-grow-1 text-end"><span>Hotovo</span></div>
-			</div>
-			<div class="progress" style="height: 5px">
-				<div class="progress-bar-animated bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="col-xxl-4 col-lg-6 box-col-6">
-	<div class="project-box b-light1-primary">
-		<span class="badge badge-success">Hotovo</span>
-
-		<h5 class="f-w-500">
-			Iris - Kaggle
-		</h5><a href="{plink Projects:detail, 1}" class="btn btn-secondary btn-xs">Detail</a>
-		<p></p>
-		<div class="row details">
 			<div class="col-8"><span>Počet dimenzí</span></div>
 			<div class="col-4 font-primary">5 </div>
 			<div class="col-8"><span>Počet vstupních vektorů</span></div>
@@ -90,28 +76,7 @@
 			<div class="col-4 font-primary">149.900</div>
 			<div class="col-8"> <span>Počet aktualizovaných vah</span></div>
 			<div class="col-4 font-primary">298.800</div>
-		</div>
 
-		<div class="project-status mt-4">
-			<div class="d-flex mb-0">
-				<p>100% </p>
-				<div class="flex-grow-1 text-end"><span>Hotovo</span></div>
-			</div>
-			<div class="progress" style="height: 5px">
-				<div class="progress-bar-animated bg-success" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="col-xxl-4 col-lg-6 box-col-6">
-	<div class="project-box b-light1-primary">
-		<span class="badge badge-primary">Probíhá</span>
-
-		<h5 class="f-w-500">
-			Analýza pracovních cest
-		</h5><a href="{plink Projects:detail, 1}" class="btn btn-secondary btn-xs">Detail</a>
-		<p></p>
-		<div class="row details">
 			<div class="col-8"><span>Počet dimenzí</span></div>
 			<div class="col-4 font-primary">8 </div>
 			<div class="col-8"><span>Počet vstupních vektorů</span></div>
@@ -120,42 +85,4 @@
 			<div class="col-4 font-primary"> 30x30 Hex</div>
 		</div>
 
-		<div class="project-status mt-4">
-			<div class="d-flex mb-0">
-				<p>75% </p>
-				<div class="flex-grow-1 text-end"><span>Probíhá</span></div>
-			</div>
-			<div class="progress" style="height: 5px">
-				<div class="progress-bar-animated bg-primary progress-bar-striped" role="progressbar" style="width: 75%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-			</div>
-		</div>
-	</div>
-</div>
-<div class="col-xxl-4 col-lg-6 box-col-6">
-	<div class="project-box b-light1-primary">
-		<span class="badge badge-secondary">Nový</span>
-
-		<h5 class="f-w-500">
-			Student Performance Factors
-		</h5><a href="{plink Projects:detail, 1}" class="btn btn-secondary btn-xs">Detail</a>
-		<p></p>
-		<div class="row details">
-			<div class="col-8"><span>Počet dimenzí</span></div>
-			<div class="col-4 font-primary">12 </div>
-			<div class="col-8"><span>Počet vstupních vektorů</span></div>
-			<div class="col-4 font-primary">6608 </div>
-		</div>
-
-		<div class="project-status mt-4">
-			<div class="d-flex mb-0">
-				<p>0% </p>
-				<div class="flex-grow-1 text-end"><span>Nový</span></div>
-			</div>
-			<div class="progress" style="height: 5px">
-				<div class="progress-bar-animated bg-primary progress-bar-striped" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-				<div class="progress-bar-animated bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-			</div>
-		</div>
-	</div>
-</div>
 *}

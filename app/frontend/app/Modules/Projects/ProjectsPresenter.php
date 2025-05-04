@@ -11,8 +11,10 @@ use Nette\Application\UI\Form;
 
 class ProjectsPresenter extends BasePresenter
 {
-	private $projectsService;
-	private $projectFormFactory;
+	private ProjectsService $projectsService;
+	private ProjectFormFactory $projectFormFactory;
+
+	private $projectDetail;
 
 	public function __construct(
 		ProjectsService				$projectsService,
@@ -50,11 +52,8 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->somConfig = $this->projectsService->getProjectConfig($projectDetail);
 		$this->getTemplate()->somConfigDescription = $this->projectsService->getConfigDescription();
 		$this->getTemplate()->projectConfigDescription = $this->projectsService->getProjectConfigDescription();
-	}
 
-	public function renderCreate()
-	{
-		$this->getTemplate()->setFile(__DIR__.'/Templates/edit.latte');
+		$this->getTemplate()->inputFileData = $this->projectsService->getInputFileData($projectDetail->project_id);
 	}
 
 	public function renderMap(int $project_id)
@@ -75,9 +74,44 @@ class ProjectsPresenter extends BasePresenter
 		// $this->getTemplate()->extremesData = $extremesData;
 		// dump($extremesData);
 
-		$clustersData = json_decode(file_get_contents($jsonDir . '/clusters.json'), true);		
+		$clustersData = json_decode(file_get_contents($jsonDir . '/clusters.json'), true);
 		ksort($clustersData);
-		$this->getTemplate()->clustersData = $clustersData;		
+		$this->getTemplate()->items = $clustersData;
+//		dump($clustersData);
+//		die("File:" . __FILE__ . "; Line:" . __LINE__);
+
+		$this->getTemplate()->size = $size = 10;
+
+		$counts   = [];
+		$maxCount = 0;
+		for ($y = 0; $y < $size; $y++) {
+			for ($x = 0; $x < $size; $x++) {
+				$cnt = isset($clustersData[$y.'_'.$x]) && is_array($clustersData[$y.'_'.$x])
+					? count($clustersData[$y.'_'.$x])
+					: 0;
+
+				$counts[$y.'_'.$x] = $cnt;
+				$maxCount       = max($maxCount, $cnt);
+			}
+		}
+
+		$this->getTemplate()->counts   = $counts;
+		$this->getTemplate()->maxCount = $maxCount;
+		$this->getTemplate()->colors   = [
+			'#f7fbff','#deebf7','#c6dbef','#9ecae1',
+			'#6baed6','#4292c6','#2171b5','#08519c','#08306b'
+		];
+
+		$this->getTemplate()->selectedCell = $this->selectedCell;
+	}
+
+	public function handleChangeCell(string $cell)
+	{
+		die("File:" . __FILE__ . "; Line:" . __LINE__);
+//		$jsonDir = WWW_DIR . '/userFiles/' . $projectDetail->uid_hash . '/json';
+//		$clustersData = json_decode(file_get_contents($jsonDir . '/clusters.json'), true);
+//		ksort($clustersData);
+//		$this->selectedCell = $clustersData[$cell];
 	}
 
 	public function handleDelete(int $project_id)
@@ -93,23 +127,70 @@ class ProjectsPresenter extends BasePresenter
 		$this->redirect('Projects:default');
 	}
 
-	public function actionEdit(int $project_id)
+	public function handleSubmit(int $project_id)
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
 		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.', 'success');
+			$this->redirect('Projects:default');
+		}
+		$this->projectsService->submitProject($this->getUser()->getId(), $projectDetail);
+
+		$this->flashMessage('Projekt byl odeslán na analýzu.', 'success');
+		$this->redirect('Projects:default');
+	}
+
+	public function actionEdit(int $project_id): void
+	{
+		$this->projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$this->projectDetail) {
 			$this->flashMessage('Projekt nenalezen.');
 			$this->redirect('Projects:default');
 		}
-		$this->getComponent('projectForm')->setDefaults($projectDetail);
+
+		$this->getComponent('editProjectForm')->setDefaults($this->projectDetail);
 	}
 
-	public function createComponentProjectForm(): Form
+	public function actionEditSom(int $project_id): void
+	{
+		$this->projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$this->projectDetail) {
+			$this->flashMessage('Projekt nenalezen.');
+			$this->redirect('Projects:default');
+		}
+
+		$this->getComponent('editSomProjectForm')->setDefaults($this->projectDetail);
+	}
+
+	public function createComponentCreateProjectForm(): Form
 	{
 		return $this->projectFormFactory->createForm(
 			function ($project_id): void {
 				$this->flashMessage('Projekt byl úspěšně vytvořen.');
 				$this->redirect("Projects:detail", ['project_id' => $project_id]);
 			}
+		);
+	}
+
+	public function createComponentEditSomProjectForm(): Form
+	{
+		return $this->projectFormFactory->editSomForm(
+			function ($project_id): void {
+				$this->flashMessage('Projekt byl upraven.');
+				$this->redirect("Projects:detail", ['project_id' => $project_id]);
+			},
+			$this->projectDetail->project_id
+		);
+	}
+
+	public function createComponentEditProjectForm(): Form
+	{
+		return $this->projectFormFactory->editForm(
+			function ($project_id): void {
+				$this->flashMessage('Projekt byl upraven.');
+				$this->redirect("Projects:detail", ['project_id' => $project_id]);
+			},
+			$this->projectDetail->project_id
 		);
 	}
 }
