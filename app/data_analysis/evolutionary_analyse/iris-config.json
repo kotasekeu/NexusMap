@@ -14,8 +14,6 @@
     "batch_growth_type": ["exp-growth", "linear-growth"],
     "random_seed": null,
     "growth_g": [5.0, 10.0, 15.0, 25.0, 50.0],
-    "sample_size": 500,
-    "input_dim": 4,
     "map_size": [[10,10],[20, 20]],
     "epoch_multiplier": [1.0],
     "min_q_error": null,

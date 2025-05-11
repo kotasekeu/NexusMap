@@ -11,6 +11,7 @@ use Dibi\Result;
 use Dibi\Row;
 use Nette\Http\FileUpload;
 use Nette\Utils\ArrayHash;
+use PHP_CodeSniffer\Tests\Core\Tokenizers\PHP\StableCommentWhitespaceTest;
 
 class ProjectsService extends BaseService
 {
@@ -36,11 +37,33 @@ class ProjectsService extends BaseService
 
 	private function prepareProject(Row $project)
 	{
-		$project->som_settings 		= empty($project->som_settings) ? null : json_decode($project->som_settings);
+		$project->som_settings 		= $this->getSomSettings($project->som_settings);
 		$project->project_settings	= empty($project->project_settings) ? null : json_decode($project->project_settings);
 
+		;
 		return $project;
 	}
+
+
+	private function getSomSettings(string $som_settings) : ?\stdClass
+	{
+		if (empty($som_settings) || $som_settings == '') {
+			return null;
+		}
+
+		$returnData = json_decode($som_settings);
+
+		if (isset($returnData->map_size)) {
+			$mn = explode('x', $returnData->map_size);
+			$returnData->m = intval($mn[0]);
+			$returnData->n = intval($mn[1]);
+			unset($returnData->map_size);
+		}
+
+		return $returnData;
+	}
+
+
 
 	public function createProject(array|ArrayHash $data): int
 	{
@@ -109,8 +132,28 @@ class ProjectsService extends BaseService
 	{
 		$project_id = intval($data->project_id);
 		unset($data->project_id);
-		$somJsonData = json_encode($data);
 
+		foreach ($data as $key => $value) {
+			if (empty($value) || $value == '') {
+				unset($data->$key);
+			}
+		}
+
+		if (isset($data->map_size)) {
+			$mn = explode('x', $data->map_size);
+			$data->m = intval($mn[0]);
+			$data->n = intval($mn[1]);
+			unset($data->map_size);
+		}
+		$intValFields = ['max_epochs_without_improvement','epoch_multiplier', 'random_seed', 'num_batches', 'project_id'];
+		foreach ($intValFields as $value) {
+
+			if (isset($data[$value]) && ! empty($data[$value])) {
+				$data[$value] = intval($data[$value]);
+			}
+		}
+
+		$somJsonData = json_encode($data);
 		$this->projectsRepository->updateProjectSomSettings($project_id, $this->getCustomerId(), $somJsonData);
 
 		return $project_id;

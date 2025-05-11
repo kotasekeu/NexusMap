@@ -158,8 +158,19 @@ class ProjectsPresenter extends BasePresenter
 			$this->flashMessage('Projekt nenalezen.');
 			$this->redirect('Projects:default');
 		}
+		if ($this->projectDetail->status == 1 || $this->projectDetail->ready_to_analyze == 1) {
+			$this->flashMessage('Projekt který je hotový či probíhá analýza nelze upravovat.');
+			$this->redirect('Projects:default');
+		}
 
-		$this->getComponent('editSomProjectForm')->setDefaults($this->projectDetail);
+		$this->getComponent('editSomProjectForm')->setDefaults(
+			array_merge(
+				[
+					'project_id'	=> $this->projectDetail->project_id,
+					'name'			=> $this->projectDetail->name,
+				],
+				(array)$this->projectDetail->som_settings
+			));
 	}
 
 	public function createComponentCreateProjectForm(): Form

@@ -3,6 +3,8 @@
 
 import random
 import copy
+from os.path import exists
+
 from evolutionary_som_config import CONFIG
 import os
 import csv
@@ -314,8 +316,10 @@ def load_input_data(input_file: str) -> np.ndarray:
     
     if NORMALIZED_DATA is not None:
         return NORMALIZED_DATA
-        
-    preprocess_file = normalize_data(input_file, {})
+
+    preprocess_file = os.path.join(os.path.dirname(input_file), "preprocess-input.csv")
+    if not os.path.exists(preprocess_file):
+        preprocess_file = normalize_data(input_file, {}, {})
     NORMALIZED_DATA = pd.read_csv(preprocess_file, delimiter=',').values
     log_message("SYSTEM", f"Načtena a normalizována data z externího souboru: {input_file}")
     return NORMALIZED_DATA
@@ -329,8 +333,12 @@ def evaluate_individual(ind):
     """
     start_time = time.time()
 
-    sample_size = ind["sample_size"]
-    input_dim = ind["input_dim"]
+    if "sample_size" in ind:
+        sample_size = ind["sample_size"]
+
+    if "input_dim" in ind:
+        input_dim = ind["input_dim"]
+
     map_width, map_height = ind["map_size"]    
 
     # Načtení dat - buď z externího souboru nebo generovaná
@@ -372,6 +380,7 @@ if __name__ == "__main__":
 
     # Načtení konfigurace
     config = load_config(args.config)
+
 
     # Nastavení globální proměnné pro vstupní soubor
     if args.input:

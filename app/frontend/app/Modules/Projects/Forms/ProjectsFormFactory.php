@@ -326,7 +326,6 @@ final class ProjectFormFactory
 		};
 
 		$form->onSuccess[] = function (Form $form, ArrayHash $values) use ($onSuccess): void {
-
 			$project_id = $this->projectsService->saveProjectSomSettings($values);
 			$onSuccess($project_id);
 		};

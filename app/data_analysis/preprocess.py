@@ -2,6 +2,8 @@ import pandas as pd
 from sklearn.preprocessing import MinMaxScaler
 from utils import log_message
 import os
+import sys
+from database import update_project_settings
 
 def validate_input_file(input_path: str, settings: dict) -> bool:
     """Ověří správnost vstupního CSV souboru."""
@@ -21,9 +23,8 @@ def validate_input_file(input_path: str, settings: dict) -> bool:
     return True
 
 
-def normalize_data(input_path: str, settings: dict) -> str:
+def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     """Normalizuje data z input.csv do preprocess.csv podle vybraných sloupců a typu dat.
-    
     Args:
         input_path: Cesta k vstupnímu CSV souboru
         settings: Slovník s nastavením pro normalizaci
@@ -31,6 +32,7 @@ def normalize_data(input_path: str, settings: dict) -> str:
     Returns:
         str: Cesta k vytvořenému výstupnímu souboru preprocess.csv
     """
+
     df = pd.read_csv(input_path, delimiter=',')
     cols = settings.get("selected_columns", df.columns.tolist())
     data = df[cols].copy()
@@ -43,6 +45,7 @@ def normalize_data(input_path: str, settings: dict) -> str:
 
     # 2) Rozdělení na číselné vs. textové
     processed = pd.DataFrame()
+    categorical_column = [];
     for col in cols:
         series = data[col]
         if pd.api.types.is_numeric_dtype(series):
@@ -56,6 +59,7 @@ def normalize_data(input_path: str, settings: dict) -> str:
             if n_uniques <= 20:
                 # kategorie: label‑encoding
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
+                categorical_column.append(col)
             else:
                 # volný text: též factorize (případně později zvláštní zpracování)
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
@@ -69,5 +73,10 @@ def normalize_data(input_path: str, settings: dict) -> str:
     # Vytvoření cesty pro výstupní soubor ve stejném adresáři
     output_path = os.path.join(os.path.dirname(input_path), "preprocess-" + os.path.basename(input_path))
     normalized_df.to_csv(output_path, index=False, sep=',')
+
+    settings['categorical_column'] = categorical_column
+
+    if uid_hash:
+        update_project_settings(uid_hash, settings)
 
     return output_path

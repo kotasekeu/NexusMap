@@ -58,17 +58,17 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
     som.train(data)
 
     # Uložení vstupních dat
-    np.savetxt(f"{output_path}/data.csv", data, delimiter=",")
+    np.savetxt(f"{output_path}csv/data.csv", data, delimiter=",")
 
     # Uložení naučených vah
-    np.save(f"{output_path}/weights.npy", som.weights)
+    np.save(f"{output_path}weights.npy", som.weights)
 
 
     # Načteme původní DataFrame s primárním klíčem
-    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=',')
+    df_orig = pd.read_csv(f"{output_path}csv/input.csv", delimiter=',')
 
     # Uložíme shluky
-    cluster_file = f"{output_path}/clusters.json"
+    cluster_file = f"{output_path}json/clusters.json"
 
     extract_and_save_clusters(
         som,
@@ -83,18 +83,17 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
         data,
         df_orig,
         project_settings["categorical_column"],
-        output_dir=f"{output_path}/"
+        output_dir=f"{output_path}"
     )
 
     # načíst data
-    df_orig = pd.read_csv(f"{output_path}/input.csv", delimiter=',')
+    df_orig = pd.read_csv(f"{output_path}csv/input.csv", delimiter=',')
     clusters = json.load(open(cluster_file))
 
     # spočítat statistiky podle sloupců
     stats = compute_group_statistics(df_orig,
                                     project_settings["legend_column"],
                                     project_settings["analysis_columns"])
-    
     #detekovat extrémy s prahovou hodnotou např. 2σ
     extremes = detect_extremes(df_orig,
                             clusters,
@@ -105,15 +104,15 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
                             primary_id=project_settings["primary_id"])
     
     # uložit výsledek
-    with open(f"{output_path}/extremes.json", "w", encoding="utf-8") as f:
+    with open(f"{output_path}json/extremes.json", "w", encoding="utf-8") as f:
         json.dump(extremes, f, indent=4)
 
 
     extract_and_save_pie_data_from_clusters(
         df_orig,
-        f"{output_path}/clusters.json",
+        f"{output_path}json/clusters.json",
         project_settings['categorical_column'],
-        f"{output_path}/",
+        f"{output_path}",
         project_settings['primary_id']
     )
 
@@ -150,13 +149,13 @@ def process_project(uid_hash: str) -> None:
     som_settings = load_som_settings(project)
 
     # Kontrola vstupního souboru
-    input_file = f"{output_path}input.csv"
+    input_file = f"{output_path}csv/input.csv"
     if not validate_input_file(input_file, project_settings):
         log_message(f"Neplatný vstupní soubor pro projekt {uid_hash}.")
         sys.exit(1)
 
     # Předzpracování dat
-    preprocess_file = normalize_data(input_file, project_settings)
+    preprocess_file = normalize_data(input_file, uid_hash, project_settings)
 
     train_and_analyze_som(preprocess_file, som_settings, project_settings,output_path, uid_hash)
 
@@ -169,8 +168,10 @@ def compute_group_statistics(df_orig: pd.DataFrame,
                              group_by: str,
                              analysis_columns: list[str]) -> dict[str, dict[str, tuple[float, float]]]:    
     stats = {}
-    grouped = df_orig.groupby(group_by)[analysis_columns]    
+
+    grouped = df_orig.groupby(group_by)[analysis_columns]
     agg = grouped.agg(['mean', 'std'])
+
     for key, row in agg.iterrows():
         stats[key] = {col: (row[(col, 'mean')], row[(col, 'std')]) for col in analysis_columns}
     return stats
@@ -298,7 +299,7 @@ def extract_and_save_pie_data_from_clusters(
             "categories": cat_map,
             "counts": counts_out
         }
-        fn = os.path.join(output_dir, f"pie_data_{col}.json")
+        fn = os.path.join(output_dir, f"json/pie_data_{col}.json")
         with open(fn, 'w', encoding='utf-8') as f:
             json.dump(out, f, indent=2, ensure_ascii=False)
 
@@ -309,5 +310,5 @@ if __name__ == "__main__":
         sys.exit(1)    
 
     uid_hash = sys.argv[1]
-    clear_files(uid_hash)
+    # clear_files(uid_hash)
     process_project(uid_hash)

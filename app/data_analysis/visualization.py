@@ -357,7 +357,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         )
 
     # 4) Cluster‑map
-    clusters = json.load(open(f"{output_path}/clusters.json", encoding="utf-8"))
+    clusters = json.load(open(f"{output_path}/json/clusters.json", encoding="utf-8"))
     generate_cluster_map(
         som,
         clusters,
@@ -379,7 +379,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     for column_name in settings['categorical_column']:
         plot_pie_map_from_json(
             som,
-            f"{output_path}/pie_data_{column_name}.json",
+            f"{output_path}/json/pie_data_{column_name}.json",
             f"{output_path}/visualization/pie_map_{column_name}.png",
             map_type
         )

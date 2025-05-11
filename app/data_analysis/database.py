@@ -1,5 +1,6 @@
 import mysql.connector
 from config.settings import DB_CONFIG
+import json
 
 def get_db_connection():
     """
@@ -24,7 +25,7 @@ def fetch_project(uid_hash):
 
     try:
         # Query to retrieve all project information where the uid_hash matches the provided value and the analysis is not yet done.
-        query = "SELECT * FROM projects WHERE uid_hash = %s AND status = 0"
+        query = "SELECT * FROM projects WHERE uid_hash = %s AND status = 0 AND ready_to_analyze = 1"
         cursor.execute(query, (uid_hash,))
         result = cursor.fetchone()
     finally:
@@ -50,6 +51,20 @@ def update_project_status(uid_hash, status):
         # Query to update the project status based on the provided uid_hash and status.
         query = "UPDATE projects SET status = %s WHERE uid_hash = %s"
         cursor.execute(query, (status, uid_hash))
+        db.commit()  # Uloží změny do databáze.
+    finally:
+        # Zajistí, že jsou všechny otevřené zdroje uzavřeny.
+        cursor.close()
+        db.close()
+
+def update_project_settings(uid_hash, project_setting):
+    db = get_db_connection()
+    cursor = db.cursor()
+    settings_string = json.dumps(project_setting)
+    try:
+        # Query to update the project som_setting based on the provided uid_hash and som_setting.
+        query = "UPDATE projects SET project_settings = %s WHERE uid_hash = %s"
+        cursor.execute(query, (settings_string, uid_hash))
         db.commit()  # Uloží změny do databáze.
     finally:
         # Zajistí, že jsou všechny otevřené zdroje uzavřeny.

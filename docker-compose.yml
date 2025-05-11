@@ -27,7 +27,7 @@ services:
       - shared_network
     volumes:
       - ./app/data_analysis:/app/data_analysis
-      - ./var/projects:/userfiles
+      - ./app/frontend/public/userFiles:/userfiles
     depends_on:
       - db
 
@@ -43,7 +43,6 @@ services:
       - ./app/frontend:/var/www
       - ./app/frontend/public:/var/www/html
       - ./tests/:/var/www/tests
-      - ./var/projects:/userfiles
     networks:
       shared_network:
         ipv4_address: 172.23.0.101

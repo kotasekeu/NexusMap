@@ -25,10 +25,10 @@
 CONFIG = {
     # Nastavení evolučního algoritmu
     # Velikost populace v každé generaci
-    "population_size": 5,
+    "population_size": 4,
 
     # Počet generací
-    "generations": 2,
+    "generations": 1,
 
     # Předpona pro identifikátor konfigurace
     "uid_prefix": "evolution",
@@ -80,7 +80,7 @@ CONFIG = {
     "map_size": (20, 20),
 
     # Násobitel určující počet epoch (sample_size * epoch_multiplier)
-    "epoch_multiplier": [1.0],
+    "epoch_multiplier": 1.0,
 
     # Minimální kvalita mapy (Q-error)
     "min_q_error": None,
