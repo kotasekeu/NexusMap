@@ -132,45 +132,61 @@ def run_evolution(param_space):
 
     :param param_space: Prostor všech parametrů, které se mají optimalizovat
     """
-    population = [random_config(param_space) for _ in range(POPULATION_SIZE)]
-    for gen in range(GENERATIONS):
-        print(f"Generace {gen + 1}/{GENERATIONS}")
+    try:
+        population = [random_config(param_space) for _ in range(POPULATION_SIZE)]
+        for gen in range(GENERATIONS):
+            print(f"Generace {gen + 1}/{GENERATIONS}")
 
-        # vyhodnotit
-        with Pool(processes=cpu_count()) as pool:
-            scored = pool.map(evaluate_individual, population)
+            # vyhodnotit
+            with Pool(processes=min(cpu_count(), POPULATION_SIZE)) as pool:
+                try:
+                    # Přidání population_id a generation do argumentů
+                    args = [(ind, i, gen) for i, ind in enumerate(population)]
+                    scored = pool.starmap(evaluate_individual, args)
+                except Exception as e:
+                    print(f"Chyba při vyhodnocování populace: {str(e)}")
+                    pool.terminate()
+                    pool.join()
+                    raise e
 
-        # normalizace
-        qes = [s[0] for s in scored]
-        times = [s[2] for s in scored]
-        qe_min, qe_max   = min(qes), max(qes)
-        t_min,  t_max    = min(times), max(times)
-        # spočítat fitness pro každý jedinec
-        scored_f = []
-        for qe, cfg, dur, upd in scored:
-            ne = (qe - qe_min) / (qe_max - qe_min) if qe_max > qe_min else 0.0
-            nt = (dur - t_min) / (t_max - t_min) if t_max > t_min else 0.0
-            fit = W_ERROR*(1 - ne) + W_TIME*(1 - nt)
-            scored_f.append((fit, qe, cfg, dur, upd))
+            # normalizace
+            qes = [s[0] for s in scored]
+            times = [s[2] for s in scored]
+            qe_min, qe_max   = min(qes), max(qes)
+            t_min,  t_max    = min(times), max(times)
+            # spočítat fitness pro každý jedinec
+            scored_f = []
+            for qe, cfg, dur, upd in scored:
+                ne = (qe - qe_min) / (qe_max - qe_min) if qe_max > qe_min else 0.0
+                nt = (dur - t_min) / (t_max - t_min) if t_max > t_min else 0.0
+                fit = W_ERROR*(1 - ne) + W_TIME*(1 - nt)
+                scored_f.append((fit, qe, cfg, dur, upd))
 
-        # vybrat podle fitness
-        scored_f.sort(key=lambda x: x[0], reverse=True)
-        best = scored_f[0]
-        print(f" Nejlepší QE: {best[1]:.6f} | Čas: {best[3]:.2f}s | Fitness: {best[0]:.4f}")
+            # vybrat podle fitness
+            scored_f.sort(key=lambda x: x[0], reverse=True)
+            best = scored_f[0]
+            print(f" Nejlepší QE: {best[1]:.6f} | Čas: {best[3]:.2f}s | Fitness: {best[0]:.4f}")
 
-        # selekce top 50 %
-        top = [entry[2] for entry in scored_f[:POPULATION_SIZE // 2]]
-        next_gen = top[:]
-        # generace nové populace s křížením + mutací
-        while len(next_gen) < POPULATION_SIZE:
-            p1, p2 = random.sample(top, 2)
-            child  = crossover(p1, p2, param_space)
-            child  = mutate(child, param_space)
-            next_gen.append(child)
+            # selekce top 50 %
+            top = [entry[2] for entry in scored_f[:POPULATION_SIZE // 2]]
+            next_gen = top[:]
+            # generace nové populace s křížením + mutací
+            while len(next_gen) < POPULATION_SIZE:
+                p1, p2 = random.sample(top, 2)
+                child  = crossover(p1, p2, param_space)
+                child  = mutate(child, param_space)
+                next_gen.append(child)
 
-        population = next_gen
-        # uložit nejlepší
-        log_final_best(get_uid(best[2]), best[2], best[1], duration=best[3])
+            population = next_gen
+            # uložit nejlepší
+            log_final_best(get_uid(best[2]), best[2], best[1], duration=best[3])
+            
+    except KeyboardInterrupt:
+        print("\nUkončuji evoluční algoritmus...")
+        return
+    except Exception as e:
+        print(f"\nChyba při běhu evolučního algoritmu: {str(e)}")
+        return            
 
 def get_uid(config):
     """
@@ -286,6 +302,37 @@ def evaluate_som_quality(som, data):
     
     return quantization_error
 
+def log_status_to_csv(uid, population_id, generation, status="started", start_time=None, end_time=None):
+    """
+    Zapíše nebo aktualizuje stav konfigurace do status.csv.
+    
+    :param uid: Identifikátor konfigurace
+    :param population_id: ID populace
+    :param generation: Číslo generace
+    :param status: Stav konfigurace (started/completed/failed)
+    :param start_time: Čas spuštění
+    :param end_time: Čas dokončení
+    """
+    csv_path = os.path.join(WORKING_DIR, "status.csv")
+    file_exists = os.path.isfile(csv_path)
+    
+    with open(csv_path, mode="a", newline="") as f:
+        fieldnames = ['uid', 'population_id', 'generation', 'status', 'start_time', 'end_time']
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        if not file_exists:
+            writer.writeheader()
+        
+        row = {
+            'uid': uid,
+            'population_id': population_id,
+            'generation': generation,
+            'status': status,
+            'start_time': start_time or datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            'end_time': end_time
+        }
+        writer.writerow(row)
+
+
 def log_final_best(uid, config, score, duration):
     """
     Uloží nejlepší konfiguraci generace do souboru final_best.txt.
@@ -324,51 +371,117 @@ def load_input_data(input_file: str) -> np.ndarray:
     log_message("SYSTEM", f"Načtena a normalizována data z externího souboru: {input_file}")
     return NORMALIZED_DATA
 
-def evaluate_individual(ind):
+def extract_uid_from_path(file_path: str) -> str:
     """
-    Vyhodnotí jednu konfiguraci: provede trénink Kohonen sítě, změří čas, spočítá chybu a zaloguje.
-
-    :param ind: Slovník s parametry jedné konfigurace
-    :return: Tuple (score, config, duration) – pro další zpracování v evoluci
-    """
-    start_time = time.time()
-
-    if "sample_size" in ind:
-        sample_size = ind["sample_size"]
-
-    if "input_dim" in ind:
-        input_dim = ind["input_dim"]
-
-    map_width, map_height = ind["map_size"]    
-
-    # Načtení dat - buď z externího souboru nebo generovaná
-    if INPUT_FILE:
-        data = load_input_data(INPUT_FILE)
-    else:
-        data = get_or_generate_data(sample_size, input_dim)
-
-    som = KohonenSOM(
-        dim=data.shape[1],        
-        m=map_width, 
-        n=map_height, 
-        **{k: v for k, v in ind.items() if k not in ['sample_size', 'input_dim', 'map_size']}   
-    )    
-
-    som.train(data)
+    Extrahuje UID z cesty k souboru ve formátu /userfiles/nxmpp68178971b152c3.74205522/csv/input.csv
     
-    duration = time.time() - start_time
+    :param file_path: Cesta k souboru
+    :return: Extrahovaný UID
+    """
+    parts = file_path.split('/')
+    for part in parts:
+        if part.startswith('nxmpp'):
+            return part
+    return None
+
+def evaluate_individual(ind, population_id, generation):
+    start_time = time.time()
     uid = get_uid(ind)
-    set_uid_hash(uid)
+    
+    try:
+        # Logování startu
+        log_status_to_csv(uid, population_id, generation, "started", 
+                         datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
-    # print(f"Upraveno vah:{som.total_weight_updates}")
-    # print(f"MQE: {som.best_mqe:.8f}")
-    # print(f"Doba trvání: {duration:.2f}s")
-    # print(f"--------------------------------")
-    log_message(uid, f"Konfigurace vyhodnocena – kvantizační chyba: {som.best_mqe:.8f}, čas: {duration:.2f}s")
-    log_result_to_csv(uid, ind, som.best_mqe, duration, som.total_weight_updates)
+        if "sample_size" in ind:
+            sample_size = ind["sample_size"]
 
-    return (som.best_mqe, copy.deepcopy(ind), duration, som.total_weight_updates)
+        if "input_dim" in ind:
+            input_dim = ind["input_dim"]
 
+        # Načtení dat - buď z externího souboru nebo generovaná
+        if INPUT_FILE:
+            data = load_input_data(INPUT_FILE)
+        else:
+            data = get_or_generate_data(sample_size, input_dim)
+
+        som = KohonenSOM(
+            dim=data.shape[1],        
+            **{k: v for k, v in ind.items() if k not in ['sample_size', 'input_dim']}
+        )    
+
+        som.train(data)
+        
+        duration = time.time() - start_time
+        log_message(uid, f"Konfigurace vyhodnocena – kvantizační chyba: {som.best_mqe:.8f}, čas: {duration:.2f}s")
+        log_result_to_csv(uid, ind, som.best_mqe, duration, som.total_weight_updates)
+        
+        # Logování úspěšného dokončení
+        log_status_to_csv(uid, population_id, generation, "completed", 
+                         datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S"),
+                         datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        
+        return (som.best_mqe, copy.deepcopy(ind), duration, som.total_weight_updates)
+        
+    except Exception as e:
+        # Logování chyby
+        log_status_to_csv(uid, population_id, generation, "failed", 
+                         datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S"),
+                         datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        log_message(uid, f"Chyba při vyhodnocování: {str(e)}")
+        raise e
+
+
+def analyze_results():
+    """
+    Provede analýzu výsledků evolučního algoritmu a vytvoří soubory s nejlepšími konfiguracemi.
+    """
+    
+    # Načtení dat
+    df = pd.read_csv(os.path.join(WORKING_DIR, "results.csv"))
+    
+    # Výpočet skóre
+    df["score_combined"] = df["score"] * df["duration"] * df["total_weight_updates"]
+    
+    # Sloupce nepatřící do konfigurace
+    non_config_cols = [
+        "uid", "score", "duration", "total_weight_updates",
+        "score_combined", "config_count"
+    ]
+    
+    # Dynamické určení konfiguračních sloupců
+    compare_cols = [col for col in df.columns if col not in non_config_cols and not col.startswith("Unnamed")]
+    
+    # Nejlepší řádky pro každou konfiguraci (podle UID)
+    best_rows = df.loc[df.groupby("uid")["score_combined"].idxmin()].copy()
+    best_rows["config_count"] = df.groupby("uid")["uid"].transform("count")
+    
+    # Seřazení
+    best_sorted = best_rows.sort_values("score_combined")
+    
+    # Zjištění statických parametrů
+    static_cols = [col for col in compare_cols if df[col].nunique(dropna=False) == 1]
+    
+    # Odstranění statických sloupců z výsledné tabulky
+    dynamic_cols = [col for col in best_sorted.columns if col not in static_cols]
+    best_sorted = best_sorted[dynamic_cols]
+    
+    # Uložení plné tabulky
+    best_sorted.to_csv(os.path.join(WORKING_DIR, "best_configurations_full.csv"), index=False)
+    
+    # Vítězná konfigurace
+    winner = best_sorted.iloc[0]
+
+    # Zápis do TXT souboru
+    with open(os.path.join(WORKING_DIR, "summary.txt"), "w", encoding="utf-8") as f:
+        f.write("Best configuration:\n")
+        for col in dynamic_cols:
+            f.write(f"{col}: {winner[col]}\n")
+        f.write("\nStatic parameters:\n")
+        for col in static_cols:
+            f.write(f"{col} = {df[col].iloc[0]}\n")
+    
+    log_message("SYSTEM", "Analýza výsledků dokončena - vytvořeny soubory best_configurations_full.csv a summary.txt")
 
 # --- Spuštění algoritmu ---
 if __name__ == "__main__":
@@ -380,7 +493,6 @@ if __name__ == "__main__":
 
     # Načtení konfigurace
     config = load_config(args.config)
-
 
     # Nastavení globální proměnné pro vstupní soubor
     if args.input:
@@ -402,3 +514,6 @@ if __name__ == "__main__":
     som_config.pop("uid_prefix", None)
 
     run_evolution(som_config)
+    
+    # Spuštění analýzy výsledků po dokončení evolučního algoritmu
+    analyze_results()
