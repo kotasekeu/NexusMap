@@ -18,7 +18,7 @@
 									{var $count = count($items[$x.'_'.$y])}
 									{$count}
 							{else}
-								<a class="cell" href="#nodata" data-coord="{$x}_{$y}" title="Žádná data" style="background-color:#FFFFFF;">
+								<a class="cell nodata" href="#nodata" data-coord="{$x}_{$y}" title="Žádná data" style="background-color:#FFFFFF;">
 							{/if}
 							</a>
 						</div>
@@ -82,6 +82,10 @@
 			cursor: pointer;
 		}
 		.hidden { display: none !important; }
+
+        .cell a.nodata:hover {
+            background-color:#FFF !important;
+        }
 	</style>
 {/block}
 

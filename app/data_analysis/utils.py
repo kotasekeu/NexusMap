@@ -18,7 +18,7 @@ def log_message(message: str) -> None:
     from datetime import datetime
     current_time = datetime.now()
     with open(log_file, "a") as log:
-        log.write(f"{current_time} {message}\n")
+        log.write(f"{current_time} {message} {_uid_hash}\n")
 
 
 def clear_files(uid_hash: str) -> None:

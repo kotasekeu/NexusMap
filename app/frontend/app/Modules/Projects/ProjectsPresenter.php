@@ -56,6 +56,22 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->inputFileData = $this->projectsService->getInputFileData($projectDetail->project_id);
 	}
 
+
+	public function renderStatsData(int $project_id): void
+	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.');
+			$this->redirect('Projects:default');
+		}
+
+		$this->getTemplate()->projectDetail = $projectDetail;
+		$this->getTemplate()->clusters		= $clusters = $this->projectsService->getClustersData($projectDetail->uid_hash);
+		$this->getTemplate()->extremes		= $extremes	= $this->projectsService->getExtremesData($projectDetail->uid_hash);
+		$this->getTemplate()->records		= $records	= $this->projectsService->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
+		$this->getTemplate()->statsData		= $this->projectsService->getStatsDataFromSources($clusters, $extremes, $records, $projectDetail);
+	}
+
 	public function renderMap(int $project_id)
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -102,7 +118,7 @@ class ProjectsPresenter extends BasePresenter
 			'#6baed6','#4292c6','#2171b5','#08519c','#08306b'
 		];
 
-		$this->getTemplate()->selectedCell = $this->selectedCell;
+//		$this->getTemplate()->selectedCell = $this->selectedCell;
 	}
 
 	public function handleChangeCell(string $cell)

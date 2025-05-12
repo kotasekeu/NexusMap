@@ -45,7 +45,9 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
 
     # 2) Rozdělení na číselné vs. textové
     processed = pd.DataFrame()
-    categorical_column = [];
+    categorical_column = []
+    numerical_column = []
+    string_column = []
     for col in cols:
         series = data[col]
         if pd.api.types.is_numeric_dtype(series):
@@ -53,6 +55,7 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
             num = pd.to_numeric(series, errors="coerce")
             num = num.fillna(nan_replacement.get(col, 0))
             processed[col] = num
+            numerical_column.append(col)
         else:
             # textové: rozhodnout podle počtu unikátů
             n_uniques = series.nunique(dropna=True)
@@ -63,6 +66,7 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
             else:
                 # volný text: též factorize (případně později zvláštní zpracování)
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
+                string_column.append(col)
         log_message(f"Sloupec '{col}': typ {'číselný' if pd.api.types.is_numeric_dtype(data[col]) else 'kategoriální'} (unikátů {data[col].nunique(dropna=True)})")
 
     # 3) Škálování všech sloupců do [0,1]
@@ -75,6 +79,8 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     normalized_df.to_csv(output_path, index=False, sep=',')
 
     settings['categorical_column'] = categorical_column
+    settings['numerical_column'] = numerical_column
+    settings['string_column'] = string_column
 
     if uid_hash:
         update_project_settings(uid_hash, settings)

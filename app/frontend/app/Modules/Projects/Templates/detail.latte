@@ -16,7 +16,6 @@
 					<a class="btn btn-danger" n:href="delete!, project_id => $projectDetail->project_id"  onclick="return confirm('Opravdu chcete smazat tento projekt?');"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
 				</div>
 			</div>
-
 		</div>
 	</div>
 	<div class="container-fluid">
@@ -30,6 +29,7 @@
 									#{$projectDetail->project_id} {$projectDetail->name}
 									{if $projectDetail->status == 1}
 										<a n:href="Projects:map, $projectDetail->project_id" class="btn btn-success">Detail mapy</a>
+										<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-primary">Zobrazit analýzu</a>
 									{/if}
 									{if $projectDetail->ready_to_analyze == 0}
 										<a class="btn btn-warning" n:href="submit!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Spustit analýzu</a>
@@ -137,7 +137,7 @@
 										</div>
 									</div>
 
-
+									{include ./statsData.latte}
 									{include ./projectFiles.latte}
 									{include ./projectConfigTable.latte}
 									<div class="card mt-4">

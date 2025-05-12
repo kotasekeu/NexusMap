@@ -24,6 +24,7 @@ import pandas as pd
 import argparse
 from utils import set_uid_hash
 import json
+import psutil
 
 # --- Nastavení parametrů evolučního algoritmu ---
 
@@ -138,11 +139,24 @@ def run_evolution(param_space):
             print(f"Generace {gen + 1}/{GENERATIONS}")
 
             # vyhodnotit
-            with Pool(processes=min(cpu_count(), POPULATION_SIZE)) as pool:
+            with Pool(processes=min(12, cpu_count(), POPULATION_SIZE)) as pool:
                 try:
                     # Přidání population_id a generation do argumentů
                     args = [(ind, i, gen) for i, ind in enumerate(population)]
-                    scored = pool.starmap(evaluate_individual, args)
+                    results = []
+                    for i, arg in enumerate(args):
+                        try:
+                            result = pool.apply_async(evaluate_individual, arg)
+                            results.append(result)
+                        except Exception as e:
+                            print(f"Chyba při inicializaci procesu {i}: {e}")
+
+                    scored = []
+                    for i, r in enumerate(results):
+                        try:
+                            scored.append(r.get(timeout=3600))  # max 1h timeout na jedince
+                        except Exception as e:
+                            print(f"[CHYBA] Jedinec {i} selhal: {e}")
                 except Exception as e:
                     print(f"Chyba při vyhodnocování populace: {str(e)}")
                     pool.terminate()
@@ -186,7 +200,9 @@ def run_evolution(param_space):
         return
     except Exception as e:
         print(f"\nChyba při běhu evolučního algoritmu: {str(e)}")
-        return            
+        return
+
+    print(f"Generace {gen + 1} – úspěšných: {len(scored)}/{POPULATION_SIZE}")
 
 def get_uid(config):
     """
@@ -314,12 +330,12 @@ def log_status_to_csv(uid, population_id, generation, status="started", start_ti
     :param end_time: Čas dokončení
     """
     csv_path = os.path.join(WORKING_DIR, "status.csv")
-    file_exists = os.path.isfile(csv_path)
-    
+    write_header = not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0
+
     with open(csv_path, mode="a", newline="") as f:
         fieldnames = ['uid', 'population_id', 'generation', 'status', 'start_time', 'end_time']
         writer = csv.DictWriter(f, fieldnames=fieldnames)
-        if not file_exists:
+        if write_header:
             writer.writeheader()
         
         row = {
@@ -389,6 +405,7 @@ def evaluate_individual(ind, population_id, generation):
     uid = get_uid(ind)
     
     try:
+        print(f"[GEN {generation + 1}] Total RAM used: {psutil.virtual_memory().used // (1024 ** 2)} MB")
         # Logování startu
         log_status_to_csv(uid, population_id, generation, "started", 
                          datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

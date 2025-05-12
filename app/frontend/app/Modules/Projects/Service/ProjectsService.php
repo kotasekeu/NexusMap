@@ -40,7 +40,6 @@ class ProjectsService extends BaseService
 		$project->som_settings 		= $this->getSomSettings($project->som_settings);
 		$project->project_settings	= empty($project->project_settings) ? null : json_decode($project->project_settings);
 
-		;
 		return $project;
 	}
 
@@ -58,6 +57,10 @@ class ProjectsService extends BaseService
 			$returnData->m = intval($mn[0]);
 			$returnData->n = intval($mn[1]);
 			unset($returnData->map_size);
+		}
+
+		if (empty($returnData)) {
+			return null;
 		}
 
 		return $returnData;
@@ -381,5 +384,93 @@ class ProjectsService extends BaseService
 		}
 
 		return $fileData;
+	}
+
+	public function getClustersData(string $uid_hash): ?array
+	{
+		$clustersJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/clusters.json';
+		if (!file_exists($clustersJson)) {
+			return null;
+		}
+		$jsonData = file_get_contents($clustersJson);
+
+		$clustersData = json_decode($jsonData, true);
+		ksort($clustersData);
+
+		return $clustersData;
+	}
+
+	public function getExtremesData(string $uid_hash): ?array
+	{
+		$extremesJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/extremes.json';
+		if (!file_exists($extremesJson)) {
+			return null;
+		}
+		$jsonData = file_get_contents($extremesJson);
+
+		$extremesData = json_decode($jsonData, true);
+		ksort($extremesData['by_cluster']);
+		ksort($extremesData['by_group']);
+
+		return $extremesData;
+	}
+
+	public function getRecordsData(string $uid_hash, string $primary_id): ?array
+	{
+		$csvFile = WWW_DIR . '/userFiles/' . $uid_hash . '/csv/input.csv';
+		if (!file_exists($csvFile)) {
+			return null;
+		}
+
+
+		$handle = fopen($csvFile, 'r');
+		$line = fgets($handle);
+		$line = ltrim($line, "\xEF\xBB\xBF\x00..\x1F");
+
+		$headers = str_getcsv(trim($line), ",", '"', '\\');
+
+		$primaryIdIndex = array_search($primary_id, $headers);
+		if ($primaryIdIndex === false) {
+			fclose($handle);
+			return null;
+		}
+
+		$records = [];
+		while (($row = fgetcsv($handle, 0, ",", '"', '\\')) !== false) {
+			if (count($row) === count($headers)) {
+				$records[$row[$primaryIdIndex]] = array_combine($headers, $row);
+			}
+		}
+
+		fclose($handle);
+		return $records;
+	}
+
+	public function getStatsDataFromSources($clusters, $extremes, $records, $projectDetail): array
+	{
+		$clustersWithData = [];
+		$categorical_column	= $projectDetail->project_settings->categorical_column;
+		$numerical_column	= $projectDetail->project_settings->numerical_column;
+		$string_column		= $projectDetail->project_settings->string_column;
+
+		foreach ($clusters as $clusterKey => $cluster) {
+			$clustersWithData[$clusterKey]['count'] = count($cluster);
+
+			foreach ($cluster as $clusterRecord) {
+				$clustersWithData[$clusterKey]['records'][$clusterRecord] = $records[$clusterRecord];
+
+				foreach ($numerical_column as $numericalColumnValue) {
+					dump($numericalColumnValue);
+					die("File:" . __FILE__ . "; Line:" . __LINE__);
+				}
+			}
+		}
+
+		dump($records);
+		dump($projectDetail);
+		dump($extremes);
+		dump($clusters);
+		die("File:" . __FILE__ . "; Line:" . __LINE__);
+		return $clustersWithData;
 	}
 }
