@@ -8,6 +8,7 @@ Tento nástroj slouží k automatické optimalizaci parametrů Kohonenovy neuron
 
 - `evolutionary_som.py` – hlavní skript pro spuštění evoluce
 - `evolutionary_som_config.py` – výchozí konfigurace parametrového prostoru
+- `evolution-config.json` – ukázkový konfigurační soubor
 - `./reports/` – adresář pro výsledky, zálohy, cache a logy. Adresář je vytvořen:
   - V adresáři vstupního souboru (pokud je zadán)
   - V aktuálním adresáři (pokud není zadán vstupní soubor)
@@ -39,7 +40,7 @@ Tento nástroj slouží k automatické optimalizaci parametrů Kohonenovy neuron
        "map_size": [20, 20],
        "epoch_multiplier": [1.0, 5.0, 10.0],
        "min_q_error": null,
-       "map_type": "square",
+       "map_type": ["square", "hex"],
        "normalize_weights_flag": [false, true],
        "max_epochs_without_improvement": null
    }
@@ -95,6 +96,9 @@ Výstupy běhu jsou ukládány do složky `reports` v příslušném adresáři:
 - ✅ Jednoduchá správa dat (cache podle vstupních parametrů)
 - ✅ Podpora vlastních vstupních dat
 - ✅ Rozšiřitelnost o další metriky a metody optimalizace
+- ✅ Podpora hexagonální a čtvercové mřížky
+- ✅ Možnost nastavení minimální kvantizační chyby pro early stopping
+- ✅ Možnost nastavení maximálního počtu epoch bez zlepšení
 
 ---
 
@@ -123,11 +127,15 @@ Výstupy běhu jsou ukládány do složky `reports` v příslušném adresáři:
 - UID konfigurací slouží pro dohledání konkrétního výsledku napříč soubory
 - Vstupní data lze zadat buď jako CSV soubor, nebo se automaticky vygenerují
 - Pro replikovatelnost výsledků lze nastavit `random_seed`
+- Hexagonální mřížka může poskytnout lepší výsledky pro některé typy dat
+- Early stopping může výrazně zrychlit trénování při zachování kvality
 
 ---
 
-## 🔄 Reset mezi běhy
+## 🚧 TODO / Chybějící funkce
 
-- Při každém spuštění se staré výsledky přesunou do `backup-*`
-- Zachovává se pouze `input.csv`, pokud existuje
-- Cache vygenerovaných dat se zachovává pro opakované použití
+- [ ] Implementace dalších typů mřížky
+- [ ] Podpora pro více typů fitness funkcí
+- [ ] Vizualizace průběhu evoluce
+- [ ] Export nejlepších konfigurací do JSON
+- [ ] Možnost pokračování v evoluci z předchozího stavu

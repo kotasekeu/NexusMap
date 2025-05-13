@@ -70,57 +70,43 @@
 									<div class="card mt-4">
 										<div class="card-body">
 											<div class="row">
-												<div class="col-md-12">
-													<h3>Nalezené extrémy podle oblastí</h3>
-													<br />
-													{dump $clustersWithData}
-													{foreach $clustersWithData as $clusterKey => $cluster}
-														{if !empty($cluster['extremes'])}
+												<h3>Nalezené extrémy podle oblastí</h3>
+												<br />
+												{foreach $clustersWithData as $clusterKey => $cluster}
+													{if !empty($cluster['extremes'])}
+														<div class="col-sm-4">
 															<div class="cluster-box">
 																<h4>Cluster ({explode('_',$clusterKey)[0]}, {explode('_',$clusterKey)[1]})</h4>
-																<p>Počet dat v clusteru: {$cluster['count']}</p>
+																<p>
+																	Počet dat v clusteru: {$cluster['count']}
+																</p>
 
-																{* Numerické statistiky *}
 																{if isset($cluster['numerical_stats'])}
 																	<div class="stats-box">
 																		<h5>Numerické statistiky:</h5>
 																		{foreach $cluster['numerical_stats'] as $column => $stats}
 																			<h6>{$column}:</h6>
 																			<ul>
-																				<li>Minimum: {$stats['min']}</li>
-																				<li>Maximum: {$stats['max']}</li>
-																				<li>Průměr: {round($stats['avg'], 2)}</li>
+																				<li>Min. {$stats['min']}</li>
+																				<li>Max. {$stats['max']}</li>
+																				<li>Prům: {round($stats['avg'], 2)}</li>
 																				<li>Medián: {$stats['median']}</li>
 																			</ul>
 																		{/foreach}
 																	</div>
 																{/if}
-
-																{* Kategorické statistiky *}
-																<div class="stats-box">
-																	<h5>Kategorické statistiky:</h5>
-																	{foreach $cluster['categorical_stats'] as $column => $categories}
-																		<h6>{$column}:</h6>
-																		<ul>
-																			{foreach $categories as $value => $count}
-																				<li>{$value}: {$count}</li>
-																			{/foreach}
-																		</ul>
-																	{/foreach}
-																</div>
-
 																{* Extrémní hodnoty *}
 																<div class="stats-box">
-																	<h5>Extrémní hodnoty:</h5>
+																	<h5>Nalezené extrémy:</h5>
 																	<table>
 																		<tr>
-																			{foreach $projectDetail->project_settings->analysis_columns as $column}
+																			{foreach $projectDetail->project_settings->numerical_column as $column}
 																				<th>{$column}</th>
 																			{/foreach}
 																		</tr>
 																		{foreach $cluster['extremes'] as $recordId => $record}
 																			<tr class="extreme">
-																				{foreach $projectDetail->project_settings->analysis_columns as $column}
+																				{foreach $projectDetail->project_settings->numerical_column as $column}
 																					<td>{$record[$column]}</td>
 																				{/foreach}
 																			</tr>
@@ -132,26 +118,10 @@
 																<button class="toggle-button" onclick="document.getElementById('data_{$clusterKey}').classList.toggle('hidden')">
 																	Zobrazit všechna data clusteru
 																</button>
-																<div id="data_{$clusterKey}" class="hidden">
-																	<table>
-																		<tr>
-																			{foreach $projectDetail->project_settings->analysis_columns as $column}
-																				<th>{$column}</th>
-																			{/foreach}
-																		</tr>
-																		{foreach $cluster['records'] as $recordId => $record}
-																			<tr>
-																				{foreach $projectDetail->project_settings->analysis_columns as $column}
-																					<td>{$record[$column]}</td>
-																				{/foreach}
-																			</tr>
-																		{/foreach}
-																	</table>
-																</div>
 															</div>
-														{/if}
-													{/foreach}
-												</div>
+														</div>
+													{/if}
+												{/foreach}
 											</div>
 										</div>
 									</div>

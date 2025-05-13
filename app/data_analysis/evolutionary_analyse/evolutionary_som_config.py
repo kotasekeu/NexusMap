@@ -25,10 +25,10 @@
 CONFIG = {
     # Nastavení evolučního algoritmu
     # Velikost populace v každé generaci
-    "population_size": 4,
+    "population_size": 10,
 
     # Počet generací
-    "generations": 1,
+    "generations": 5,
 
     # Předpona pro identifikátor konfigurace
     "uid_prefix": "evolution",

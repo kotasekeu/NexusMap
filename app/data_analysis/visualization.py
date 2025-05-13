@@ -442,6 +442,3 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
             f"{output_path}/visualization/pie_map_group_{group_name}.png",
             map_type
         )
-        
-        # Smazání dočasného souboru
-        # os.remove(temp_json)

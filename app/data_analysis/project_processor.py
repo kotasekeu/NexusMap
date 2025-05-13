@@ -1,7 +1,19 @@
+"""
+Hlavní modul pro zpracování projektů analýzy dat.
+
+Tento modul zajišťuje:
+- Načítání a validaci projektových dat z databáze
+- Předzpracování vstupních dat
+- Trénování Kohonenovy SOM sítě
+- Analýzu a detekci extrémů v datech
+- Generování výstupních souborů a vizualizací
+- Správu stavu projektu v databázi
+"""
+
 import sys
 from database import fetch_project, update_project_status
 from preprocess import validate_input_file, normalize_data
-from utils import log_message, set_uid_hash, clear_files
+from utils import log_message, set_uid_hash
 from kohonen import KohonenSOM
 import pandas as pd
 import numpy as np
@@ -10,20 +22,39 @@ import json
 from matplotlib.lines import Line2D
 from visualization import generate_maps
 import os
-from collections import defaultdict, Counter,OrderedDict
+from collections import defaultdict, Counter, OrderedDict
 
-# vytahneme data z databaze podle uid
 def get_project_detail(uid_hash: str) -> dict:
+    """Načte detail projektu z databáze podle UID.
+    
+    Args:
+        uid_hash (str): Unikátní identifikátor projektu
+        
+    Returns:
+        dict: Slovník s detaily projektu
+        
+    Raises:
+        SystemExit: Pokud projekt není nalezen nebo analýza již byla dokončena
+    """
     project = fetch_project(uid_hash)
     if not project:
         log_message(f"Projekt s UID {uid_hash} nenalezen nebo analýza již byla dokončena.")
         sys.exit(1)
     return project
 
-# vezmeme jen nastavení z detailu projektu
 def load_project_settings(project: dict) -> dict:
+    """Načte nastavení projektu z JSON řetězce.
+    
+    Args:
+        project (dict): Slovník s detaily projektu
+        
+    Returns:
+        dict: Nastavení projektu
+        
+    Raises:
+        SystemExit: Pokud nastavení nelze načíst nebo je neplatné
+    """
     try:
-        import json
         settings = json.loads(project["project_settings"])
         return settings
     except (KeyError, ValueError) as e:
@@ -31,82 +62,85 @@ def load_project_settings(project: dict) -> dict:
         sys.exit(1)
 
 def load_som_settings(project: dict) -> dict:
+    """Načte nastavení SOM sítě z JSON řetězce.
+    
+    Args:
+        project (dict): Slovník s detaily projektu
+        
+    Returns:
+        dict: Nastavení SOM sítě
+        
+    Raises:
+        SystemExit: Pokud nastavení nelze načíst nebo je neplatné
+    """
     try:
-        import json
         settings = json.loads(project["som_settings"])
         return settings
     except (KeyError, ValueError) as e:
-        log_message(f"Chyba při načítání nastavení projektu: {e}")
+        log_message(f"Chyba při načítání nastavení SOM: {e}")
         sys.exit(1)
 
-#  doplnit budou zvlašť data pro csv soubor a pro mapu
-#def load_som_settings(project: dict) -> dict:
-
-
-def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_settings: dict,output_path: str, uid_hash: str) -> None:
-    """Trénuje SOM a generuje výstupy."""
+def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_settings: dict, output_path: str, uid_hash: str) -> None:
+    """Trénuje SOM síť a generuje výstupy analýzy.
+    
+    Args:
+        preprocess_file (str): Cesta k předzpracovanému souboru
+        som_settings (dict): Nastavení SOM sítě
+        project_settings (dict): Nastavení projektu
+        output_path (str): Cesta pro výstupní soubory
+        uid_hash (str): Unikátní identifikátor projektu
+        
+    Note:
+        Funkce provádí:
+        1. Trénování SOM sítě
+        2. Uložení vstupních dat a naučených vah
+        3. Extrakci a uložení shluků
+        4. Generování dat pro koláčové grafy
+        5. Výpočet statistik a detekci extrémů
+        6. Generování vizualizací
+    """
     # Načtení předzpracovaných dat
     data = pd.read_csv(preprocess_file, delimiter=',').values
 
-    # Inicializace SOM
-    som = KohonenSOM(        
-        dim=data.shape[1],
-        **som_settings
-    ) 
-
-    # Trénování SOM
+    # Inicializace a trénování SOM
+    som = KohonenSOM(dim=data.shape[1], **som_settings)
     som.train(data)
 
-    # Uložení vstupních dat
+    # Uložení vstupních dat a vah
     np.savetxt(f"{output_path}csv/data.csv", data, delimiter=",")
-
-    # Uložení naučených vah
     np.save(f"{output_path}weights.npy", som.weights)
 
-
-    # Načteme původní DataFrame s primárním klíčem
+    # Načtení původních dat
     df_orig = pd.read_csv(f"{output_path}csv/input.csv", delimiter=',')
 
-    # Uložíme shluky
+    # Extrakce a uložení shluků
     cluster_file = f"{output_path}json/clusters.json"
+    extract_and_save_clusters(som, data, df_orig, cluster_file, project_settings["primary_id"])
 
-    extract_and_save_clusters(
-        som,
-        data,
-        df_orig,
-        cluster_file,
-        project_settings["primary_id"]
-    )
+    # Generování dat pro koláčové grafy
+    extract_and_save_pie_data(som, data, df_orig, project_settings["categorical_column"], output_path)
 
-    extract_and_save_pie_data(
-        som,
-        data,
-        df_orig,
-        project_settings["categorical_column"],
-        output_dir=f"{output_path}"
-    )
-
-    # načíst data
+    # Načtení dat pro analýzu
     df_orig = pd.read_csv(f"{output_path}csv/input.csv", delimiter=',')
     clusters = json.load(open(cluster_file))
 
-    # spočítat statistiky podle sloupců
+    # Výpočet statistik a detekce extrémů
     stats = compute_group_statistics(df_orig,
-                                    project_settings["legend_column"],
-                                    project_settings["analysis_columns"],
-                                    project_settings)
-    #detekovat extrémy s prahovou hodnotou např. 2σ
+                                   project_settings["legend_column"],
+                                   project_settings["analysis_columns"],
+                                   project_settings)
+
     detect_extremes(df_orig,
-                            output_path,
-                            clusters,
-                            stats,
-                            threshold=project_settings.get("std_threshold", 2),
-                            legend_column=project_settings["legend_column"],
-                            analysis_columns=project_settings["analysis_columns"],
-                            primary_id=project_settings["primary_id"],
-                            project_settings=project_settings)    
+                   output_path,
+                   clusters,
+                   stats,
+                   threshold=project_settings.get("std_threshold", 2),
+                   legend_column=project_settings["legend_column"],
+                   analysis_columns=project_settings["analysis_columns"],
+                   primary_id=project_settings["primary_id"],
+                   project_settings=project_settings)
 
-
+    # Generování koláčových grafů pro shluky
     extract_and_save_pie_data_from_clusters(
         df_orig,
         f"{output_path}json/clusters.json",
@@ -115,38 +149,58 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
         project_settings['primary_id']
     )
 
+    # Generování vizualizací
     generate_maps(som, data, preprocess_file, output_path, som_settings, project_settings)
 
-
-def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: str, primary_id: str):
-    """Uloží JSON shluků: klíč 'i_j' → seznam primárních ID vzorků (jako čisté Python int)."""
+def extract_and_save_clusters(som, data: np.ndarray, df_orig: pd.DataFrame, cluster_filename: str, primary_id: str) -> None:
+    """Extrahuje a ukládá shluky dat do JSON souboru.
+    
+    Args:
+        som: Trénovaná SOM síť
+        data (np.ndarray): Předzpracovaná data
+        df_orig (pd.DataFrame): Původní data
+        cluster_filename (str): Cesta k výstupnímu JSON souboru
+        primary_id (str): Název sloupce s primárním klíčem
+        
+    Note:
+        Vytváří JSON ve formátu: {"i_j": [pid1, pid2, ...], ...}
+        kde i_j jsou souřadnice neuronu a pid jsou primární ID vzorků
+    """
     clusters = {}
     for idx, sample in enumerate(data):
         i, j = som.find_bmu(sample)
         key = f"{i}_{j}"
         
-        # převést numpy.int64 na Python int
-        pid_raw = df_orig.iloc[idx][primary_id]  # použije správný index
+        pid_raw = df_orig.iloc[idx][primary_id]
+        if isinstance(pid_raw, (np.integer, np.floating)):
+            pid_raw = pid_raw.item()
         clusters.setdefault(key, []).append(pid_raw)
     
     os.makedirs(os.path.dirname(cluster_filename), exist_ok=True)
-
     with open(cluster_filename, 'w', encoding='utf-8') as f:
-        json.dump(clusters, f, indent=4)        
+        json.dump(clusters, f, indent=4)
 
-# hlavní metoda co řídí všechno
 def process_project(uid_hash: str) -> None:
-    # Nastavení uid_hash pro logování
+    """Hlavní funkce pro zpracování projektu.
+    
+    Args:
+        uid_hash (str): Unikátní identifikátor projektu
+        
+    Note:
+        Proces zpracování:
+        1. Načtení a validace dat
+        2. Předzpracování dat
+        3. Trénování a analýza SOM
+        4. Aktualizace stavu projektu
+    """
     set_uid_hash(uid_hash)
     output_path = f"/userfiles/{uid_hash}/"
     
     log_message(f"Spouštím zpracování projektu s UID {uid_hash}...")
 
-    # Načtení detailů projektu
+    # Načtení a validace dat
     project = get_project_detail(uid_hash)
-
-    # Aktualizace stavu - běžící projektu v databázi
-    update_project_status(uid_hash, 2)
+    update_project_status(uid_hash, 2)  # Stav: běžící
 
     project_settings = load_project_settings(project)
     som_settings = load_som_settings(project)
@@ -157,38 +211,46 @@ def process_project(uid_hash: str) -> None:
         log_message(f"Neplatný vstupní soubor pro projekt {uid_hash}.")
         sys.exit(1)
 
-    # Předzpracování dat
+    # Předzpracování a analýza
     preprocess_file = normalize_data(input_file, uid_hash, project_settings)
+    train_and_analyze_som(preprocess_file, som_settings, project_settings, output_path, uid_hash)
 
-    train_and_analyze_som(preprocess_file, som_settings, project_settings,output_path, uid_hash)
-
-    # Aktualizace stavu projektu v databázi
-    update_project_status(uid_hash, 1)
+    # Dokončení
+    update_project_status(uid_hash, 1)  # Stav: dokončeno
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
-
 def compute_group_statistics(df_orig: pd.DataFrame,
-                             group_by: str,
-                             analysis_columns: list[str],
-                             project_settings: dict) -> dict[str, dict[str, tuple[float, float]]]:    
+                           group_by: str,
+                           analysis_columns: list[str],
+                           project_settings: dict) -> dict[str, dict[str, tuple[float, float]]]:
+    """Vypočítá statistiky pro skupiny dat.
+    
+    Args:
+        df_orig (pd.DataFrame): Původní data
+        group_by (str): Sloupec pro seskupení
+        analysis_columns (list[str]): Seznam sloupců pro analýzu
+        project_settings (dict): Nastavení projektu
+        
+    Returns:
+        dict: Statistiky ve formátu {skupina: {sloupec: (průměr, směrodatná odchylka)}}
+    """
     stats = {}
     
-    # Použijeme pouze sloupce definované jako numerické v nastavení
+    # Výběr numerických sloupců
     if 'numerical_column' in project_settings:
         numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
     else:
-        # Fallback na původní logiku, pokud numerical_column není definováno
         numeric_columns = df_orig[analysis_columns].select_dtypes(include=[np.number]).columns.tolist()
     
     if not numeric_columns:
         log_message("Varování: Žádné numerické sloupce pro analýzu.")
         return stats
 
-    # Zajistíme, že group_by sloupec je v DataFrame
     if group_by not in df_orig.columns:
         log_message(f"Varování: Sloupec {group_by} nenalezen v datech.")
         return stats
 
+    # Výpočet statistik
     grouped = df_orig.groupby(group_by)[numeric_columns]
     agg = grouped.agg(['mean', 'std'])
 
@@ -196,35 +258,49 @@ def compute_group_statistics(df_orig: pd.DataFrame,
         stats[key] = {col: (row[(col, 'mean')], row[(col, 'std')]) for col in numeric_columns}
     return stats
 
-
 def detect_extremes(df_orig: pd.DataFrame,
-                    output_path: str,
-                    clusters: dict[str, list[int]],
-                    stats_by_group: dict[str, dict[str, tuple[float, float]]],
-                    threshold: float,
-                    legend_column: str,
-                    analysis_columns: list[str],
-                    primary_id: str,
-                    project_settings: dict) -> dict:
+                   output_path: str,
+                   clusters: dict[str, list[int]],
+                   stats_by_group: dict[str, dict[str, tuple[float, float]]],
+                   threshold: float,
+                   legend_column: str,
+                   analysis_columns: list[str],
+                   primary_id: str,
+                   project_settings: dict) -> dict:
+    """Detekuje extrémní hodnoty v datech.
+    
+    Args:
+        df_orig (pd.DataFrame): Původní data
+        output_path (str): Cesta pro výstupní soubory
+        clusters (dict): Slovník shluků
+        stats_by_group (dict): Statistiky pro skupiny
+        threshold (float): Prahová hodnota pro detekci extrémů
+        legend_column (str): Sloupec pro legendu
+        analysis_columns (list[str]): Seznam sloupců pro analýzu
+        primary_id (str): Název sloupce s primárním klíčem
+        project_settings (dict): Nastavení projektu
+        
+    Returns:
+        dict: Extrémní hodnoty ve formátu {'by_group': {...}, 'by_cluster': {...}}
+    """
     extremes = {'by_group': {}, 'by_cluster': {}}
 
-    # Použijeme pouze sloupce definované jako numerické v nastavení
+    # Výběr numerických sloupců
     if 'numerical_column' in project_settings:
         numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
     else:
-        # Fallback na původní logiku, pokud numerical_column není definováno
         numeric_columns = df_orig[analysis_columns].select_dtypes(include=[np.number]).columns.tolist()
     
     if not numeric_columns:
         log_message("Varování: Žádné numerické sloupce pro detekci extrémů.")
         return extremes
 
-    # Extrémy podle globálního členění
+    # Detekce extrémů podle skupin
     for group_val, cols_stats in stats_by_group.items():
         mask = (df_orig[legend_column] == group_val)
         df_group = df_orig[mask]
-        for col in numeric_columns:  # Použijeme pouze numerické sloupce
-            if col in cols_stats:  # Kontrola, zda sloupec existuje ve statistikách
+        for col in numeric_columns:
+            if col in cols_stats:
                 mean, std = cols_stats[col]
                 if std and not np.isnan(std):
                     vals = df_group[col]
@@ -232,12 +308,12 @@ def detect_extremes(df_orig: pd.DataFrame,
                     if not outliers.empty:
                         extremes['by_group'][group_val] = outliers.tolist()
 
-    # Extrémy podle clusteru
+    # Detekce extrémů podle shluků
     for cl_key, pid_list in clusters.items():
         if not pid_list:
             continue
         df_cluster = df_orig[df_orig[primary_id].isin(pid_list)]
-        for col in numeric_columns:  # Použijeme pouze numerické sloupce
+        for col in numeric_columns:
             mean = df_cluster[col].mean()
             std = df_cluster[col].std()
             if std and not np.isnan(std):
@@ -245,29 +321,29 @@ def detect_extremes(df_orig: pd.DataFrame,
                 if not outliers.empty:
                     extremes['by_cluster'][cl_key] = outliers.tolist()
 
-    # uložit výsledek
+    # Uložení výsledků
     os.makedirs(f"{output_path}json", exist_ok=True)
     with open(f"{output_path}json/extremes.json", "w", encoding="utf-8") as f:
         json.dump(extremes, f, indent=4)
 
-def extract_and_save_pie_data(
-    som,
-    data: np.ndarray,
-    df_orig,
-    categorical_columns: list,
-    output_dir: str
-):
-    """
-    Pro každý sloupec v categorical_columns:
-      1) načte hodnoty z df_orig,
-      2) spočítá pro každý neuron (i,j) počty jednotlivých kategorií,
-      3) uloží JSON: seznam kategorií + counts per 'i_j'.
+def extract_and_save_pie_data(som, data: np.ndarray, df_orig: pd.DataFrame, categorical_columns: list, output_dir: str) -> None:
+    """Generuje data pro koláčové grafy podle neuronů SOM.
+    
+    Args:
+        som: Trénovaná SOM síť
+        data (np.ndarray): Předzpracovaná data
+        df_orig (pd.DataFrame): Původní data
+        categorical_columns (list): Seznam kategoriálních sloupců
+        output_dir (str): Cesta pro výstupní soubory
+        
+    Note:
+        Pro každý kategoriální sloupec vytváří JSON s počty kategorií pro každý neuron.
+        Formát: {"categories": {1: "kategorie1", ...}, "counts": {"i_j": {1: počet, ...}}}
     """
     os.makedirs(output_dir, exist_ok=True)
     m, n = som.m, som.n
 
     for col in categorical_columns:
-        # unikátní kategorie v původním DF (př.: ['setosa','versicolor','virginica'])
         categories = df_orig[col].dropna().unique().tolist()
         cat_map = {i+1: cat for i, cat in enumerate(categories)}
 
@@ -293,40 +369,45 @@ def extract_and_save_pie_data(
         with open(fn, 'w', encoding='utf-8') as f:
             json.dump(out, f, indent=2, ensure_ascii=False)
 
-
-def extract_and_save_pie_data_from_clusters(
-    df_orig,
-    cluster_file: str,
-    categorical_columns: list,
-    output_dir: str,
-    primary_id: str
-):
-    """
-    Pro každý sloupec v categorical_columns:
-      • Načte clusters.json: { "i_j": [pid1,pid2,…], … }
-      • Pro každý klastr spočítá Counter kategorií podle df_orig[primary_id]→df_orig[col]
-      • Uloží JSON s číselnými klíči kategorií i counts
+def extract_and_save_pie_data_from_clusters(df_orig: pd.DataFrame,
+                                          cluster_file: str,
+                                          categorical_columns: list,
+                                          output_dir: str,
+                                          primary_id: str) -> None:
+    """Generuje data pro koláčové grafy podle shluků.
+    
+    Args:
+        df_orig (pd.DataFrame): Původní data
+        cluster_file (str): Cesta k souboru se shluky
+        categorical_columns (list): Seznam kategoriálních sloupců
+        output_dir (str): Cesta pro výstupní soubory
+        primary_id (str): Název sloupce s primárním klíčem
+        
+    Note:
+        Pro každý kategoriální sloupec vytváří JSON s počty kategorií pro každý shluk.
+        Formát: {"categories": {"1": "kategorie1", ...}, "counts": {"i_j": {"1": počet, ...}}}
     """
     os.makedirs(output_dir, exist_ok=True)
-    # nahrání klastrů
+    
+    # Načtení shluků
     with open(cluster_file, 'r', encoding='utf-8') as f:
         clusters = json.load(f)
 
-    # pro každou kategorii připravíme mapu pid→label
+    # Mapování primárních ID na řádky
     pid_to_row = {row[primary_id]: row for _, row in df_orig.iterrows()}
 
     for col in categorical_columns:
-        # zjistíme unikátní kategorie a vytvarujeme mapu 1→název
+        # Vytvoření mapy kategorií
         cats = sorted(df_orig[col].dropna().unique().tolist())
         cat_map = OrderedDict((str(i+1), cats[i]) for i in range(len(cats)))
 
+        # Počítání kategorií pro každý shluk
         counts_out = {}
         for pos, pid_list in clusters.items():
             ctr = Counter()
             for pid in pid_list:
                 label = pid_to_row[pid][col]
                 ctr[label] += 1
-            # převedeme na číselné klíče
             counts_out[pos] = {
                 str(i+1): ctr.get(cats[i], 0)
                 for i in range(len(cats))
@@ -346,5 +427,4 @@ if __name__ == "__main__":
         sys.exit(1)    
 
     uid_hash = sys.argv[1]
-    # clear_files(uid_hash)
     process_project(uid_hash)
