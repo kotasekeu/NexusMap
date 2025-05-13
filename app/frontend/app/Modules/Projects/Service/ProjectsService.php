@@ -106,16 +106,11 @@ class ProjectsService extends BaseService
 		$rowCount = 0;
 		
 		while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
-			if (count($row) === $headerCount) {
+			// Přeskočit prázdné řádky
+			if (count($row) === $headerCount && array_filter($row, 'strlen')) {
 				$data[] = $row;
 				$rowCount++;
 			}
-		}
-		
-		// Odstranění prázdných řádků na konci
-		while (!empty($data) && empty(array_filter(end($data)))) {
-			array_pop($data);
-			$rowCount--;
 		}
 		
 		fclose($handle);
@@ -165,6 +160,9 @@ class ProjectsService extends BaseService
 		foreach ($cleanedData['data'] as $row) {
 			fputcsv($handle, $row, ',', '"', '\\');
 		}
+		
+		$stat = fstat($handle);
+		ftruncate($handle, $stat['size']-1);
 		
 		fclose($handle);
 	}
@@ -417,11 +415,13 @@ class ProjectsService extends BaseService
 	{
 		return [
 			"selected_columns"		=> "Vybrané sloupce pro analýzu",
-			"categorical_column"	=> "Kategorický sloupec",
+			"categorical_column"	=> "Kategorické sloupce",
 			"primary_id"			=> "Hlavní ID",
 			"analysis_columns"		=> "Sloupce pro analýzu",
 			"legend_column"			=> "Sloupec pro legendu",
-			"legend_title"			=> "Název legendy"
+			"legend_title"			=> "Název legendy",
+			"numerical_column"		=> "Numerické sloupce",
+			"string_column"			=> "Textové sloupce",
 		];
 	}
 

@@ -4,6 +4,7 @@ from utils import log_message
 import os
 import sys
 from database import update_project_settings
+import json
 
 def validate_input_file(input_path: str, settings: dict) -> bool:
     """Ověří správnost vstupního CSV souboru."""
@@ -24,15 +25,6 @@ def validate_input_file(input_path: str, settings: dict) -> bool:
 
 
 def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
-    """Normalizuje data z input.csv do preprocess.csv podle vybraných sloupců a typu dat.
-    Args:
-        input_path: Cesta k vstupnímu CSV souboru
-        settings: Slovník s nastavením pro normalizaci
-        
-    Returns:
-        str: Cesta k vytvořenému výstupnímu souboru preprocess.csv
-    """
-
     df = pd.read_csv(input_path, delimiter=',')
     cols = settings.get("selected_columns", df.columns.tolist())
     data = df[cols].copy()
@@ -48,8 +40,16 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     categorical_column = []
     numerical_column = []
     string_column = []
+        
     for col in cols:
         series = data[col]
+        # Speciální případ pro ID sloupce - vždy kategoriální
+        if col.startswith('id_') or col.endswith('_id'):
+            processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
+            categorical_column.append(col)
+            log_message(f"Sloupec '{col}': typ kategoriální (ID sloupec)")
+            continue
+            
         if pd.api.types.is_numeric_dtype(series):
             # číselné: převést + nahradit zbytky NaN
             num = pd.to_numeric(series, errors="coerce")
@@ -59,7 +59,7 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
         else:
             # textové: rozhodnout podle počtu unikátů
             n_uniques = series.nunique(dropna=True)
-            if n_uniques <= 20:
+            if n_uniques <= 30:
                 # kategorie: label‑encoding
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 categorical_column.append(col)
@@ -69,9 +69,18 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
                 string_column.append(col)
         log_message(f"Sloupec '{col}': typ {'číselný' if pd.api.types.is_numeric_dtype(data[col]) else 'kategoriální'} (unikátů {data[col].nunique(dropna=True)})")
 
+    primary_id = settings.get('primary_id')
+
+    if primary_id in numerical_column:
+        numerical_column = [col for col in numerical_column if col != primary_id]
+    if primary_id in categorical_column:
+        categorical_column = [col for col in categorical_column if col != primary_id]
+
     # 3) Škálování všech sloupců do [0,1]
     scaler = MinMaxScaler()
+    
     scaled = scaler.fit_transform(processed.values)
+    
     normalized_df = pd.DataFrame(scaled, columns=cols)
 
     # Vytvoření cesty pro výstupní soubor ve stejném adresáři

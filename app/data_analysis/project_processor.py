@@ -93,7 +93,8 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
     # spočítat statistiky podle sloupců
     stats = compute_group_statistics(df_orig,
                                     project_settings["legend_column"],
-                                    project_settings["analysis_columns"])
+                                    project_settings["analysis_columns"],
+                                    project_settings)
     #detekovat extrémy s prahovou hodnotou např. 2σ
     detect_extremes(df_orig,
                             output_path,
@@ -102,7 +103,8 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
                             threshold=project_settings.get("std_threshold", 2),
                             legend_column=project_settings["legend_column"],
                             analysis_columns=project_settings["analysis_columns"],
-                            primary_id=project_settings["primary_id"])    
+                            primary_id=project_settings["primary_id"],
+                            project_settings=project_settings)    
 
 
     extract_and_save_pie_data_from_clusters(
@@ -140,11 +142,13 @@ def process_project(uid_hash: str) -> None:
     output_path = f"/userfiles/{uid_hash}/"
     
     log_message(f"Spouštím zpracování projektu s UID {uid_hash}...")
-    # # Aktualizace stavu - běžící projektu v databázi
-    # update_project_status(uid_hash, 2)
 
     # Načtení detailů projektu
     project = get_project_detail(uid_hash)
+
+    # Aktualizace stavu - běžící projektu v databázi
+    update_project_status(uid_hash, 2)
+
     project_settings = load_project_settings(project)
     som_settings = load_som_settings(project)
 
@@ -160,20 +164,37 @@ def process_project(uid_hash: str) -> None:
     train_and_analyze_som(preprocess_file, som_settings, project_settings,output_path, uid_hash)
 
     # Aktualizace stavu projektu v databázi
-    # update_project_status(uid_hash, 1) -------- odkomentovat, v prubehu testovani by se nepoustela analyza znovu
+    update_project_status(uid_hash, 1)
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 
 def compute_group_statistics(df_orig: pd.DataFrame,
                              group_by: str,
-                             analysis_columns: list[str]) -> dict[str, dict[str, tuple[float, float]]]:    
+                             analysis_columns: list[str],
+                             project_settings: dict) -> dict[str, dict[str, tuple[float, float]]]:    
     stats = {}
+    
+    # Použijeme pouze sloupce definované jako numerické v nastavení
+    if 'numerical_column' in project_settings:
+        numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
+    else:
+        # Fallback na původní logiku, pokud numerical_column není definováno
+        numeric_columns = df_orig[analysis_columns].select_dtypes(include=[np.number]).columns.tolist()
+    
+    if not numeric_columns:
+        log_message("Varování: Žádné numerické sloupce pro analýzu.")
+        return stats
 
-    grouped = df_orig.groupby(group_by)[analysis_columns]
+    # Zajistíme, že group_by sloupec je v DataFrame
+    if group_by not in df_orig.columns:
+        log_message(f"Varování: Sloupec {group_by} nenalezen v datech.")
+        return stats
+
+    grouped = df_orig.groupby(group_by)[numeric_columns]
     agg = grouped.agg(['mean', 'std'])
 
     for key, row in agg.iterrows():
-        stats[key] = {col: (row[(col, 'mean')], row[(col, 'std')]) for col in analysis_columns}
+        stats[key] = {col: (row[(col, 'mean')], row[(col, 'std')]) for col in numeric_columns}
     return stats
 
 
@@ -184,27 +205,40 @@ def detect_extremes(df_orig: pd.DataFrame,
                     threshold: float,
                     legend_column: str,
                     analysis_columns: list[str],
-                    primary_id: str) -> dict:
+                    primary_id: str,
+                    project_settings: dict) -> dict:
     extremes = {'by_group': {}, 'by_cluster': {}}
+
+    # Použijeme pouze sloupce definované jako numerické v nastavení
+    if 'numerical_column' in project_settings:
+        numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
+    else:
+        # Fallback na původní logiku, pokud numerical_column není definováno
+        numeric_columns = df_orig[analysis_columns].select_dtypes(include=[np.number]).columns.tolist()
+    
+    if not numeric_columns:
+        log_message("Varování: Žádné numerické sloupce pro detekci extrémů.")
+        return extremes
 
     # Extrémy podle globálního členění
     for group_val, cols_stats in stats_by_group.items():
         mask = (df_orig[legend_column] == group_val)
         df_group = df_orig[mask]
-        for col in analysis_columns:
-            mean, std = cols_stats[col]
-            if std and not np.isnan(std):
-                vals = df_group[col]
-                outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
-                if not outliers.empty:
-                    extremes['by_group'][group_val] = outliers.astype(int).tolist()
+        for col in numeric_columns:  # Použijeme pouze numerické sloupce
+            if col in cols_stats:  # Kontrola, zda sloupec existuje ve statistikách
+                mean, std = cols_stats[col]
+                if std and not np.isnan(std):
+                    vals = df_group[col]
+                    outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
+                    if not outliers.empty:
+                        extremes['by_group'][group_val] = outliers.astype(int).tolist()
 
     # Extrémy podle clusteru
     for cl_key, pid_list in clusters.items():
         if not pid_list:
             continue
         df_cluster = df_orig[df_orig[primary_id].isin(pid_list)]
-        for col in analysis_columns:
+        for col in numeric_columns:  # Použijeme pouze numerické sloupce
             mean = df_cluster[col].mean()
             std = df_cluster[col].std()
             if std and not np.isnan(std):
@@ -306,7 +340,6 @@ def extract_and_save_pie_data_from_clusters(
         fn = os.path.join(output_dir, f"json/pie_data_{col}.json")
         with open(fn, 'w', encoding='utf-8') as f:
             json.dump(out, f, indent=2, ensure_ascii=False)
-
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
