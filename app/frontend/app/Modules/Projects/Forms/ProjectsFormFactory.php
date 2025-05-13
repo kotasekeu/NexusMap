@@ -162,27 +162,27 @@ final class ProjectFormFactory
 		$form->addText('name', 'Název projektu')
 			->setDisabled(true);
 
-		$form->addText('learning_rate', 'Rychlost učení')
+		$form->addText('learning_rate', 'Počáteční rychlost učení')
 			->setHtmlAttribute('type', 'number')
 			->setRequired('Vyplňte rychlost učení')
 			->setHtmlAttribute('min', '0.1')
 			->setHtmlAttribute('max', '1')
-			->setHtmlAttribute('step', '0.1')
+			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Rychlost učení musí být číslo')
 			->addRule(Form::Range, 'Rychlost učení musí být mezi 0 a 1', [0, 1])
 			->setDefaultValue(0.9);
 
-		$form->addText('min_learning_rate', 'Minimální rychlost učení')
+		$form->addText('min_learning_rate', 'Koncová rychlost učení')
 			->setRequired('Vyplňte minimální rychlost učení')
 			->setHtmlAttribute('type', 'number')
-			->setHtmlAttribute('min', '0.1')
+			->setHtmlAttribute('min', '0.001')
 			->setHtmlAttribute('max', '1')
-			->setHtmlAttribute('step', '0.1')
+			->setHtmlAttribute('step', '0.001')
 			->addRule(Form::Float, 'Minimální rychlost učení musí být číslo')
 			->addRule(Form::Range, 'Minimální rychlost učení musí být mezi 0 a 1', [0, 1])
 			->setDefaultValue(0.1);
 
-		$form->addText('radius', 'Počáteční poloměr')
+		$form->addText('radius', 'Počáteční poloměr okolí')
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
 			->setHtmlAttribute('max', '100')
@@ -191,7 +191,7 @@ final class ProjectFormFactory
 			->addRule(Form::Range, 'Poloměr musí být mezi 0 a 100', [0, 100])
 			->setNullable();
 
-		$form->addText('min_radius', 'Minimální poloměr')
+		$form->addText('min_radius', 'Koncový poloměr okolí')
 			->setRequired('Vyplňte minimální poloměr')
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
@@ -210,16 +210,6 @@ final class ProjectFormFactory
 			->addRule(Form::Range, 'Počet sekcí musí být mezi 0 a 100', [0, 100])
 			->setDefaultValue(10);
 
-		$form->addText('min_batch_percent', 'Minimální velikost dávky (%)')
-			->setRequired('Vyplňte minimální velikost dávky')
-			->setHtmlAttribute('type', 'number')
-			->setHtmlAttribute('min', '0')
-			->setHtmlAttribute('max', '100')
-			->setHtmlAttribute('step', '0.1')
-			->addRule(Form::Float, 'Minimální velikost dávky musí být číslo')
-			->addRule(Form::Range, 'Minimální velikost dávky musí být mezi 0 a 100', [0, 100])
-			->setDefaultValue(0.1);
-
 		$form->addText('max_batch_percent', 'Maximální velikost dávky (%)')
 			->setRequired('Vyplňte maximální velikost dávky')
 			->setHtmlAttribute('type', 'number')
@@ -229,6 +219,16 @@ final class ProjectFormFactory
 			->addRule(Form::Float, 'Maximální velikost dávky musí být číslo')
 			->addRule(Form::Range, 'Maximální velikost dávky musí být mezi 0 a 100', [0, 100])
 			->setDefaultValue(5.0);
+
+		$form->addText('min_batch_percent', 'Minimální velikost dávky (%)')
+			->setRequired('Vyplňte minimální velikost dávky')
+			->setHtmlAttribute('type', 'number')
+			->setHtmlAttribute('min', '0')
+			->setHtmlAttribute('max', '100')
+			->setHtmlAttribute('step', '0.1')
+			->addRule(Form::Float, 'Minimální velikost dávky musí být číslo')
+			->addRule(Form::Range, 'Minimální velikost dávky musí být mezi 0 a 100', [0, 100])
+			->setDefaultValue(0.1);
 
 		$valuesUpdateType = [
 			'logarithmic' => 'Logaritmický',
@@ -287,7 +287,7 @@ final class ProjectFormFactory
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
 			->setHtmlAttribute('max', '10000')
-			->setHtmlAttribute('step', '1')
+			->setHtmlAttribute('step', '0.5')
 			->addRule(Form::Range, 'Násobitel epoch musí být mezi 0 a 10000', [0, 10000])
 			->setDefaultValue(1);
 
@@ -309,7 +309,6 @@ final class ProjectFormFactory
 		$form->addSelect('normalize_weights_flag', 'Normalizovat váhy', [
 				0	=> "Ne", 1	=> "Ano"
 			])
-			->setPrompt("Vyberte")
 			->setRequired('Vyberte');
 
 		$form->addText('max_epochs_without_improvement', 'Maximální počet epoch bez zlepšení')

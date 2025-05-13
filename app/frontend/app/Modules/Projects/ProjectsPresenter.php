@@ -69,7 +69,7 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->clusters		= $clusters = $this->projectsService->getClustersData($projectDetail->uid_hash);
 		$this->getTemplate()->extremes		= $extremes	= $this->projectsService->getExtremesData($projectDetail->uid_hash);
 		$this->getTemplate()->records		= $records	= $this->projectsService->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
-		$this->getTemplate()->statsData		= $this->projectsService->getStatsDataFromSources($clusters, $extremes, $records, $projectDetail);
+		$this->getTemplate()->clustersWithData		= $this->projectsService->getStatsDataFromSources($clusters, $extremes, $records, $projectDetail);
 	}
 
 	public function renderMap(int $project_id)
@@ -164,7 +164,14 @@ class ProjectsPresenter extends BasePresenter
 			$this->redirect('Projects:default');
 		}
 
-		$this->getComponent('editProjectForm')->setDefaults($this->projectDetail);
+		$this->getComponent('editProjectForm')->setDefaults(
+			array_merge(
+				[
+					'project_id'	=> $this->projectDetail->project_id,
+					'name'			=> $this->projectDetail->name,
+				],
+				(array)$this->projectDetail->project_settings
+			));
 	}
 
 	public function actionEditSom(int $project_id): void

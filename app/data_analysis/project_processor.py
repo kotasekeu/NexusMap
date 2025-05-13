@@ -95,17 +95,14 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
                                     project_settings["legend_column"],
                                     project_settings["analysis_columns"])
     #detekovat extrémy s prahovou hodnotou např. 2σ
-    extremes = detect_extremes(df_orig,
+    detect_extremes(df_orig,
+                            output_path,
                             clusters,
                             stats,
                             threshold=project_settings.get("std_threshold", 2),
                             legend_column=project_settings["legend_column"],
                             analysis_columns=project_settings["analysis_columns"],
-                            primary_id=project_settings["primary_id"])
-    
-    # uložit výsledek
-    with open(f"{output_path}json/extremes.json", "w", encoding="utf-8") as f:
-        json.dump(extremes, f, indent=4)
+                            primary_id=project_settings["primary_id"])    
 
 
     extract_and_save_pie_data_from_clusters(
@@ -130,6 +127,9 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: 
         pid_raw = df_orig.iloc[idx][primary_id]  # použije správný index
         pid = int(pid_raw)
         clusters.setdefault(key, []).append(pid)
+    
+    os.makedirs(os.path.dirname(cluster_filename), exist_ok=True)
+
     with open(cluster_filename, 'w', encoding='utf-8') as f:
         json.dump(clusters, f, indent=4)        
 
@@ -178,6 +178,7 @@ def compute_group_statistics(df_orig: pd.DataFrame,
 
 
 def detect_extremes(df_orig: pd.DataFrame,
+                    output_path: str,
                     clusters: dict[str, list[int]],
                     stats_by_group: dict[str, dict[str, tuple[float, float]]],
                     threshold: float,
@@ -211,7 +212,10 @@ def detect_extremes(df_orig: pd.DataFrame,
                 if not outliers.empty:
                     extremes['by_cluster'][cl_key] = outliers.astype(int).tolist()
 
-    return extremes
+    # uložit výsledek
+    os.makedirs(f"{output_path}json", exist_ok=True)
+    with open(f"{output_path}json/extremes.json", "w", encoding="utf-8") as f:
+        json.dump(extremes, f, indent=4)
 
 def extract_and_save_pie_data(
     som,

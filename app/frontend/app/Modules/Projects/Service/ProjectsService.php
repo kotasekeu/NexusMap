@@ -74,9 +74,71 @@ class ProjectsService extends BaseService
 		$input_csv = $data['input_csv'] ?? null;
 
 		$projectId = $this->projectsRepository->create($projectData);
-
+		
 		$this->uploadInputCsv($input_csv, $projectData);
 		return $projectId;
+	}
+
+	private function cleanCsvData(FileUpload $input_csv): array
+	{
+		$handle = fopen($input_csv->getTemporaryFile(), 'r');
+		if ($handle === false) {
+			throw new \RuntimeException('Nelze otevřít CSV soubor');
+		}
+
+		// Načtení a kontrola BOM
+		$firstLine = fgets($handle);
+		if ($firstLine === false) {
+			fclose($handle);
+			throw new \RuntimeException('Prázdný CSV soubor');
+		}
+
+		// Odstranění BOM
+		$firstLine = ltrim($firstLine, "\xEF\xBB\xBF");
+		
+		// Zpracování hlavičky
+		$header = str_getcsv(trim($firstLine), ',', '"', '\\');
+		$header = array_map('trim', $header);
+		$headerCount = count($header);
+		
+		// Načtení a očištění dat
+		$data = [];
+		$rowCount = 0;
+		
+		while (($row = fgetcsv($handle, 0, ',', '"', '\\')) !== false) {
+			if (count($row) === $headerCount) {
+				$data[] = $row;
+				$rowCount++;
+			}
+		}
+		
+		// Odstranění prázdných řádků na konci
+		while (!empty($data) && empty(array_filter(end($data)))) {
+			array_pop($data);
+			$rowCount--;
+		}
+		
+		fclose($handle);
+		return [
+			'header' => $header,
+			'data' => $data,
+			'row_count' => $rowCount
+		];
+	}
+
+	public function saveInputCsvData(FileUpload $input_csv, int $project_id): void
+	{
+		$cleanedData = $this->cleanCsvData($input_csv);
+
+		$csvData = [
+			'column_count' => count($cleanedData['header']),
+			'column_names' => implode(',', $cleanedData['header']),
+			'row_count' => $cleanedData['row_count'],
+			'project_id' => $project_id,
+			'file_size' => round($input_csv->getSize() / 1024 / 1024, 2),
+		];
+
+		$this->projectsRepository->saveInputFileData($csvData);
 	}
 
 	private function uploadInputCsv(FileUpload $input_csv, array|ArrayHash $projectData): void
@@ -85,30 +147,26 @@ class ProjectsService extends BaseService
 		if (!is_dir($csvDir)) {
 			mkdir($csvDir, 0777, true);
 		}
-
+		
+		// Nejdřív zpracujeme data pro databázi
 		$this->saveInputCsvData($input_csv, $projectData['project_id']);
 
-		$input_csv->move($csvDir.'/input.csv');
-	}
+		// Získáme vyčištěná data
+		$cleanedData = $this->cleanCsvData($input_csv);
+		
+		// Uložíme vyčištěný soubor
+		$handle = fopen($csvDir.'/input.csv', 'w');
+		if ($handle === false) {
+			throw new \RuntimeException('Nelze vytvořit výstupní CSV soubor');
+		}
 
-	public function saveInputCsvData(FileUpload $input_csv, int $project_id): void
-	{
-		$file = new \SplFileObject($input_csv->getTemporaryFile());
-		$file->setFlags(\SplFileObject::READ_CSV);
-
-		$file->rewind();
-		$header = $file->current();
-		$file->seek(PHP_INT_MAX);
-
-		$csvData = [
-			'column_count' => count($header),
-			'column_names' => implode(',', array_map('trim', $header)),
-			'row_count' => $file->key() - 1,
-			'project_id' => $project_id,
-			'file_size' => round($input_csv->getSize() / 1024 / 1024, 2),
-		];
-
-		$this->projectsRepository->saveInputFileData($csvData);
+		// Zápis hlavičky a dat
+		fputcsv($handle, $cleanedData['header'], ',', '"', '\\');
+		foreach ($cleanedData['data'] as $row) {
+			fputcsv($handle, $row, ',', '"', '\\');
+		}
+		
+		fclose($handle);
 	}
 
 	public function saveProject(array|ArrayHash $data): int
@@ -449,28 +507,83 @@ class ProjectsService extends BaseService
 	public function getStatsDataFromSources($clusters, $extremes, $records, $projectDetail): array
 	{
 		$clustersWithData = [];
-		$categorical_column	= $projectDetail->project_settings->categorical_column;
-		$numerical_column	= $projectDetail->project_settings->numerical_column;
-		$string_column		= $projectDetail->project_settings->string_column;
+		$categorical_column = $projectDetail->project_settings->categorical_column;
+		$numerical_column = $projectDetail->project_settings->numerical_column;
+		$string_column = $projectDetail->project_settings->string_column;
 
 		foreach ($clusters as $clusterKey => $cluster) {
-			$clustersWithData[$clusterKey]['count'] = count($cluster);
+			$clustersWithData[$clusterKey] = [
+				'count' => count($cluster),
+				'numerical_stats' => [],
+				'categorical_stats' => [],
+				'records' => [],
+				'extremes' => []
+			];
 
-			foreach ($cluster as $clusterRecord) {
-				$clustersWithData[$clusterKey]['records'][$clusterRecord] = $records[$clusterRecord];
+			// Zpracování numerických sloupců
+			foreach ($numerical_column as $column) {
+				$values = [];
+				foreach ($cluster as $recordId) {
+					if (isset($records[$recordId][$column]) && $records[$recordId][$column] !== '') {
+						$values[] = floatval($records[$recordId][$column]);
+					}
+				}
 
-				foreach ($numerical_column as $numericalColumnValue) {
-					dump($numericalColumnValue);
-					die("File:" . __FILE__ . "; Line:" . __LINE__);
+				if (!empty($values)) {
+					$clustersWithData[$clusterKey]['numerical_stats'][$column] = [
+						'min' => min($values),
+						'max' => max($values),
+						'avg' => array_sum($values) / count($values),
+						'median' => $this->calculateMedian($values)
+					];
+				}
+			}
+
+			// Zpracování kategorických sloupců
+			foreach ($categorical_column as $column) {
+				$categories = [];
+				foreach ($cluster as $recordId) {
+					if (isset($records[$recordId][$column])) {
+						$value = $records[$recordId][$column];
+						if (!isset($categories[$value])) {
+							$categories[$value] = 0;
+						}
+						$categories[$value]++;
+					}
+				}
+				$clustersWithData[$clusterKey]['categorical_stats'][$column] = $categories;
+			}
+
+			// Zpracování záznamů
+			foreach ($cluster as $recordId) {
+				if (! isset($records[$recordId])) {
+					continue;
+				}
+
+				$clustersWithData[$clusterKey]['records'][$recordId] = $records[$recordId];
+			}
+
+			// Zpracování extrémů
+			if (isset($extremes['by_cluster'][$clusterKey])) {
+				foreach ($extremes['by_cluster'][$clusterKey] as $extremeRecordId) {
+					$clustersWithData[$clusterKey]['extremes'][$extremeRecordId] = $records[$extremeRecordId];
 				}
 			}
 		}
 
-		dump($records);
-		dump($projectDetail);
-		dump($extremes);
-		dump($clusters);
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
 		return $clustersWithData;
+	}
+
+	private function calculateMedian(array $values): float
+	{
+		sort($values);
+		$count = count($values);
+		$middle = floor($count / 2);
+
+		if ($count % 2 == 0) {
+			return ($values[$middle - 1] + $values[$middle]) / 2;
+		}
+
+		return $values[$middle];
 	}
 }
