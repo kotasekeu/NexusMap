@@ -1,0 +1,167 @@
+{layout '../../../Common/Templates/@layout.latte'}
+{block header}
+	<style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        th, td {
+            border: 1px solid black;
+            padding: 8px;
+            text-align: left;
+        }
+        .extreme {
+            font-weight: bold;
+            color: red;
+        }
+        .hidden {
+            display: none;
+        }
+        .cluster-box {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .stats-box {
+            background-color: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .toggle-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .toggle-button:hover {
+            background-color: #0056b3;
+        }
+	</style>
+{/block}
+
+{block content}
+<div class="page-body">
+	<div class="container-fluid">
+		<div class="page-title">
+			<div class="row">
+				<div class="col-6">
+					<h4>Statistická data</h4>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-sm-12">
+				<div class="card">
+					<div class="blog-single card-body">
+						<div class="blog-box blog-details">
+							<div class="blog-details">
+								<h4>
+									#{$projectDetail->project_id} {$projectDetail->name}
+								</h4>
+								<div class="single-blog-content-top">
+									<div class="card mt-4">
+										<div class="card-body">
+											<div class="row">
+												<div class="col-md-12">
+													<h3>Nalezené extrémy podle oblastí</h3>
+													<br />
+													{dump $clustersWithData}
+													{foreach $clustersWithData as $clusterKey => $cluster}
+														{if !empty($cluster['extremes'])}
+															<div class="cluster-box">
+																<h4>Cluster ({explode('_',$clusterKey)[0]}, {explode('_',$clusterKey)[1]})</h4>
+																<p>Počet dat v clusteru: {$cluster['count']}</p>
+
+																{* Numerické statistiky *}
+																{if isset($cluster['numerical_stats'])}
+																	<div class="stats-box">
+																		<h5>Numerické statistiky:</h5>
+																		{foreach $cluster['numerical_stats'] as $column => $stats}
+																			<h6>{$column}:</h6>
+																			<ul>
+																				<li>Minimum: {$stats['min']}</li>
+																				<li>Maximum: {$stats['max']}</li>
+																				<li>Průměr: {round($stats['avg'], 2)}</li>
+																				<li>Medián: {$stats['median']}</li>
+																			</ul>
+																		{/foreach}
+																	</div>
+																{/if}
+
+																{* Kategorické statistiky *}
+																<div class="stats-box">
+																	<h5>Kategorické statistiky:</h5>
+																	{foreach $cluster['categorical_stats'] as $column => $categories}
+																		<h6>{$column}:</h6>
+																		<ul>
+																			{foreach $categories as $value => $count}
+																				<li>{$value}: {$count}</li>
+																			{/foreach}
+																		</ul>
+																	{/foreach}
+																</div>
+
+																{* Extrémní hodnoty *}
+																<div class="stats-box">
+																	<h5>Extrémní hodnoty:</h5>
+																	<table>
+																		<tr>
+																			{foreach $projectDetail->project_settings->analysis_columns as $column}
+																				<th>{$column}</th>
+																			{/foreach}
+																		</tr>
+																		{foreach $cluster['extremes'] as $recordId => $record}
+																			<tr class="extreme">
+																				{foreach $projectDetail->project_settings->analysis_columns as $column}
+																					<td>{$record[$column]}</td>
+																				{/foreach}
+																			</tr>
+																		{/foreach}
+																	</table>
+																</div>
+
+																{* Všechna data clusteru *}
+																<button class="toggle-button" onclick="document.getElementById('data_{$clusterKey}').classList.toggle('hidden')">
+																	Zobrazit všechna data clusteru
+																</button>
+																<div id="data_{$clusterKey}" class="hidden">
+																	<table>
+																		<tr>
+																			{foreach $projectDetail->project_settings->analysis_columns as $column}
+																				<th>{$column}</th>
+																			{/foreach}
+																		</tr>
+																		{foreach $cluster['records'] as $recordId => $record}
+																			<tr>
+																				{foreach $projectDetail->project_settings->analysis_columns as $column}
+																					<td>{$record[$column]}</td>
+																				{/foreach}
+																			</tr>
+																		{/foreach}
+																	</table>
+																</div>
+															</div>
+														{/if}
+													{/foreach}
+												</div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+{/block}

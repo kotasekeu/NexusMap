@@ -204,9 +204,8 @@ class ProjectsService extends BaseService
 			$data->n = intval($mn[1]);
 			unset($data->map_size);
 		}
-		$intValFields = ['max_epochs_without_improvement','epoch_multiplier', 'random_seed', 'num_batches', 'project_id'];
+		$intValFields = ['max_epochs_without_improvement', 'random_seed', 'num_batches', 'project_id'];
 		foreach ($intValFields as $value) {
-
 			if (isset($data[$value]) && ! empty($data[$value])) {
 				$data[$value] = intval($data[$value]);
 			}
@@ -298,6 +297,7 @@ class ProjectsService extends BaseService
 	private function getProjectCsvFiles(int $customer_id, string $uid_hash): array
 	{
 		$csvDir = WWW_DIR . '/userFiles/' . $uid_hash . '/csv';
+
 		if (!is_dir($csvDir)) {
 			return [];
 		}
@@ -507,9 +507,9 @@ class ProjectsService extends BaseService
 	public function getStatsDataFromSources($clusters, $extremes, $records, $projectDetail): array
 	{
 		$clustersWithData = [];
-		$categorical_column = $projectDetail->project_settings->categorical_column;
-		$numerical_column = $projectDetail->project_settings->numerical_column;
-		$string_column = $projectDetail->project_settings->string_column;
+		$categorical_column = $projectDetail->project_settings->categorical_column ?? [];
+		$numerical_column = $projectDetail->project_settings->numerical_column ?? [];
+		$string_column = $projectDetail->project_settings->string_column ?? [];
 
 		foreach ($clusters as $clusterKey => $cluster) {
 			$clustersWithData[$clusterKey] = [

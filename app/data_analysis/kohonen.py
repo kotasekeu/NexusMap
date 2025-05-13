@@ -36,7 +36,7 @@ class KohonenSOM:
         self.batch_growth_type = batch_growth_type
 
         self.growth_g = growth_g
-        self.epoch_multiplier = epoch_multiplier
+        self.epoch_multiplier = float(epoch_multiplier)
         self.map_type = map_type
 
         self.normalize_weights_flag = normalize_weights_flag    

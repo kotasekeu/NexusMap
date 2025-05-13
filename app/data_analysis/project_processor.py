@@ -127,8 +127,7 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig, cluster_filename: 
         
         # převést numpy.int64 na Python int
         pid_raw = df_orig.iloc[idx][primary_id]  # použije správný index
-        pid = int(pid_raw)
-        clusters.setdefault(key, []).append(pid)
+        clusters.setdefault(key, []).append(pid_raw)
     
     os.makedirs(os.path.dirname(cluster_filename), exist_ok=True)
 
@@ -231,7 +230,7 @@ def detect_extremes(df_orig: pd.DataFrame,
                     vals = df_group[col]
                     outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
                     if not outliers.empty:
-                        extremes['by_group'][group_val] = outliers.astype(int).tolist()
+                        extremes['by_group'][group_val] = outliers.tolist()
 
     # Extrémy podle clusteru
     for cl_key, pid_list in clusters.items():
@@ -244,7 +243,7 @@ def detect_extremes(df_orig: pd.DataFrame,
             if std and not np.isnan(std):
                 outliers = df_cluster.loc[np.abs(df_cluster[col] - mean) > threshold * std, primary_id]
                 if not outliers.empty:
-                    extremes['by_cluster'][cl_key] = outliers.astype(int).tolist()
+                    extremes['by_cluster'][cl_key] = outliers.tolist()
 
     # uložit výsledek
     os.makedirs(f"{output_path}json", exist_ok=True)
@@ -314,7 +313,7 @@ def extract_and_save_pie_data_from_clusters(
         clusters = json.load(f)
 
     # pro každou kategorii připravíme mapu pid→label
-    pid_to_row = {int(row[primary_id]): row for _, row in df_orig.iterrows()}
+    pid_to_row = {row[primary_id]: row for _, row in df_orig.iterrows()}
 
     for col in categorical_columns:
         # zjistíme unikátní kategorie a vytvarujeme mapu 1→název

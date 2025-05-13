@@ -59,6 +59,8 @@ class ProjectsPresenter extends BasePresenter
 
 	public function renderStatsData(int $project_id): void
 	{
+		$this->getTemplate()->title = "Statistická data";
+
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
 		if (!$projectDetail) {
 			$this->flashMessage('Projekt nenalezen.');

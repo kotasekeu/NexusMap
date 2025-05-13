@@ -237,12 +237,12 @@ def plot_pie_map_from_json(
                 wedge = Wedge(
                     (x, y), radius,
                     theta1=angle,
-                    theta2=angle - 360 * f,
+                    theta2=angle + 360 * f,
                     facecolor=cmap(k0 / len(cat_keys)),
                     edgecolor='white'
                 )
                 ax.add_patch(wedge)
-                angle -= 360 * f      
+                angle += 360 * f
 
     cat_map  = data['categories']              
     cat_keys = sorted(cat_map.keys(), key=int)
@@ -376,10 +376,72 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         map_type=map_type
     )
 
+    # Vykreslení jednotlivých kategoriálních sloupců
     for column_name in settings['categorical_column']:
+        if not any(column_name in group for group in settings.get('categorical_groups', {}).values()):
+            plot_pie_map_from_json(
+                som,
+                f"{output_path}/json/pie_data_{column_name}.json",
+                f"{output_path}/visualization/pie_map_{column_name}.png",
+                map_type
+            )
+    
+    # Vykreslení skupin kategoriálních sloupců
+    for group_name, columns in settings.get('categorical_groups', {}).items():
+        json_files = [f"{output_path}/json/pie_data_{col}.json" for col in columns]
+        combined_data = {
+            'categories': {},
+            'counts': defaultdict(lambda: defaultdict(int))
+        }
+        
+        # Spojení dat ze všech JSON souborů ve skupině
+        for json_file in json_files:
+            with open(json_file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                # Přidání kategorií s prefixem názvu sloupce
+                column_name = os.path.basename(json_file).replace('pie_data_', '').replace('.json', '')
+                for k, v in data['categories'].items():
+                    # Zachováme původní číselné klíče, ale přidáme prefix pro rozlišení
+                    combined_data['categories'][f"{column_name}_{k}"] = f"{column_name}: {v}"
+                
+                # Spojení počtů
+                for pos, counts in data['counts'].items():
+                    for k, v in counts.items():
+                        combined_data['counts'][pos][f"{column_name}_{k}"] = v
+        
+        # Převedení dat do formátu, který očekává plot_pie_map_from_json
+        formatted_data = {
+            'categories': {},
+            'counts': {}
+        }
+        
+        # Seřazení kategorií podle číselné části klíče
+        sorted_keys = sorted(combined_data['categories'].keys(), 
+                           key=lambda x: int(x.split('_')[-1]))
+        
+        # Přečíslování kategorií od 1
+        for new_key, old_key in enumerate(sorted_keys, 1):
+            formatted_data['categories'][str(new_key)] = combined_data['categories'][old_key]
+            
+            # Přepočítání počtů pro nové klíče
+            for pos in combined_data['counts']:
+                if pos not in formatted_data['counts']:
+                    formatted_data['counts'][pos] = {}
+                if old_key in combined_data['counts'][pos]:
+                    formatted_data['counts'][pos][str(new_key)] = combined_data['counts'][pos][old_key]
+        
+        # Uložení přeformátovaných dat do dočasného JSON souboru
+        temp_json = f"{output_path}/json/temp_pie_data_{group_name}.json"
+        with open(temp_json, 'w', encoding='utf-8') as f:
+            json.dump(formatted_data, f, ensure_ascii=False)
+        
+        # Vykreslení pomocí existující metody
         plot_pie_map_from_json(
             som,
-            f"{output_path}/json/pie_data_{column_name}.json",
-            f"{output_path}/visualization/pie_map_{column_name}.png",
+            temp_json,
+            f"{output_path}/visualization/pie_map_group_{group_name}.png",
             map_type
         )
+        
+        # Smazání dočasného souboru
+        # os.remove(temp_json)

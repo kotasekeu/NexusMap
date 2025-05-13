@@ -40,7 +40,8 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     categorical_column = []
     numerical_column = []
     string_column = []
-        
+    categorical_groups = {}  # Slovník pro skupiny kategoriálních sloupců
+    
     for col in cols:
         series = data[col]
         # Speciální případ pro ID sloupce - vždy kategoriální
@@ -63,6 +64,14 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
                 # kategorie: label‑encoding
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 categorical_column.append(col)
+                
+                # Seskupení podle prefixu
+                parts = col.split('_')
+                if len(parts) > 1:
+                    prefix = parts[0]
+                    if prefix not in categorical_groups:
+                        categorical_groups[prefix] = []
+                    categorical_groups[prefix].append(col)
             else:
                 # volný text: též factorize (případně později zvláštní zpracování)
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
@@ -90,6 +99,7 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     settings['categorical_column'] = categorical_column
     settings['numerical_column'] = numerical_column
     settings['string_column'] = string_column
+    settings['categorical_groups'] = {k: v for k, v in categorical_groups.items() if len(v) > 1}
 
     if uid_hash:
         update_project_settings(uid_hash, settings)
