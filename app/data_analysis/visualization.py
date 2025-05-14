@@ -111,15 +111,15 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
     fig.colorbar(sc, ax=ax, label='Hits')
     ax.set_aspect('equal')
     ax.axis('off')
-    ax.margins(0.08)
+    ax.margins(0)
     plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
 def generate_component_plane(som, component: int, output_file: str,
                             map_type: str = 'square', cmap: str = 'coolwarm',
-                            column_name: str = None):
+                            column_name: str = None, save_legend: bool = True):
     """
     Komponentní rovina pro zvolenou dimenzi váhových vektorů.
     
@@ -347,13 +347,22 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     df = pd.read_csv(preprocess_file, delimiter=';', nrows=0)
     column_names = df.columns.tolist()
     
+    # Rozdělení názvů sloupců podle čárek před cyklem
+    column_names_list = column_names[0].split(',') if column_names else []
+    
     for dim in range(som.dim):
+        # Přeskočíme generování mapy pro primary_id sloupec
+        if dim < len(column_names_list) and column_names_list[dim] == settings['primary_id']:
+            continue
+            
         generate_component_plane(
             som,
             component=dim,
             output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
             map_type=map_type,
-            column_name=column_names[dim] if dim < len(column_names) else None
+            cmap='coolwarm',
+            column_name=column_names_list[dim] if dim < len(column_names_list) else None,
+            save_legend=True
         )
 
     # 4) Cluster‑map

@@ -70,3 +70,24 @@ def update_project_settings(uid_hash, project_setting):
         # Zajistí, že jsou všechny otevřené zdroje uzavřeny.
         cursor.close()
         db.close()
+
+def update_project_results(uid_hash, results):
+    """
+    Uloží výsledky (metriky) trénování do sloupce results v tabulce projects.
+
+    :param uid_hash: Jedinečný identifikátor pro projekt
+    :type uid_hash: str
+    :param results: Slovník s výsledky/metrikami (uloží se jako JSON)
+    :type results: dict
+    :return: None
+    """
+    db = get_db_connection()
+    cursor = db.cursor()
+    results_string = json.dumps(results)
+    try:
+        query = "UPDATE projects SET results = %s WHERE uid_hash = %s"
+        cursor.execute(query, (results_string, uid_hash))
+        db.commit()
+    finally:
+        cursor.close()
+        db.close()

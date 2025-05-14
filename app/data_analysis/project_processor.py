@@ -11,7 +11,7 @@ Tento modul zajišťuje:
 """
 
 import sys
-from database import fetch_project, update_project_status
+from database import fetch_project, update_project_status, update_project_results
 from preprocess import validate_input_file, normalize_data
 from utils import log_message, set_uid_hash
 from kohonen import KohonenSOM
@@ -23,6 +23,8 @@ from matplotlib.lines import Line2D
 from visualization import generate_maps
 import os
 from collections import defaultdict, Counter, OrderedDict
+import time
+import psutil
 
 def get_project_detail(uid_hash: str) -> dict:
     """Načte detail projektu z databáze podle UID.
@@ -103,8 +105,23 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
     data = pd.read_csv(preprocess_file, delimiter=',').values
 
     # Inicializace a trénování SOM
+    max_memory = psutil.virtual_memory().used // (1024 ** 2)  # v MB před trénováním
+    start_time = time.time()
     som = KohonenSOM(dim=data.shape[1], **som_settings)
     som.train(data)
+    duration = time.time() - start_time
+    # Změříme paměť po trénování
+    max_memory = max(max_memory, psutil.virtual_memory().used // (1024 ** 2))
+    # Uložení metrik do databáze
+    metrics = {
+        "duration": duration,
+        "total_weight_updates": som.total_weight_updates,
+        "best_mqe": som.best_mqe,
+        "epochs": getattr(som, 'epochs_run', None),
+        "map_size": [som.m, som.n],
+        "max_memory_mb": max_memory
+    }
+    # update_project_results(uid_hash, metrics)
 
     # Uložení vstupních dat a vah
     np.savetxt(f"{output_path}csv/data.csv", data, delimiter=",")
@@ -200,7 +217,7 @@ def process_project(uid_hash: str) -> None:
 
     # Načtení a validace dat
     project = get_project_detail(uid_hash)
-    update_project_status(uid_hash, 2)  # Stav: běžící
+    # update_project_status(uid_hash, 2)  # Stav: běžící
 
     project_settings = load_project_settings(project)
     som_settings = load_som_settings(project)
@@ -216,7 +233,7 @@ def process_project(uid_hash: str) -> None:
     train_and_analyze_som(preprocess_file, som_settings, project_settings, output_path, uid_hash)
 
     # Dokončení
-    update_project_status(uid_hash, 1)  # Stav: dokončeno
+    # update_project_status(uid_hash, 1)  # Stav: dokončeno
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 def compute_group_statistics(df_orig: pd.DataFrame,

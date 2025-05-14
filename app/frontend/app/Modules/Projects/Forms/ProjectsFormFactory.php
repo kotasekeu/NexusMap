@@ -133,9 +133,6 @@ final class ProjectFormFactory
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte sloupec legendy');
 
-		$form->addText('legend_title', $columnsNames['legend_title'])
-			->setRequired('Vyplňte titul legendy');
-
 		$form->addSubmit('submit', 'Uložit projekt');
 
 		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
@@ -215,7 +212,7 @@ final class ProjectFormFactory
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
 			->setHtmlAttribute('max', '100')
-			->setHtmlAttribute('step', '0.1')
+			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Maximální velikost dávky musí být číslo')
 			->addRule(Form::Range, 'Maximální velikost dávky musí být mezi 0 a 100', [0, 100])
 			->setDefaultValue(5.0);
@@ -225,7 +222,7 @@ final class ProjectFormFactory
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
 			->setHtmlAttribute('max', '100')
-			->setHtmlAttribute('step', '0.1')
+			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Minimální velikost dávky musí být číslo')
 			->addRule(Form::Range, 'Minimální velikost dávky musí být mezi 0 a 100', [0, 100])
 			->setDefaultValue(0.1);

@@ -74,25 +74,32 @@
 												<br />
 												{foreach $clustersWithData as $clusterKey => $cluster}
 													{if !empty($cluster['extremes'])}
-														<div class="col-sm-4">
+														<div class="col-sm-6">
 															<div class="cluster-box">
 																<h4>Cluster ({explode('_',$clusterKey)[0]}, {explode('_',$clusterKey)[1]})</h4>
 																<p>
-																	Počet dat v clusteru: {$cluster['count']}
+																	{dump $cluster}
+																	Počet dat v clusteru: {$cluster['count']} <br />
+																	Počet nalezených extrémů: {count($cluster['extremes'])} <br />
 																</p>
 
 																{if isset($cluster['numerical_stats'])}
 																	<div class="stats-box">
-																		<h5>Numerické statistiky:</h5>
-																		{foreach $cluster['numerical_stats'] as $column => $stats}
-																			<h6>{$column}:</h6>
-																			<ul>
-																				<li>Min. {$stats['min']}</li>
-																				<li>Max. {$stats['max']}</li>
-																				<li>Prům: {round($stats['avg'], 2)}</li>
-																				<li>Medián: {$stats['median']}</li>
-																			</ul>
-																		{/foreach}
+																		<h5>Průměry numerických sloupců:</h5>
+																		<table>
+																			<tr>
+																				{foreach $cluster['numerical_stats'] as $column => $stats}
+																					<th>{$column}</th>
+																				{/foreach}
+																			</tr>
+																			<tr>
+																				{foreach $cluster['numerical_stats'] as $column => $stats}
+																					<td>
+																						{round($stats['avg'], 2)}
+																					</td>
+																				{/foreach}
+																			</tr>
+																		</table>
 																	</div>
 																{/if}
 																{* Extrémní hodnoty *}
@@ -113,11 +120,6 @@
 																		{/foreach}
 																	</table>
 																</div>
-
-																{* Všechna data clusteru *}
-																<button class="toggle-button" onclick="document.getElementById('data_{$clusterKey}').classList.toggle('hidden')">
-																	Zobrazit všechna data clusteru
-																</button>
 															</div>
 														</div>
 													{/if}

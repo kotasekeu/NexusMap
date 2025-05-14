@@ -26,8 +26,25 @@ class ProjectsService extends BaseService
 
     public function getProjects(int $customer_id)
     {
-        return $this->projectsRepository->getProjectsForCustomer($customer_id);
+		$projects = $this->projectsRepository->getProjectsForCustomer($customer_id);
+
+		return $this->prepareProjects($projects);
     }
+
+	private function prepareProjects(array $projects): array
+	{
+		$returnProjects = [];
+
+		if (empty($projects)) {
+			return $returnProjects;
+		}
+
+		foreach ($projects as $project) {
+			$returnProjects[] = $this->prepareProject($project);
+		}
+
+		return $returnProjects;
+	}
 
 	public function getProjectDetail(int $customer_id, int $project_id): ?Row
 	{
@@ -39,6 +56,7 @@ class ProjectsService extends BaseService
 	{
 		$project->som_settings 		= $this->getSomSettings($project->som_settings);
 		$project->project_settings	= empty($project->project_settings) ? null : json_decode($project->project_settings);
+		$project->results			= empty($project->results) ? null : json_decode($project->results);
 
 		return $project;
 	}
@@ -418,8 +436,7 @@ class ProjectsService extends BaseService
 			"categorical_column"	=> "Kategorické sloupce",
 			"primary_id"			=> "Hlavní ID",
 			"analysis_columns"		=> "Sloupce pro analýzu",
-			"legend_column"			=> "Sloupec pro legendu",
-			"legend_title"			=> "Název legendy",
+			"legend_column"			=> "Sloupec pro hledání extrémů",
 			"numerical_column"		=> "Numerické sloupce",
 			"string_column"			=> "Textové sloupce",
 		];
@@ -512,6 +529,7 @@ class ProjectsService extends BaseService
 		$string_column = $projectDetail->project_settings->string_column ?? [];
 
 		foreach ($clusters as $clusterKey => $cluster) {
+
 			$clustersWithData[$clusterKey] = [
 				'count' => count($cluster),
 				'numerical_stats' => [],

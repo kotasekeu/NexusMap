@@ -92,6 +92,53 @@
 														</div>
 													{/if}
 
+													{if ! empty($projectDetail->results)}
+														<div class="card mt-4">
+															<div class="card-header">
+																<h5>Výsledky analýzy</h5>
+															</div>
+															<div class="card-body">
+																<table class="table table-striped">
+																	<thead>
+																	<tr>
+																		<th>Popis</th>
+																		<th>Hodnota</th>
+																	</tr>
+																	</thead>
+																	<tbody>
+																		<tr>
+																			<td>Dimenze (počet sloupců)</td>
+																			<td>{$projectDetail->column_count}</td>
+																		</tr>
+																		<tr>
+																			<td>Rozměr (počet řádků)</td>
+																			<td>{$projectDetail->row_count}</td>
+																		</tr>
+																		<tr>
+																			<td>Velikost souboru</td>
+																			<td>{$projectDetail->file_size} MB</td>
+																		</tr>
+																		<tr>
+																			<td>Délka zpracování</td>
+																			<td>{$projectDetail->results->duration|round:2}s</td>
+																		</tr>
+																		<tr>
+																			<td>Počet průchodů/epoch</td>
+																			<td>{$projectDetail->results->epochs}</td>
+																		</tr>
+																		<tr>
+																			<td>Počet aktualizovaných vah</td>
+																			<td>{$projectDetail->results->total_weight_updates}</td>
+																		</tr>
+																		<tr>
+																			<td>Dosažena kvantizační chyba</td>
+																			<td>{$projectDetail->results->best_mqe|round:4}</td>
+																		</tr>
+																	</tbody>
+																</table>
+															</div>
+														</div>
+													{/if}
 
 													
 												</div>

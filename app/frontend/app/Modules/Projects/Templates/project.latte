@@ -14,6 +14,7 @@
 
 		<h5 class="f-w-500">
 			<a href="{plink Projects:detail, $projectDetail->project_id}">{$projectDetail->name}</a>
+			<br /><em class="small text-secondary">{$projectDetail->uid_hash}</em>
 		</h5>
 		<p></p>
 		<div class="row details">
@@ -24,6 +25,25 @@
 			<div class="col-4 text-black">{$projectDetail->row_count} </div>
 			<div class="col-8"><span>Velikost souboru </span></div>
 			<div class="col-4 text-black">{$projectDetail->file_size} MB </div>
+			{if isset($projectDetail->project_settings->primary_id)}
+				<div class="col-8"><span>Primární sloupec </span></div>
+				<div class="col-4 text-black">{$projectDetail->project_settings->primary_id} </div>
+			{/if}
+			{if ! empty($projectDetail->results)}
+				<div class="col-12">
+					<strong>Výsledky analýzy</strong>
+				</div>
+				<div class="col-8"><span>Rozměr mapy </span></div>
+				<div class="col-4 font-black"> {$projectDetail->results->map_size[0]}x{$projectDetail->results->map_size[1]}</div>
+				<div class="col-8"> <span>Délka zpracování</span></div>
+				<div class="col-4 font-black">{$projectDetail->results->duration|round:2}s</div>
+				<div class="col-8"> <span>Počet průchodů/epoch</span></div>
+				<div class="col-4 font-black">{$projectDetail->results->epochs}</div>
+				<div class="col-8"> <span>Počet aktualizovaných vah</span></div>
+				<div class="col-4 font-black">{$projectDetail->results->total_weight_updates}</div>
+				<div class="col-8"> <span>Dosažena kvantizační chyba</span></div>
+				<div class="col-4 font-black">{$projectDetail->results->best_mqe|round:4}</div>
+			{/if}
 		</div>
 		<a href="{plink Projects:detail, $projectDetail->project_id}" class="btn btn-success btn-xs">Detail</a>
 		<div class="project-status mt-4">
@@ -63,26 +83,3 @@
 		</div>
 	</div>
 </div>
-{*
-			<div class="col-8"><span>Počet dimenzí</span></div>
-			<div class="col-4 font-primary">5 </div>
-			<div class="col-8"><span>Počet vstupních vektorů</span></div>
-			<div class="col-4 font-primary">150 </div>
-			<div class="col-8"> <span>Mapa </span></div>
-			<div class="col-4 font-primary"> 10x10 čtverec</div>
-			<div class="col-8"> <span>Délka zpracování</span></div>
-			<div class="col-4 font-primary">23,45s</div>
-			<div class="col-8"> <span>Počet průchodů/epoch</span></div>
-			<div class="col-4 font-primary">149.900</div>
-			<div class="col-8"> <span>Počet aktualizovaných vah</span></div>
-			<div class="col-4 font-primary">298.800</div>
-
-			<div class="col-8"><span>Počet dimenzí</span></div>
-			<div class="col-4 font-primary">8 </div>
-			<div class="col-8"><span>Počet vstupních vektorů</span></div>
-			<div class="col-4 font-primary"> 2389</div>
-			<div class="col-8"> <span>Mapa </span></div>
-			<div class="col-4 font-primary"> 30x30 Hex</div>
-		</div>
-
-*}

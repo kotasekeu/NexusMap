@@ -179,6 +179,7 @@ class KohonenSOM:
         total_epochs = int(total_samples * self.epoch_multiplier)
         no_improvement_count = 0
 
+        self.epochs_run = 0  # Přidáno: počítadlo skutečně proběhlých epoch
         for epoch in range(total_epochs):
             # Příprava dávky
             batch_percent = self.get_batch_percent(epoch, total_epochs)
@@ -231,6 +232,8 @@ class KohonenSOM:
             # Logování průběhu
             if epoch % 100 == 0:                
                 log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{total_qe:.6f}")                
+
+            self.epochs_run = epoch + 1  # Uložíme skutečný počet epoch (i při předčasném ukončení)
 
         # Výpis souhrnných informací
         print(f"\nSouhrn trénování:")

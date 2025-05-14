@@ -42,11 +42,13 @@ class ProjectsRepository extends BaseRepository
 
 	public function getProjectDetail(int $customer_id, int $project_id): ?Row
 	{
-		return $this->db->select('*')
-			->from($this->getTable())
-			->where('customer_id = %i', $customer_id)
-			->where($this->getPrimaryKey() . ' = %i', $project_id)
-			->where('visible = 1')
+		return $this->db->select('P.*, SF.row_count, SF.column_count, SF.column_names, SF.file_size')
+			->from($this->getTable() . " AS P")
+			->leftJoin($this->sourceFileTable . " AS SF")
+			->on("SF.project_id = P.project_id")
+			->where('P.customer_id = %i', $customer_id)
+			->where('P.project_id = %i', $project_id)
+			->where('P.visible = 1')
 			->fetch();
 	}
 

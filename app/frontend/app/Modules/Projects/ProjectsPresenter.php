@@ -170,7 +170,7 @@ class ProjectsPresenter extends BasePresenter
 			array_merge(
 				[
 					'project_id'	=> $this->projectDetail->project_id,
-					'name'			=> $this->projectDetail->name,
+					'name'			=> $this->projectDetail->name
 				],
 				(array)$this->projectDetail->project_settings
 			));
@@ -193,6 +193,7 @@ class ProjectsPresenter extends BasePresenter
 				[
 					'project_id'	=> $this->projectDetail->project_id,
 					'name'			=> $this->projectDetail->name,
+					'map_size'		=> $this->projectDetail->som_settings->m . "x" . $this->projectDetail->som_settings->n
 				],
 				(array)$this->projectDetail->som_settings
 			));
