@@ -34,6 +34,18 @@ def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
         raise ValueError("Unsupported map type: choose 'square' or 'hex'")
     return np.array(X), np.array(Y)
 
+def _set_axes_limits(ax, m, n, map_type):
+    X, Y = _grid_coordinates(m, n, map_type)
+    if map_type == 'hex':
+        # pro hexagon: šířka = 1, výška = √3/2*2 = √3 ≈1.732
+        dx = 0.5
+        dy = np.sqrt(3) / 2
+    else:
+        dx = dy = 0.5
+
+    ax.set_xlim(X.min() - dx, X.max() + dx)
+    ax.set_ylim(Y.min() - dy, Y.max() + dy)
+    ax.margins(0)
 
 def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str = 'viridis'):
     """
@@ -117,39 +129,106 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
     plt.close()
 
 
-def generate_component_plane(som, component: int, output_file: str,
-                            map_type: str = 'square', cmap: str = 'coolwarm',
-                            column_name: str = None, save_legend: bool = True):
+def generate_component_plane(
+    som,
+    component: int,
+    output_file: str,
+    map_type: str = 'square',
+    cmap: str = 'coolwarm',
+    column_name: str = None,
+    save_legend: bool = True,
+    data_mean: float = None,
+    data_std: float = None
+):
     """
-    Komponentní rovina pro zvolenou dimenzi váhových vektorů.
-    
-    Args:
-        som: Instance SOM
-        component: Index dimenze
-        output_file: Cesta k výstupnímu souboru
-        map_type: Typ mapy ('square' nebo 'hex')
-        cmap: Barevná mapa
-        column_name: Název sloupce pro legendu
-    """
-    check_folder(output_file)
-    m, n, dim = som.m, som.n, som.dim
-    plane = som.weights.reshape(-1, dim)[:, component].reshape(m, n)
-    X, Y = _grid_coordinates(m, n, map_type)
-    fig, ax = plt.subplots(figsize=(20,12))
+    Vykreslí komponentovou rovinu (váhový rozměr) do output_file (bez legendy) a
+    pokud save_legend, vytvoří samostatný soubor legendy v téže složce.
 
-    element_size = get_size_of_point(m,n,map_type)    
-    sc = ax.scatter(X, Y, c=plane.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-    
-    # Použijeme název sloupce pro legendu, pokud je zadán
-    legend_label = column_name if column_name else f'Component {component}'
-    fig.colorbar(sc, ax=ax, label=legend_label)
+    Args:
+        som: Instance SOM s vlastnostmi m,n,dim a .weights
+        component: Index dimenze váhového vektoru
+        output_file: Cesta k výstupnímu obrázku komponentové mapy
+        map_type: 'square' nebo 'hex'
+        cmap: Název matplotlib colormap
+        column_name: Popisek legendy (název atributu)
+        save_legend: Zda generovat samostatný obrázek legendy
+    """
+    # Vytvoření cílové složky
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+
+    # Načtení hodnot komponenty
+    m, n, dim = som.m, som.n, som.dim
+    vals = som.weights.reshape(-1, dim)[:, component]
+    # nejprve vezmeme normalizované váhy
+    vals_norm = som.weights.reshape(-1, dim)[:, component]
+    if data_mean is not None and data_std is not None:
+        vals = vals_norm * data_std + data_mean
+    else:
+        vals = vals_norm
+
+    # Škálování barev podle reálných rozsahů
+    vmin, vmax = vals.min(), vals.max()
+    norm = Normalize(vmin=vmin, vmax=vmax)
+
+    # 1) Vykreslení mapy bez legendy
+    X, Y = _grid_coordinates(m, n, map_type)
+    fig, ax = plt.subplots(figsize=(20, 12))
+    sc = ax.scatter(
+        X, Y,
+        c=vals,
+        s=get_size_of_point(m, n, map_type),
+        cmap=cmap,
+        norm=norm,
+        marker='h' if map_type == 'hex' else 's'
+    )
+    _set_axes_limits(ax, som.m, som.n, map_type)
+
     ax.set_aspect('equal')
     ax.axis('off')
-    ax.margins(0.08)
+    ax.margins(0)
     plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
-    plt.close()
+    # uložíme mapu…
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
+    plt.close(fig)
 
+    if save_legend:
+        fig2 = plt.figure(figsize=(2, 12))
+        cax = fig2.add_axes([0.35, 0.02, 0.3, 0.96])
+
+        cbar = fig2.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=cax,
+            orientation='vertical',
+            extend='neither',
+            extendfrac=0.0,
+            label=column_name or f"Component {component}"
+        )
+        # váš blok po vytvoření cbar
+        vmin, vmax = norm.vmin, norm.vmax
+        orig_ticks = cbar.get_ticks()
+        # vybereme jen ty, co skutečně leží mezi vmin a vmax
+        middle_ticks = [t for t in orig_ticks if vmin < t < vmax]
+        new_ticks = [vmin] + middle_ticks + [vmax]
+        cbar.set_ticks(new_ticks)
+        cbar.set_ticklabels([f"{t:.2f}" for t in new_ticks])
+
+        # ručně omezíme výšku colorbaru na přesný rozsah
+        cbar.ax.set_ylim(vmin, vmax)
+        # popisek napravo
+        cbar.ax.yaxis.set_label_position('right')
+        cbar.ax.yaxis.tick_right()
+
+        # schovej jen obrys ostatních stran, ale nech osu Y
+        for spine in ['top', 'bottom', 'left']:
+            cax.spines[spine].set_visible(False)
+        cax.spines['right'].set_visible(False)  # popřípadě i tu
+        # a nastav parametry tiků
+        cax.tick_params(axis='y', which='both', length=5, labelsize=10)
+
+        base, ext = os.path.splitext(output_file)
+        legend_file = f"{base}_legend{ext}"
+        plt.savefig(legend_file, bbox_inches='tight', pad_inches=0.02)
+        plt.close(fig2)
 
 def generate_cluster_map(som, clusters: dict, output_file: str,
                         map_type: str = 'square', palette: list = None):
@@ -274,9 +353,9 @@ def check_folder(output_file: str):
         os.makedirs(folder)
 
 def get_size_of_point(m,n,map_type):
-    if map_type == 'hex':    
+    if map_type == 'hex':
         if m == 10:
-            point_size = 10000
+            point_size = 9000
         elif m == 20:
             point_size = 2300
         elif m == 30:
@@ -325,6 +404,16 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     # parametr mřížky
     map_type = som_settings.get("map_type", "square")
 
+    # vytažení těch sloupců, co jste normalizovali
+    df_all = pd.read_csv(f"{output_path}/csv/input.csv", delimiter=',')
+    # vezmi jen numerické sloupce
+    numeric_cols = settings['numerical_column']
+    df_num = df_all[numeric_cols]
+
+    # spočti průměry a odchylky jen těchto sloupců
+    means = df_num.mean().values
+    stds = df_num.std().values
+
     # 1) U‑Matrix
     generate_u_matrix(
         som,
@@ -354,15 +443,27 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         # Přeskočíme generování mapy pro primary_id sloupec
         if dim < len(column_names_list) and column_names_list[dim] == settings['primary_id']:
             continue
-            
+
+        col_name = column_names_list[dim] if dim < len(column_names_list) else None
+
+        # jestli je tento sloupec numerický, najdi jeho index v numeric_cols
+        if col_name in numeric_cols:
+            idx = numeric_cols.index(col_name)
+            data_mean = means[idx]
+            data_std = stds[idx]
+        else:
+            data_mean = data_std = None
+
         generate_component_plane(
             som,
             component=dim,
             output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
             map_type=map_type,
             cmap='coolwarm',
-            column_name=column_names_list[dim] if dim < len(column_names_list) else None,
-            save_legend=True
+            column_name=col_name,
+            save_legend=True,
+            data_mean=data_mean,
+            data_std=data_std
         )
 
     # 4) Cluster‑map

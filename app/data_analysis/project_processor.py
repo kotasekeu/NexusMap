@@ -138,7 +138,6 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
     extract_and_save_pie_data(som, data, df_orig, project_settings["categorical_column"], output_path)
 
     # Načtení dat pro analýzu
-    df_orig = pd.read_csv(f"{output_path}csv/input.csv", delimiter=',')
     clusters = json.load(open(cluster_file))
 
     # Výpočet statistik a detekce extrémů
