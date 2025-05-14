@@ -41,6 +41,8 @@ class KohonenSOM:
         map_type (str, optional): Typ mřížky ('hex' nebo 'square'). Výchozí hodnota je 'hex'
         min_q_error (float, optional): Minimální požadovaná kvantizační chyba pro early stopping
         max_epochs_without_improvement (int, optional): Maximální počet epoch bez zlepšení pro early stopping
+        mqe_recording_interval (int, optional): Interval pro záznam kvantizační chyby. Výchozí hodnota je 10
+
         
     Note:
         Podporované typy útlumu:
@@ -57,7 +59,7 @@ class KohonenSOM:
                  num_batches=10, min_batch_percent=0.1, max_batch_percent=5,
                  lr_decay_type='exp-drop', radius_decay_type='exp-drop', batch_growth_type='exp-growth',
                  random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex', min_q_error=None,
-                 max_epochs_without_improvement=None):        
+                 max_epochs_without_improvement=None, mqe_recording_interval=10):        
         # Základní parametry sítě
         self.m = m
         self.n = n
@@ -93,10 +95,15 @@ class KohonenSOM:
         self.normalize_weights_flag = normalize_weights_flag    
         self.min_q_error = min_q_error
         self.max_epochs_without_improvement = max_epochs_without_improvement
+        self.mqe_recording_interval = mqe_recording_interval
+
 
         # Metriky trénování
         self.total_weight_updates = 0
         self.best_mqe = float('inf')
+        self.mqe_history = []  # Seznam pro ukládání historie kvantizační chyby
+        self.epochs_history = []  # Seznam pro ukládání čísel epoch
+
 
         # Inicializace vah
         if random_seed is not None:
@@ -172,14 +179,17 @@ class KohonenSOM:
             3. Kontrola podmínek pro ukončení:
                - Dosažení minimální MQE
                - Žádné zlepšení po N epochách
-            4. Logování průběhu každých 100 epoch
+            4. Logování průběhu každých N epoch
         """
         log_message(f"Epocha|počet zpracovanych vektorů celkem|počet vektorů zpracovaných v batch|radius|lr|MQE")
         total_samples = data.shape[0]
         total_epochs = int(total_samples * self.epoch_multiplier)
         no_improvement_count = 0
 
-        self.epochs_run = 0  # Přidáno: počítadlo skutečně proběhlých epoch
+        self.epochs_run = 0
+        self.mqe_history = []  # Reset historie MQE
+        self.epochs_history = []  # Reset historie epoch
+        
         for epoch in range(total_epochs):
             # Příprava dávky
             batch_percent = self.get_batch_percent(epoch, total_epochs)
@@ -214,6 +224,11 @@ class KohonenSOM:
             codebook_vectors = self.weights.reshape(-1, self.dim)
             bmu_indexes = np.array([self.find_bmu(x)[0] * self.n + self.find_bmu(x)[1] for x in data])
             neuron_error_map, total_qe = self.compute_quantization_error(data, codebook_vectors, bmu_indexes, (self.m, self.n))
+
+              # Ukládání historie MQE v zadaném intervalu
+            if epoch % self.mqe_recording_interval == 0:
+                self.mqe_history.append(total_qe)
+                self.epochs_history.append(epoch)
 
             # Kontrola podmínek pro ukončení
             if self.min_q_error is not None and total_qe <= self.min_q_error:

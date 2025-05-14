@@ -1,61 +1,19 @@
 {layout '../../../Common/Templates/@layout.latte'}
 {block head}
-<style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-        .map-wrapper {
-            position: relative;
-            width: 1000px;
-            height: 1000px;
-            background-image: url('http://nexusmap.l/userFiles/nxmpp68239e46939817.89994944/visualization/hit_map_square.png'); /* exportovaný obrázek heatmapy */
-            background-size: cover;
-            border: 1px solid #ccc;
-			padding:15px;
-        }
-        .map-container {
-            position: relative;
-			width:100%;
-            height:100%;
-        }
-        .grid-cell {
-            position: absolute;
-            width: 10%;
-            height: 10%;
-            border: 1px solid transparent;
-        }
-        .grid-cell:hover {
-            border: 1px solid rgba(0,0,0,0.3);
-            background-color: rgba(255,255,255,0.1);
-        }
-        .tooltip {
-            position: absolute;
-            background: white;
-            padding: 5px;
-            border: 1px solid #ccc;
-            font-size: 12px;
-            display: none;
-            z-index: 10;
-        }
-	</style>
+	<link rel="stylesheet" type="text/css" href="{$baseUrl}/assets/css/map.css">
 {/block}
 
 {block content}
 	<div class="page-body">
 		<div class="container-fluid">
-			<div class="map-wrapper">
+			<div class="map-wrapper" style="background-image: url('http://nexusmap.l/userFiles/nxmpp68239e46939817.89994944/visualization/hit.png'); /* exportovaný obrázek heatmapy */">
 				<div class="map-container" id="map">
-
 					<div class="tooltip" id="tooltip"></div>
 				</div>
 			</div>
 		</div>
 	</div>
 
-{/block}
-
-{block scripts}
 	<script n:syntax="off">
 		const map = document.getElementById('map');
 		const tooltip = document.getElementById('tooltip');

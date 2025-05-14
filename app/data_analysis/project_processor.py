@@ -121,7 +121,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
         "map_size": [som.m, som.n],
         "max_memory_mb": max_memory
     }
-    # update_project_results(uid_hash, metrics)
+    update_project_results(uid_hash, metrics)
 
     # Uložení vstupních dat a vah
     np.savetxt(f"{output_path}csv/data.csv", data, delimiter=",")
@@ -216,7 +216,7 @@ def process_project(uid_hash: str) -> None:
 
     # Načtení a validace dat
     project = get_project_detail(uid_hash)
-    # update_project_status(uid_hash, 2)  # Stav: běžící
+    update_project_status(uid_hash, 2)  # Stav: běžící
 
     project_settings = load_project_settings(project)
     som_settings = load_som_settings(project)
@@ -232,7 +232,7 @@ def process_project(uid_hash: str) -> None:
     train_and_analyze_som(preprocess_file, som_settings, project_settings, output_path, uid_hash)
 
     # Dokončení
-    # update_project_status(uid_hash, 1)  # Stav: dokončeno
+    update_project_status(uid_hash, 1)  # Stav: dokončeno
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 def compute_group_statistics(df_orig: pd.DataFrame,

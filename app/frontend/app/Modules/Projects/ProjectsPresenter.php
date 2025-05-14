@@ -62,6 +62,7 @@ class ProjectsPresenter extends BasePresenter
 			'component'  => 'Mapa atributů',
 			'distance'   => 'Mapa kvantizační chyby',
 			'cluster'    => 'Mapa klastrů',
+			'mqe-history'=> 'Vývoj kvantizační chyby v čase'
 		];
 
 		$this->getTemplate()->visualizationTypesDescription = [
@@ -71,6 +72,7 @@ class ProjectsPresenter extends BasePresenter
 			'component'  => 'Heatmapa hodnot jednotlivých vstupních atributů v každém neuronu.',
 			'distance'   => 'Průměrná kvantizační chyba (vzdálenost vzorku od BMU) pro každý neuron.',
 			'cluster'    => 'Zobrazení přiřazení původních vzorků ke klastrům (neurony).',
+			'mqe-history'=> 'Graf zobrazuje vývoj kvantizační chyby v čase. '
 		];
 	}
 

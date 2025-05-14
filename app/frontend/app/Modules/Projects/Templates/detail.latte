@@ -193,7 +193,9 @@
 														<div class="col-md-4">
 															<h5>
 																{if str_contains($type, '_')}
-																	{$visualizationTypes[explode('_',$type)[0]]} - {explode('_',$type)[1]}
+																	{if isset($visualizationTypes[explode('_',$type)[0]])}
+																		{$visualizationTypes[explode('_',$type)[0]]} - {explode('_',$type)[1]}
+																	{/if}
 																{else}
 																	{$visualizationTypes[$type]}
 																{/if}
@@ -218,6 +220,7 @@
 																	 class="legend-overlay"
 																	 style="display: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); max-height: 100%; z-index: 5;">
 															</div>
+															<br /><br />
 
 															<style>
 																.visualization-wrapper {

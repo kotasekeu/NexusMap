@@ -543,7 +543,39 @@ def sanitize_filename(filename: str) -> str:
     filename = ''.join(c for c in filename if c.isalnum() or c in '_-')
     return filename
 
-def generate_maps(som, data, preprocess_file,output_path, som_settings, settings):
+def generate_mqe_history_plot(som, output_file: str):
+    """Vykreslí graf vývoje kvantizační chyby během trénování.
+    
+    Args:
+        som: Instance SOM s vlastnostmi mqe_history a epochs_history
+        output_file: Cesta k výstupnímu souboru
+    """
+    check_folder(output_file)
+    
+    fig, ax = plt.subplots(figsize=(12, 6))
+    
+    # Vykreslení křivky MQE
+    ax.plot(som.epochs_history, som.mqe_history, 'b-', linewidth=2)
+    
+    # Zvýraznění nejlepší dosažené hodnoty
+    best_mqe_idx = np.argmin(som.mqe_history)
+    best_mqe = som.mqe_history[best_mqe_idx]
+    best_epoch = som.epochs_history[best_mqe_idx]
+    ax.plot(best_epoch, best_mqe, 'ro', markersize=10, label=f'Nejlepší MQE: {best_mqe:.6f}')
+    
+    # Nastavení popisků
+    ax.set_xlabel('Epocha')
+    ax.set_ylabel('Kvantizační chyba (MQE)')
+    ax.set_title('Vývoj kvantizační chyby během trénování')
+    ax.grid(True, linestyle='--', alpha=0.7)
+    ax.legend()
+    
+    # Uložení grafu
+    plt.tight_layout()
+    plt.savefig(output_file)
+    plt.close()
+
+def generate_maps(som, data, preprocess_file, output_path, som_settings, settings):
     # parametr mřížky
     map_type = som_settings.get("map_type", "square")
 
@@ -622,7 +654,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         map_type=map_type
     )
 
-    # 5) Distance‑map (prům. kvantizační chyba) - původní metoda
+    # 5) Distance‑map (prům. kvantizační chyba)
     codebook_vectors = som.weights.reshape(-1, som.dim)
     bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
     neuron_error_map, _ = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))
@@ -632,6 +664,13 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         f"{output_path}/visualization/distance.png",
         map_type=map_type
     )
+
+    # 6) Graf vývoje kvantizační chyby
+    if hasattr(som, 'mqe_history') and len(som.mqe_history) > 0:
+        generate_mqe_history_plot(
+            som,
+            f"{output_path}/visualization/mqe-history.png"
+        )
 
     # Vykreslení jednotlivých kategoriálních sloupců
     for column_name in settings['categorical_column']:
