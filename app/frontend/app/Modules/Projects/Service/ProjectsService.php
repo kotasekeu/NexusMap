@@ -291,20 +291,33 @@ class ProjectsService extends BaseService
 		}
 	}
 
-	private function getProjectVisualizations(int $customer_id, string $uid_hash): array
+	private function scanDirectoryForFiles(string $directory): array
 	{
-		$visualizationDir = WWW_DIR . '/userFiles/' . $uid_hash . '/visualization';
-		if (!is_dir($visualizationDir)) {
+		if (!is_dir($directory)) {
 			return [];
 		}
 
-		$files = scandir($visualizationDir);
-		$visualizations = [];
+		$files = scandir($directory);
+		$result = [];
 		foreach ($files as $file) {
-			if ($file === '.' || $file === '..') {
+			$fullPath = $directory . '/' . $file;
+			if ($file === '.' || $file === '..' || $file[0] === '.' || is_dir($fullPath)) {
 				continue;
 			}
-			$prefix = explode('_', $file)[0];
+			$result[] = $file;
+		}
+
+		return $result;
+	}
+
+	private function getProjectVisualizations(int $customer_id, string $uid_hash): array
+	{
+		$visualizationDir = WWW_DIR . '/userFiles/' . $uid_hash . '/visualization';
+		$files = $this->scanDirectoryForFiles($visualizationDir);
+		
+		$visualizations = [];
+		foreach ($files as $file) {
+			$prefix = explode('.', $file)[0];
 			$visualizations[$prefix][] = $file;
 		}
 
@@ -315,40 +328,13 @@ class ProjectsService extends BaseService
 	private function getProjectCsvFiles(int $customer_id, string $uid_hash): array
 	{
 		$csvDir = WWW_DIR . '/userFiles/' . $uid_hash . '/csv';
-
-		if (!is_dir($csvDir)) {
-			return [];
-		}
-
-		$files = scandir($csvDir);
-		$csvFiles = [];
-		foreach ($files as $file) {
-			if ($file === '.' || $file === '..') {
-				continue;
-			}
-			$csvFiles[] = $file;
-		}
-
-		return $csvFiles;
+		return $this->scanDirectoryForFiles($csvDir);
 	}
 
 	private function getProjectJsonFiles(int $customer_id, string $uid_hash): array
 	{
 		$jsonDir = WWW_DIR . '/userFiles/' . $uid_hash . '/json';
-		if (!is_dir($jsonDir)) {
-			return [];
-		}
-
-		$files = scandir($jsonDir);
-		$jsonFiles = [];
-		foreach ($files as $file) {
-			if ($file === '.' || $file === '..') {
-				continue;
-			}
-			$jsonFiles[] = $file;
-		}
-
-		return $jsonFiles;
+		return $this->scanDirectoryForFiles($jsonDir);
 	}
 
 	public function getProjectConfig($projectDetail): array

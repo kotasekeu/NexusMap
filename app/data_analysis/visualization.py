@@ -47,9 +47,16 @@ def _set_axes_limits(ax, m, n, map_type):
     ax.set_ylim(Y.min() - dy, Y.max() + dy)
     ax.margins(0)
 
-def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str = 'viridis'):
+def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str = 'viridis', save_legend: bool = True):
     """
     Unified Distance Matrix: vykreslí průměrné vzdálenosti mezi sousedy neuronů.
+
+    Args:
+        som: Instance SOM s vlastnostmi m,n a weights
+        output_file: Cesta k výstupnímu souboru
+        map_type: Typ mřížky ('square' nebo 'hex')
+        cmap: Název colormapy
+        save_legend: Zda generovat samostatnou legendu
     """
     # Kontroluje, zda existuje složka pro výstupní soubor
     check_folder(output_file)
@@ -74,29 +81,51 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
                     neigh.append(np.linalg.norm(weights[i,j] - weights[ni,nj]))
             # Vypočítává průměrnou vzdálenost od sousedních neuronů
             u[i,j] = np.mean(neigh) if neigh else 0
+
+    # Získání rozsahu hodnot pro colorbar
+    vmin, vmax = u.min(), u.max()
+
     # Generuje souřadnice center neuronů podle typu mřížky
     X, Y = _grid_coordinates(m, n, map_type)
     # Vytváří novou figuru a osy pro vykreslení
-    fig, ax = plt.subplots(figsize=(20,12)) #20x12
+    fig, ax = plt.subplots(figsize=(20,12))
 
-    
     element_size = get_size_of_point(m,n,map_type)
     sc = ax.scatter(X, Y, c=u.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')   
 
-    fig.colorbar(sc, ax=ax, label='U-Matrix distance')
+    _set_axes_limits(ax, som.m, som.n, map_type)
     ax.set_aspect('equal')
     ax.axis('off')
-    ax.margins(0.08)
+    ax.margins(0)
     plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
+
+    # Generování samostatné legendy
+    if save_legend:
+        generate_legend(
+            vmin=vmin,
+            vmax=vmax,
+            output_file=output_file,
+            cmap=cmap,
+            label='Průměrná vzdálenost mezi sousedy'
+        )
 
 
 def generate_hit_map(som, data: np.ndarray, output_file: str,
                     map_type: str = 'square', cmap: str = 'Blues',
-                    show_numbers: bool = False):
+                    show_numbers: bool = False, save_legend: bool = True):
     """
     Heatmap návštěvnosti neuronů: velikost/barva bodu podle četnosti vzorků.
+
+    Args:
+        som: Instance SOM s vlastnostmi m,n
+        data: Vstupní data
+        output_file: Cesta k výstupnímu souboru
+        map_type: Typ mřížky ('square' nebo 'hex')
+        cmap: Název colormapy
+        show_numbers: Zda zobrazit počty vzorků v buňkách
+        save_legend: Zda generovat samostatnou legendu
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -107,6 +136,7 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
 
     # hodnoty counts v pořadí i=0..m-1, j=0..n-1
     vals = np.array([counts[(i,j)] for i in range(m) for j in range(n)])
+    vmin, vmax = vals.min(), vals.max()
 
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
@@ -120,13 +150,23 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
                 if counts[(i,j)] != 0:
                     ax.text(X[i*n+j], Y[i*n+j], str(counts[(i,j)]), ha='center', va='center', color='red')
 
-    fig.colorbar(sc, ax=ax, label='Hits')
+    _set_axes_limits(ax, som.m, som.n, map_type)
     ax.set_aspect('equal')
     ax.axis('off')
     ax.margins(0)
     plt.tight_layout()
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
+
+    # Generování samostatné legendy
+    if save_legend:
+        generate_legend(
+            vmin=vmin,
+            vmax=vmax,
+            output_file=output_file,
+            cmap=cmap,
+            label='Počet vzorků'
+        )
 
 
 def generate_component_plane(
@@ -152,6 +192,8 @@ def generate_component_plane(
         cmap: Název matplotlib colormap
         column_name: Popisek legendy (název atributu)
         save_legend: Zda generovat samostatný obrázek legendy
+        data_mean: Střední hodnota pro denormalizaci
+        data_std: Směrodatná odchylka pro denormalizaci
     """
     # Vytvoření cílové složky
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
@@ -191,44 +233,15 @@ def generate_component_plane(
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
+    # 2) Vykreslení samostatné legendy
     if save_legend:
-        fig2 = plt.figure(figsize=(2, 12))
-        cax = fig2.add_axes([0.35, 0.02, 0.3, 0.96])
-
-        cbar = fig2.colorbar(
-            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
-            cax=cax,
-            orientation='vertical',
-            extend='neither',
-            extendfrac=0.0,
+        generate_legend(
+            vmin=vmin,
+            vmax=vmax,
+            output_file=output_file,
+            cmap=cmap,
             label=column_name or f"Component {component}"
         )
-        # váš blok po vytvoření cbar
-        vmin, vmax = norm.vmin, norm.vmax
-        orig_ticks = cbar.get_ticks()
-        # vybereme jen ty, co skutečně leží mezi vmin a vmax
-        middle_ticks = [t for t in orig_ticks if vmin < t < vmax]
-        new_ticks = [vmin] + middle_ticks + [vmax]
-        cbar.set_ticks(new_ticks)
-        cbar.set_ticklabels([f"{t:.2f}" for t in new_ticks])
-
-        # ručně omezíme výšku colorbaru na přesný rozsah
-        cbar.ax.set_ylim(vmin, vmax)
-        # popisek napravo
-        cbar.ax.yaxis.set_label_position('right')
-        cbar.ax.yaxis.tick_right()
-
-        # schovej jen obrys ostatních stran, ale nech osu Y
-        for spine in ['top', 'bottom', 'left']:
-            cax.spines[spine].set_visible(False)
-        cax.spines['right'].set_visible(False)  # popřípadě i tu
-        # a nastav parametry tiků
-        cax.tick_params(axis='y', which='both', length=5, labelsize=10)
-
-        base, ext = os.path.splitext(output_file)
-        legend_file = f"{base}_legend{ext}"
-        plt.savefig(legend_file, bbox_inches='tight', pad_inches=0.02)
-        plt.close(fig2)
 
 def generate_cluster_map(som, clusters: dict, output_file: str,
                         map_type: str = 'square', palette: list = None):
@@ -242,26 +255,126 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
         i, j = map(int, key.split('_'))
         if 0 <= i < m and 0 <= j < n:
             labels[i, j] = idx
+
     unique = np.unique(labels)
     if palette is None:
         cmap = plt.get_cmap('tab20', len(unique))
     else:
         cmap = plt.colors.ListedColormap(palette)
+
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)
     sc = ax.scatter(X, Y, c=labels.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+
+    # Přidání popisků pozic neuronů
     for i in range(m):
         for j in range(n):
             ax.text(X[i*n+j], Y[i*n+j], f'({i},{j})', ha='center', va='center', size=6)
-    # fig.colorbar(sc, ax=ax, label='Cluster')
+
+    _set_axes_limits(ax, m, n, map_type)
     ax.set_aspect('equal')
     ax.axis('off')
-    ax.margins(0.08)
+    ax.margins(0)
     plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
+
+def generate_legend(
+    categories: dict = None,
+    vmin: float = None,
+    vmax: float = None,
+    output_file: str = None,
+    cmap: str = 'coolwarm',
+    label: str = None,
+    figsize: tuple = (2, 12),
+    legend_type: str = 'colorbar'
+) -> None:
+    """Generuje samostatnou legendu pro vizualizace.
+    
+    Args:
+        categories (dict, optional): Slovník kategorií pro kategorickou legendu {id: label}
+        vmin (float, optional): Minimální hodnota pro colorbar
+        vmax (float, optional): Maximální hodnota pro colorbar
+        output_file (str): Cesta k výstupnímu souboru mapy
+        cmap (str): Název colormapy
+        label (str, optional): Popisek legendy
+        figsize (tuple): Velikost figury (šířka, výška)
+        legend_type (str): Typ legendy ('colorbar' nebo 'categorical')
+    """
+    # Vytvoření cesty pro legendu
+    output_dir = os.path.dirname(output_file)
+    legends_dir = os.path.join(output_dir, 'legends')
+    os.makedirs(legends_dir, exist_ok=True)
+    
+    # Vytvoření názvu souboru pro legendu
+    base_name = os.path.basename(output_file)
+    legend_file = os.path.join(legends_dir, base_name)
+
+    # Vytvoření figury
+    fig = plt.figure(figsize=figsize)
+
+    if legend_type == 'colorbar':
+        # Vytvoření colorbar legendy
+        cax = fig.add_axes([0.35, 0.02, 0.3, 0.96])
+        norm = Normalize(vmin=vmin, vmax=vmax)
+        cbar = fig.colorbar(
+            plt.cm.ScalarMappable(norm=norm, cmap=cmap),
+            cax=cax,
+            orientation='vertical',
+            extend='neither',
+            extendfrac=0.0,
+            label=label
+        )
+
+        # Nastavení tiků
+        orig_ticks = cbar.get_ticks()
+        middle_ticks = [t for t in orig_ticks if vmin < t < vmax]
+        new_ticks = [vmin] + middle_ticks + [vmax]
+        cbar.set_ticks(new_ticks)
+        cbar.set_ticklabels([f"{t:.2f}" for t in new_ticks])
+
+        # Nastavení rozsahu a pozice
+        cbar.ax.set_ylim(vmin, vmax)
+        cbar.ax.yaxis.set_label_position('right')
+        cbar.ax.yaxis.tick_right()
+
+        # Úprava vzhledu
+        for spine in ['top', 'bottom', 'left', 'right']:
+            cax.spines[spine].set_visible(False)
+        cax.tick_params(axis='y', which='both', length=5, labelsize=10)
+
+    else:  # categorical
+        ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+        
+        # Vytvoření barevné palety
+        cmap = plt.get_cmap(cmap)
+        n_categories = len(categories)
+        
+        # Vytvoření patches pro každou kategorii
+        handles = [
+            Patch(
+                facecolor=cmap(i/n_categories),
+                label=categories[str(i+1)],
+                edgecolor='white'
+            )
+            for i in range(n_categories)
+        ]
+        
+        # Vytvoření legendy
+        ax.legend(
+            handles=handles,
+            loc='center',
+            title=label,
+            frameon=False,
+            ncol=1
+        )
+        ax.axis('off')
+
+    # Uložení a zavření
+    plt.savefig(legend_file, bbox_inches='tight', pad_inches=0.02)
+    plt.close(fig)
 
 def plot_pie_map_from_json(
     som,
@@ -323,29 +436,23 @@ def plot_pie_map_from_json(
                 ax.add_patch(wedge)
                 angle += 360 * f
 
-    cat_map  = data['categories']              
-    cat_keys = sorted(cat_map.keys(), key=int)
-    labels   = [cat_map[k] for k in cat_keys]    
-
-    labels = [data['categories'][k] for k in cat_keys]
-    handles = [
-        Patch(facecolor=plt.get_cmap(cmap)(i/len(cat_keys)), label=labels[i])
-        for i in range(len(labels))
-    ]
-    ax.legend(
-        handles=handles,
-        bbox_to_anchor=(1.02, 1),
-        loc='upper left',
-        borderaxespad=0
-    )
-
+    _set_axes_limits(ax, m, n, map_type)
     ax.set_aspect('equal')
     ax.axis('off')
-    ax.margins(0.08)
+    ax.margins(0)
     plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
+    # Generování samostatné legendy pro koláčový graf
+    generate_legend(
+        categories=data['categories'],
+        output_file=output_file,
+        cmap=cmap,
+        label=os.path.basename(json_file).replace('pie_data_', '').replace('.json', ''),
+        figsize=(4, len(data['categories']) * 0.4),
+        legend_type='categorical'
+    )
 
 def check_folder(output_file: str):
     folder = os.path.dirname(output_file)
@@ -374,9 +481,17 @@ def get_size_of_point(m,n,map_type):
     return point_size
 
 def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, output_file: str,
-                                    map_type: str = 'square', cmap: str = 'magma'):
+                                    map_type: str = 'square', cmap: str = 'magma', save_legend: bool = True):
     """
     Zobrazení průměrné kvantizační chyby na neuron z předpočítané mapy chyb.
+
+    Args:
+        som: Instance SOM s vlastnostmi m,n
+        neuron_error_map: Předpočítaná mapa chyb
+        output_file: Cesta k výstupnímu souboru
+        map_type: Typ mřížky ('square' nebo 'hex')
+        cmap: Název colormapy
+        save_legend: Zda generovat samostatnou legendu
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -386,19 +501,47 @@ def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, outp
     if max_dist > 0:
         neuron_error_map = neuron_error_map / max_dist
     
+    vmin, vmax = neuron_error_map.min(), neuron_error_map.max()
+    
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)    
     sc = ax.scatter(X, Y, c=neuron_error_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-    fig.colorbar(sc, ax=ax, label='Průměrná kvantizační chyba (compute_quantization_error)')
+    
+    _set_axes_limits(ax, som.m, som.n, map_type)
     ax.set_aspect('equal')
     ax.axis('off')
-    ax.margins(0.08)
+    ax.margins(0)
     plt.tight_layout()
-    plt.savefig(output_file, bbox_inches='tight')
+    plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
+    # Generování samostatné legendy
+    if save_legend:
+        generate_legend(
+            vmin=vmin,
+            vmax=vmax,
+            output_file=output_file,
+            cmap=cmap,
+            label='Průměrná kvantizační chyba'
+        )
+
+def sanitize_filename(filename: str) -> str:
+    """Převede název sloupce na bezpečný název souboru.
+    
+    Args:
+        filename (str): Původní název
+        
+    Returns:
+        str: Bezpečný název souboru
+    """
+    # Nahrazení nebezpečných znaků
+    filename = filename.lower()
+    filename = filename.replace(' ', '_')
+    # Odstranění diakritiky
+    filename = ''.join(c for c in filename if c.isalnum() or c in '_-')
+    return filename
 
 def generate_maps(som, data, preprocess_file,output_path, som_settings, settings):
     # parametr mřížky
@@ -417,7 +560,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     # 1) U‑Matrix
     generate_u_matrix(
         som,
-        f"{output_path}/visualization/u-matrix_{map_type}.png",
+        f"{output_path}/visualization/u-matrix.png",
         map_type=map_type
     )
 
@@ -425,9 +568,10 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     generate_hit_map(
         som,
         data,
-        f"{output_path}/visualization/hit_map_{map_type}.png",
+        f"{output_path}/visualization/hit.png",
         map_type,
         'Blues',
+        True,
         True
     )
 
@@ -445,6 +589,9 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
             continue
 
         col_name = column_names_list[dim] if dim < len(column_names_list) else None
+        
+        # Pokud nemáme název sloupce, použijeme číslo dimenze
+        safe_name = sanitize_filename(col_name) if col_name else f"dimension_{dim}"
 
         # jestli je tento sloupec numerický, najdi jeho index v numeric_cols
         if col_name in numeric_cols:
@@ -457,7 +604,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
         generate_component_plane(
             som,
             component=dim,
-            output_file=f"{output_path}/visualization/component_{dim}_{map_type}.png",
+            output_file=f"{output_path}/visualization/component_{safe_name}.png",
             map_type=map_type,
             cmap='coolwarm',
             column_name=col_name,
@@ -471,7 +618,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     generate_cluster_map(
         som,
         clusters,
-        f"{output_path}/visualization/cluster_map_{map_type}.png",
+        f"{output_path}/visualization/cluster.png",
         map_type=map_type
     )
 
@@ -482,7 +629,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
     generate_distance_map_from_error_map(
         som,
         neuron_error_map,
-        f"{output_path}/visualization/distance_map_computed_{map_type}.png",
+        f"{output_path}/visualization/distance.png",
         map_type=map_type
     )
 
@@ -492,7 +639,7 @@ def generate_maps(som, data, preprocess_file,output_path, som_settings, settings
             plot_pie_map_from_json(
                 som,
                 f"{output_path}/json/pie_data_{column_name}.json",
-                f"{output_path}/visualization/pie_map_{column_name}.png",
+                f"{output_path}/visualization/pie-map_{column_name}.png",
                 map_type
             )
     

@@ -54,6 +54,24 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->projectConfigDescription = $this->projectsService->getProjectConfigDescription();
 
 		$this->getTemplate()->inputFileData = $this->projectsService->getInputFileData($projectDetail->project_id);
+
+		$this->getTemplate()->visualizationTypes = [
+			'hit'        => 'Mapa návštěvnosti',
+			'u-matrix'   => 'U-Matrix',
+			'pie-map'    => 'Koláčová mapa',
+			'component'  => 'Mapa atributů',
+			'distance'   => 'Mapa kvantizační chyby',
+			'cluster'    => 'Mapa klastrů',
+		];
+
+		$this->getTemplate()->visualizationTypesDescription = [
+			'hit'        => 'Ukazuje počet vzorků namapovaných na každý neuron.',
+			'u-matrix'   => 'Zobrazuje vzdálenosti mezi sousedními neurony pro identifikaci hranic.',
+			'pie-map'    => 'Pro každou buňku vykresluje koláčový graf složení kategorií ve vzorcích.',
+			'component'  => 'Heatmapa hodnot jednotlivých vstupních atributů v každém neuronu.',
+			'distance'   => 'Průměrná kvantizační chyba (vzdálenost vzorku od BMU) pro každý neuron.',
+			'cluster'    => 'Zobrazení přiřazení původních vzorků ke klastrům (neurony).',
+		];
 	}
 
 

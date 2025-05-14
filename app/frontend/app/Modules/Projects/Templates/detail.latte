@@ -183,8 +183,6 @@
 											</div>
 										</div>
 									</div>
-
-{*									{include ./statsData.latte}*}
 									{include ./projectFiles.latte}
 									{include ./projectConfigTable.latte}
 									<div class="card mt-4">
@@ -193,10 +191,90 @@
 												{foreach $projectFiles['visualization'] as $type => $files}
 													{foreach $files as $file}
 														<div class="col-md-4">
-															<h5>{$type}</h5>
-															<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" class="thumbnail">
-																	<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" alt="{$type} visualisation" class="img-fluid">
-															</a>
+															<h5>
+																{if str_contains($type, '_')}
+																	{$visualizationTypes[explode('_',$type)[0]]} - {explode('_',$type)[1]}
+																{else}
+																	{$visualizationTypes[$type]}
+																{/if}
+															</h5>
+															<p class="small">
+																{if str_contains($type, '_')}
+																	{if isset($visualizationTypesDescription[explode('_',$type)[0]])}
+																		{$visualizationTypesDescription[explode('_',$type)[0]]}
+																	{/if}
+																{else}
+																	{if isset($visualizationTypesDescription[$type])}
+																		{$visualizationTypesDescription[$type]}
+																	{/if}
+																{/if}
+															</p>
+															<div class="visualization-wrapper" style="position: relative;">
+																<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" class="thumbnail">
+																	<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" alt="{$type} visualisation" class="img-fluid main-viz">
+																</a>
+																<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/legends/{$file}" 
+																	 alt="Legenda" 
+																	 class="legend-overlay"
+																	 style="display: none; position: absolute; right: 0; top: 50%; transform: translateY(-50%); max-height: 100%; z-index: 5;">
+															</div>
+
+															<style>
+																.visualization-wrapper {
+																	position: relative;
+																}
+																.legend-overlay {
+																	position: absolute;
+																	right: 0px;
+																	top: 50%;
+																	transform: translateY(-50%);
+																	max-height: 100%;
+																	z-index: 5;
+																	display: none;
+																	border: 1px solid #666;
+																}
+																/* Zajištění, že header a sidebar budou vždy navrchu */
+																.page-header {
+																	z-index: 10;
+																}
+																.sidebar-wrapper {
+																	z-index: 10 !important;
+																}
+															</style>
+
+															<script>
+																document.addEventListener('DOMContentLoaded', function() {
+																	const vizWrappers = document.querySelectorAll('.visualization-wrapper');
+																	
+																	vizWrappers.forEach(wrapper => {
+																		const mainViz = wrapper.querySelector('.main-viz');
+																		const legend = wrapper.querySelector('.legend-overlay');
+																		
+																		// Kontrola existence legendy
+																		fetch(legend.src)
+																			.then(response => {
+																				if (!response.ok) {
+																					legend.remove();
+																				}
+																			})
+																			.catch(() => {
+																				legend.remove();
+																			});
+
+																		wrapper.addEventListener('mouseenter', () => {
+																			if (legend) {
+																				legend.style.display = 'block';
+																			}
+																		});
+
+																		wrapper.addEventListener('mouseleave', () => {
+																			if (legend) {
+																				legend.style.display = 'none';
+																			}
+																		});
+																	});
+																});
+															</script>
 														</div>
 													{/foreach}
 												{/foreach}
