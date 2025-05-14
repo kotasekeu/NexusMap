@@ -32,4 +32,11 @@ abstract class BasePresenter extends Presenter
 			$this->getTemplate()->userData  = $this->getUser()->getIdentity()->getData();
 		}
 	}
+
+	protected function setTemplate(string $template)
+	{
+		$presenterReflection = new \ReflectionClass($this);
+		$presenterDir = dirname($presenterReflection->getFileName());
+		$this->getTemplate()->setFile($presenterDir . "/Templates/{$template}.latte");
+	}
 }

@@ -28,7 +28,7 @@
 								<h4>
 									#{$projectDetail->project_id} {$projectDetail->name}
 									{if $projectDetail->status == 1}
-										<a n:href="Projects:map, $projectDetail->project_id" class="btn btn-success">Detail mapy</a>
+										<a n:href="Projects:map, project_id => $projectDetail->project_id, map_name => 'neco'" class="btn btn-success">Detail mapy</a>
 										<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-primary">Zobrazit analýzu</a>
 									{/if}
 									{if $projectDetail->ready_to_analyze == 0}
@@ -212,7 +212,7 @@
 																{/if}
 															</p>
 															<div class="visualization-wrapper" style="position: relative;">
-																<a href="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" class="thumbnail">
+																<a n:href="Projects:map, project_id => $projectDetail->project_id, map_name => substr($file, 0, -4)" class="thumbnail">
 																	<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/{$file}" alt="{$type} visualisation" class="img-fluid main-viz">
 																</a>
 																<img src="{$basePath}/userFiles/{$projectDetail->uid_hash}/visualization/legends/{$file}" 

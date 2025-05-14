@@ -1,0 +1,112 @@
+{layout '../../../Common/Templates/@layout.latte'}
+{block head}
+	<link rel="stylesheet" type="text/css" href="{$baseUrl}/assets/css/map.css">
+{/block}
+
+{block content}
+	<div class="page-body">
+		<div class="container-fluid">
+            {if $mapName === 'mqe-history'}
+                <div class="map-container" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
+            {else}
+                <div class="map-container hex-map" id="map" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
+                <div class="map-tooltip" id="tooltip"></div>
+            {/if}
+		</div>
+	</div>
+{/block}
+
+{block scripts}
+	{if $mapName !== 'mqe-history'}
+		<script n:syntax="off">
+			$(function() {
+				const $map = $('#map');
+				const $tooltip = $('#tooltip');
+				const gridSize = {$projectDetail->som_settings->m|noescape};
+				const cellData = {$clustersWithData|noescape};
+				let tooltipTimeout;
+
+				function showTooltip(cell, event) {
+					clearTimeout(tooltipTimeout);
+					const d = cellData[$(cell).data('id')];
+					if (!d) return;
+
+					let tooltipContent = `Neuron ${$(cell).data('id')}<br>`;
+					tooltipContent += `Počet záznamů: ${d.records_counts}<br>`;
+					tooltipContent += `Počet extrémů: ${d.extremes_counts}<br>`;
+					tooltipContent += '<br>Průměrné hodnoty:<br>';
+					
+					for (const [key, value] of Object.entries(d.numerical_stats)) {
+						tooltipContent += `${key}: ${value.toFixed(2)}<br>`;
+					}
+
+					$tooltip
+						.html(tooltipContent)
+						.css({
+							'left': event.clientX,
+							'top': event.clientY
+						})
+						.stop(true, true)
+						.show();
+				}
+
+				function hideTooltip() {
+					tooltipTimeout = setTimeout(() => {
+						$tooltip.hide();
+					}, 100);
+				}
+
+				// Vytvoření hexagonální mřížky
+				const hexWidth = 9.5; // Šířka hexagonu v procentech
+				const hexHeight = 11.4; // Výška hexagonu v procentech
+				const horizontalSpacing = hexWidth; // Horizontální mezera mezi hexagony
+				const verticalSpacing = hexHeight * 0.795; // Vertikální mezera mezi řádky (75% výšky pro správné překrytí)
+				const initialVerticalOffset = 3.5; // Počáteční vertikální offset v procentech
+
+				for (let i = 0; i < gridSize; i++) {
+					const isOddRow = i % 2 === 1;
+					const verticalPosition = initialVerticalOffset + (i * verticalSpacing);
+					
+					for (let j = 0; j < gridSize; j++) {
+						const id = `${i}_${j}`; // ID ve formátu "řádek_sloupec"
+						const horizontalPosition = (j * horizontalSpacing) + (isOddRow ? horizontalSpacing / 2 : 0);
+						
+						const $cell = $('<div/>', {
+							'class': 'hex-cell',
+							'data-id': id
+						}).css({
+							'left': `${horizontalPosition}%`,
+							'top': `${verticalPosition}%`
+						});
+
+						cellData[id] = {
+							vectors: Math.floor(Math.random() * 20),
+							avg: (Math.random() * 10).toFixed(2),
+							extremes: Math.floor(Math.random() * 5)
+						};
+
+						$cell
+							.on('mouseenter', function(e) {
+								showTooltip(this, e);
+							})
+							.on('mouseleave', hideTooltip)
+							.on('click', function() {
+								alert('Přejít na detail clusteru ' + $(this).data('id'));
+							});
+						$map.append($cell);
+					}
+				}
+
+				// Aktualizace pozice tooltipu při pohybu myši
+				$map.on('mousemove', 'div.hex-cell', function(e) {
+					if($tooltip.is(':visible')) {
+						$tooltip.css({
+							'left': e.clientX,
+							'top': e.clientY
+						});
+					}
+				});
+			});
+		</script>
+	{/if}
+{/block}

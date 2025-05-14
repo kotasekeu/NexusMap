@@ -94,7 +94,7 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->clustersWithData		= $this->projectsService->getStatsDataFromSources($clusters, $extremes, $records, $projectDetail);
 	}
 
-	public function renderMap(int $project_id)
+	public function renderMap(int $project_id, string $map_name): void
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
 		if (!$projectDetail) {
@@ -102,54 +102,25 @@ class ProjectsPresenter extends BasePresenter
 			$this->redirect('Projects:default');
 		}
 
-		$this->getTemplate()->projectDetail = $projectDetail;
-		$somConfig = $this->projectsService->getProjectConfig($projectDetail);
-		$this->getTemplate()->somConfig = $somConfig;
-
-		$jsonDir = WWW_DIR . '/userFiles/' . $projectDetail->uid_hash . '/json';
-
-		// $extremesData = json_decode(file_get_contents($jsonDir . '/extremes.json'), true);		
-		// $this->getTemplate()->extremesData = $extremesData;
-		// dump($extremesData);
-
-		$clustersData = json_decode(file_get_contents($jsonDir . '/clusters.json'), true);
-		ksort($clustersData);
-		$this->getTemplate()->items = $clustersData;
-//		dump($clustersData);
-//		die("File:" . __FILE__ . "; Line:" . __LINE__);
-
-		$this->getTemplate()->size = $size = 10;
-
-		$counts   = [];
-		$maxCount = 0;
-		for ($y = 0; $y < $size; $y++) {
-			for ($x = 0; $x < $size; $x++) {
-				$cnt = isset($clustersData[$y.'_'.$x]) && is_array($clustersData[$y.'_'.$x])
-					? count($clustersData[$y.'_'.$x])
-					: 0;
-
-				$counts[$y.'_'.$x] = $cnt;
-				$maxCount       = max($maxCount, $cnt);
-			}
+		if ($projectDetail->som_settings->map_type == "hex") {
+			$this->setTemplate("map_hex");
+		} else {
+			$this->setTemplate("map_square");
 		}
 
-		$this->getTemplate()->counts   = $counts;
-		$this->getTemplate()->maxCount = $maxCount;
-		$this->getTemplate()->colors   = [
-			'#f7fbff','#deebf7','#c6dbef','#9ecae1',
-			'#6baed6','#4292c6','#2171b5','#08519c','#08306b'
-		];
+		$this->getTemplate()->projectDetail 	= $projectDetail;
+		$this->getTemplate()->clusters			= $clusters = $this->projectsService->getClustersData($projectDetail->uid_hash);
+		$this->getTemplate()->extremes			= $extremes	= $this->projectsService->getExtremesData($projectDetail->uid_hash);
+		$this->getTemplate()->records			= $records	= $this->projectsService->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
+		$this->getTemplate()->clustersWithData	= $this->projectsService->getStatsDataFromSourcesForMap($clusters, $extremes, $records, $projectDetail);
 
-//		$this->getTemplate()->selectedCell = $this->selectedCell;
+		$this->getTemplate()->projectDetail = $projectDetail;
+		$this->getTemplate()->mapName	= $map_name;
 	}
 
-	public function handleChangeCell(string $cell)
+	public function renderMapCellDetail(int $project_id, int $cell_x, int $cell_y): void
 	{
 		die("File:" . __FILE__ . "; Line:" . __LINE__);
-//		$jsonDir = WWW_DIR . '/userFiles/' . $projectDetail->uid_hash . '/json';
-//		$clustersData = json_decode(file_get_contents($jsonDir . '/clusters.json'), true);
-//		ksort($clustersData);
-//		$this->selectedCell = $clustersData[$cell];
 	}
 
 	public function handleDelete(int $project_id)

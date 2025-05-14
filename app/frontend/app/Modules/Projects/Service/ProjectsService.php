@@ -578,6 +578,44 @@ class ProjectsService extends BaseService
 		return $clustersWithData;
 	}
 
+	public function getStatsDataFromSourcesForMap($clusters, $extremes, $records, $projectDetail): array
+	{
+		$clustersWithData = [];
+		$numerical_column = $projectDetail->project_settings->numerical_column ?? [];
+
+		foreach ($clusters as $clusterKey => $cluster) {
+			$clustersWithData[$clusterKey] = [
+				'numerical_stats'	=> [],
+				'records_counts'	=> count($cluster),
+				'extremes_counts'	=> 0
+			];
+
+			// Zpracování numerických sloupců
+			foreach ($numerical_column as $column) {
+				$values = [];
+				foreach ($cluster as $recordId) {
+					if (isset($records[$recordId][$column]) && $records[$recordId][$column] !== '') {
+						$values[] = floatval($records[$recordId][$column]);
+					}
+				}
+
+				if (!empty($values)) {
+					$clustersWithData[$clusterKey]['numerical_stats'][$column] = array_sum($values) / count($values);
+				}
+			}
+
+			// Zpracování extrémů
+			if (isset($extremes['by_cluster'][$clusterKey])) {
+				foreach ($extremes['by_cluster'][$clusterKey] as $extremeRecordId) {
+					$clustersWithData[$clusterKey]['extremes_counts']++;
+				}
+			}
+		}
+
+		return $clustersWithData;
+	}
+
+
 	private function calculateMedian(array $values): float
 	{
 		sort($values);
