@@ -28,7 +28,6 @@
 								<h4>
 									#{$projectDetail->project_id} {$projectDetail->name}
 									{if $projectDetail->status == 1}
-										<a n:href="Projects:map, project_id => $projectDetail->project_id, map_name => 'neco'" class="btn btn-success">Detail mapy</a>
 										<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-primary">Zobrazit analýzu</a>
 									{/if}
 									{if $projectDetail->ready_to_analyze == 0}

@@ -112,14 +112,17 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->clusters			= $clusters = $this->projectsService->getClustersData($projectDetail->uid_hash);
 		$this->getTemplate()->extremes			= $extremes	= $this->projectsService->getExtremesData($projectDetail->uid_hash);
 		$this->getTemplate()->records			= $records	= $this->projectsService->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
-		$this->getTemplate()->clustersWithData	= $this->projectsService->getStatsDataFromSourcesForMap($clusters, $extremes, $records, $projectDetail);
+		$this->getTemplate()->clustersWithData	= json_encode($this->projectsService->getStatsDataFromSourcesForMap($clusters, $extremes, $records, $projectDetail));
 
-		$this->getTemplate()->projectDetail = $projectDetail;
-		$this->getTemplate()->mapName	= $map_name;
+		$this->getTemplate()->projectDetail 	= $projectDetail;
+		$this->getTemplate()->mapName			= $map_name;
+
+		$this->getTemplate()->cellLink = $this->presenter->link('Projects:cell', ['project_id' => $project_id, 'cell_id' => ""]);
 	}
 
-	public function renderMapCellDetail(int $project_id, int $cell_x, int $cell_y): void
+	public function renderCell(int $project_id, string $cell_id): void
 	{
+
 		die("File:" . __FILE__ . "; Line:" . __LINE__);
 	}
 

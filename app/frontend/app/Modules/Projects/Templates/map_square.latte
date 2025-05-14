@@ -7,9 +7,9 @@
 	<div class="page-body">
 		<div class="container-fluid">
 			{if $mapName === 'mqe-history'}
-				<div class="map-container" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
+				<div class="map-container square-map" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
 			{else}
-				<div class="map-container square-map" id="map" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
+				<div class="map-container square-map grid-size-{$projectDetail->som_settings->m}" data-size="{$projectDetail->som_settings->m|noescape}" id="map" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
 				<div class="map-tooltip" id="tooltip"></div>
 			{/if}
 		</div>
@@ -18,24 +18,34 @@
 
 {block scripts}
 	{if $mapName !== 'mqe-history'}
-		<script n:syntax="off">
+		<script>
 			$(function() {
 				const $map = $('#map');
 				const $tooltip = $('#tooltip');
 				const gridSize = {$projectDetail->som_settings->m};
-				const cellData = {};
+				const cellData = {$clustersWithData|noescape};
+				const cellLinkJs = {$cellLink};
 				let tooltipTimeout;
 
 				function showTooltip(cell, event) {
 					clearTimeout(tooltipTimeout);
 					const d = cellData[$(cell).data('id')];
+					if (!d) {
+						$tooltip.hide();
+						return;
+					}
+
+					let tooltipContent = `<strong>Neuron</strong> ${ $(cell).data('id')}<br/><br />`;
+					tooltipContent += `<strong>Počet záznamů:</strong> ${ d.records_counts}<br/>`;
+					tooltipContent += `<strong>Počet extrémů:</strong> ${ d.extremes_counts}<br/>`;
+					tooltipContent += '<br><strong>Průměrné hodnoty:</strong><br>';
+					
+					for (const [key, value] of Object.entries(d.numerical_stats)) {
+						tooltipContent += `<strong>${ key}:</strong> ${ value.toFixed(2)}<br/>`;
+					}
+
 					$tooltip
-						.html(
-							`Neuron ${$(cell).data('id')}<br>` +
-							`Počet vektorů: ${d.vectors}<br>` +
-							`Průměr: ${d.avg}<br>` +
-							`Extrémy: ${d.extremes}`
-						)
+						.html(tooltipContent)
 						.css({
 							'left': event.clientX,
 							'top': event.clientY
@@ -53,20 +63,20 @@
 				// Vytvoření mřížky - i je řádek (y), j je sloupec (x)
 				for (let i = 0; i < gridSize; i++) {
 					for (let j = 0; j < gridSize; j++) {
-						const id = `${i}_${j}`; // ID ve formátu "řádek_sloupec"
+						const id = `${ i}_${ j}`; // ID ve formátu "řádek_sloupec"
 						const $cell = $('<div/>', {
 							'class': 'grid-cell',
 							'data-id': id
 						}).css({
-							'left': `${(j / gridSize) * 100}%`, // j určuje x-ovou pozici
-							'top': `${(i / gridSize) * 100}%`   // i určuje y-ovou pozici
+							'left': `${ (j / gridSize) * 100}%`, // j určuje x-ovou pozici
+							'top': `${ (i / gridSize) * 100}%`   // i určuje y-ovou pozici
 						});
 
-						cellData[id] = {
-							vectors: Math.floor(Math.random() * 20),
-							avg: (Math.random() * 10).toFixed(2),
-							extremes: Math.floor(Math.random() * 5)
-						};
+						// Přidání třídy pro červený rámeček, pokud neuron obsahuje extrémy
+						const neuronData = cellData[id];
+						if (neuronData && neuronData.extremes_counts > 0) {
+							$cell.addClass('has-extremes');
+						}
 
 						$cell
 							.on('mouseenter', function(e) {
@@ -74,7 +84,12 @@
 							})
 							.on('mouseleave', hideTooltip)
 							.on('click', function() {
-								alert('Přejít na detail clusteru ' + $(this).data('id'));
+								const cellId = $(this).data('id');
+								if (cellLinkJs) {
+									window.location.href = cellLinkJs + "&cell_id=" + cellId;
+								} else {
+									alert('Chybí odkaz pro detail buňky.');
+								}
 							});
 						$map.append($cell);
 					}
