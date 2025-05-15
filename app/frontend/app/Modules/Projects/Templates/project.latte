@@ -34,9 +34,18 @@
 					<strong>Výsledky analýzy</strong>
 				</div>
 				<div class="col-8"><span>Rozměr mapy </span></div>
-				<div class="col-4 font-black"> {$projectDetail->results->map_size[0]}x{$projectDetail->results->map_size[1]}</div>
+				<div class="col-4 font-black"> {$projectDetail->results->map_size[0]}x{$projectDetail->results->map_size[1]} / {$projectDetail->som_settings->map_type}</div>
 				<div class="col-8"> <span>Délka zpracování</span></div>
-				<div class="col-4 font-black">{$projectDetail->results->duration|round:2}s</div>
+				<div class="col-4 font-black">
+					{var $duration = $projectDetail->results->duration}
+					{if $duration < 60}
+						{$duration|round:0}s
+					{elseif $duration < 3600}
+						{($duration / 60)|round:1} min
+					{else}
+						{($duration / 3600)|round:1} hod
+					{/if}
+				</div>
 				<div class="col-8"> <span>Počet průchodů/epoch</span></div>
 				<div class="col-4 font-black">{$projectDetail->results->epochs}</div>
 				<div class="col-8"> <span>Počet aktualizovaných vah</span></div>

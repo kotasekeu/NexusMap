@@ -90,8 +90,11 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->projectDetail = $projectDetail;
 		$this->getTemplate()->clusters		= $clusters = $this->projectsService->getClustersData($projectDetail->uid_hash);
 		$this->getTemplate()->extremes		= $extremes	= $this->projectsService->getExtremesData($projectDetail->uid_hash);
+
 		$this->getTemplate()->records		= $records	= $this->projectsService->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
 		$this->getTemplate()->clustersWithData		= $this->projectsService->getStatsDataFromSources($clusters, $extremes, $records, $projectDetail);
+		$this->getTemplate()->globalStats	= $this->projectsService->getGlobalStats($projectDetail, $records);
+		$this->getTemplate()->qError		= $this->projectsService->getQuantizationError($projectDetail->uid_hash);
 	}
 
 	public function renderMap(int $project_id, string $map_name): void
@@ -122,8 +125,19 @@ class ProjectsPresenter extends BasePresenter
 
 	public function renderCell(int $project_id, string $cell_id): void
 	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.', 'success');
+			$this->redirect('Projects:default');
+		}
 
-		die("File:" . __FILE__ . "; Line:" . __LINE__);
+		$this->getTemplate()->cellDetail			= $cellData = $this->projectsService->getCellData($projectDetail, $cell_id);
+
+		$this->getTemplate()->cell_id			= $cell_id;
+		$this->getTemplate()->projectDetail 	= $projectDetail;
+
+		$this->getTemplate()->records			= $records	= $this->projectsService->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
+		$this->getTemplate()->globalStats	= $this->projectsService->getGlobalStats($projectDetail, $records);
 	}
 
 	public function handleDelete(int $project_id)
@@ -187,7 +201,7 @@ class ProjectsPresenter extends BasePresenter
 				[
 					'project_id'	=> $this->projectDetail->project_id,
 					'name'			=> $this->projectDetail->name,
-					'map_size'		=> $this->projectDetail->som_settings->m . "x" . $this->projectDetail->som_settings->n
+					'map_size'		=> $this->projectDetail->som_settings ? $this->projectDetail->som_settings->m . "x" . $this->projectDetail->som_settings->n : null
 				],
 				(array)$this->projectDetail->som_settings
 			));

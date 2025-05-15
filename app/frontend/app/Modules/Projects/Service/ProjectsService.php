@@ -447,7 +447,7 @@ class ProjectsService extends BaseService
 		return $fileData;
 	}
 
-	public function getClustersData(string $uid_hash): ?array
+	public function getClustersData(string $uid_hash, ?string $cell = null): ?array
 	{
 		$clustersJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/clusters.json';
 		if (!file_exists($clustersJson)) {
@@ -458,10 +458,17 @@ class ProjectsService extends BaseService
 		$clustersData = json_decode($jsonData, true);
 		ksort($clustersData);
 
+		if (! empty($cell)) {
+			if (! isset($clustersData[$cell])) {
+				return [];
+			}
+			return [$cell => $clustersData[$cell]];
+		}
+
 		return $clustersData;
 	}
 
-	public function getExtremesData(string $uid_hash): ?array
+	public function getExtremesData(string $uid_hash, ?string $cell = null): ?array
 	{
 		$extremesJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/extremes.json';
 		if (!file_exists($extremesJson)) {
@@ -473,7 +480,27 @@ class ProjectsService extends BaseService
 		ksort($extremesData['by_cluster']);
 		ksort($extremesData['by_group']);
 
+		if (! empty($cell)) {
+			if (! isset($extremesData['by_cluster'][$cell])) {
+				return [];
+			}
+			return [$cell => $extremesData['by_cluster'][$cell]];
+		}
+
 		return $extremesData;
+	}
+
+	public function getQuantizationError(string $uid_hash): ?array
+	{
+		$qErrorJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/quantization_error.json';
+		if (!file_exists($qErrorJson)) {
+			return null;
+		}
+		$jsonData = file_get_contents($qErrorJson);
+
+		$qErrorData = json_decode($jsonData, true);
+
+		return $qErrorData;
 	}
 
 	public function getRecordsData(string $uid_hash, string $primary_id): ?array
@@ -512,7 +539,6 @@ class ProjectsService extends BaseService
 		$clustersWithData = [];
 		$categorical_column = $projectDetail->project_settings->categorical_column ?? [];
 		$numerical_column = $projectDetail->project_settings->numerical_column ?? [];
-		$string_column = $projectDetail->project_settings->string_column ?? [];
 
 		foreach ($clusters as $clusterKey => $cluster) {
 
@@ -615,6 +641,106 @@ class ProjectsService extends BaseService
 		return $clustersWithData;
 	}
 
+	public function getCellData(Row $projectDetail, string $cell_id): ?array
+	{
+		$clusters = $this->getClustersData($projectDetail->uid_hash, $cell_id);
+		$extremes	= $this->getExtremesData($projectDetail->uid_hash, $cell_id);
+		$records	= $this->getRecordsData($projectDetail->uid_hash, $projectDetail->project_settings->primary_id);
+		$numerical_column = $projectDetail->project_settings->numerical_column ?? [];
+
+		if (empty($records) || empty($clusters)) {
+			return null;
+		}
+
+		$returnData = [
+			'extremes'			=> [],
+			'records'			=> [],
+			'numerical_stats'	=> []
+		];
+		foreach ($clusters as $clusterKey => $cluster) {
+			foreach ($cluster as $recordId) {
+				if (isset($records[$recordId])) {
+					$returnData['records'][$recordId] = $records[$recordId];
+				}
+			}
+		}
+
+		foreach ($extremes as $extremeKey => $extreme) {
+			foreach ($extreme as $recordId) {
+				if (isset($records[$recordId])) {
+					$returnData['extremes'][$recordId] = $records[$recordId];
+				}
+			}
+		}
+
+		// Zpracování numerických sloupců
+		if (! empty($numerical_column)) {
+			foreach ($clusters as $clusterKey => $cluster) {
+				foreach ($numerical_column as $column) {
+					$values = [];
+					foreach ($cluster as $recordId) {
+						if (isset($records[$recordId][$column]) && $records[$recordId][$column] !== '') {
+							$values[] = floatval($records[$recordId][$column]);
+						}
+					}
+
+					if (!empty($values)) {
+						$returnData['numerical_stats'][$column] = [
+							'min' => min($values),
+							'max' => max($values),
+							'avg' => round(array_sum($values) / count($values), 2),
+							'median' => $this->calculateMedian($values)
+						];
+					}
+				}
+			}
+		}
+
+		return $returnData;
+	}
+
+	public function getGlobalStats(Row $projectDetail, array $records): ?array
+	{
+		$numerical_column = $projectDetail->project_settings->numerical_column ?? [];
+		$categorical_column = $projectDetail->project_settings->categorical_column ?? [];
+
+		$numericalStats = [];
+		foreach ($numerical_column as $col) {
+			$values = array_filter(array_map('floatval', array_column($records, $col)), fn($v) => $v !== null);
+			if ($values === []) continue;
+
+			sort($values);
+			$count = count($values);
+			$median = ($count % 2 === 0)
+				? ($values[$count / 2 - 1] + $values[$count / 2]) / 2
+				: $values[(int)floor($count / 2)];
+
+			$numericalStats[$col] = [
+				'min' => min($values),
+				'max' => max($values),
+				'avg' => round(array_sum($values) / $count, 3),
+				'median' => $median,
+			];
+		}
+
+		$categoricalStats = [];
+		foreach ($categorical_column as $col) {
+			$freq = [];
+			foreach ($records as $row) {
+				$val = $row[$col] ?? null;
+				if ($val !== null) {
+					$freq[$val] = ($freq[$val] ?? 0) + 1;
+				}
+			}
+			arsort($freq);
+			$categoricalStats[$col] = $freq;
+		}
+
+		return [
+			'numerical' => $numericalStats,
+			'categorical' => $categoricalStats,
+		];
+	}
 
 	private function calculateMedian(array $values): float
 	{

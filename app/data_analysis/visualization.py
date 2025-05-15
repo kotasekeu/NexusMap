@@ -47,6 +47,32 @@ def _set_axes_limits(ax, m, n, map_type):
     ax.set_ylim(Y.min() - dy, Y.max() + dy)
     ax.margins(0)
 
+
+def save_quantization_error_to_json(original_neuron_error_map: np.ndarray, total_quantization_error: float, output_path: str):
+    """Uloží kvantizační chyby do JSON souboru.
+
+    Args:
+        original_neuron_error_map (np.ndarray): Mapa kvantizačních chyb pro každý neuron (nenormalizovaná).
+        total_quantization_error (float): Celková kvantizační chyba.
+        output_path (str): Kořenová cesta pro výstupní soubory.
+    """
+    json_dir = os.path.join(output_path, 'json')
+    os.makedirs(json_dir, exist_ok=True)
+    json_file_path = os.path.join(json_dir, 'quantization_error.json')
+
+    neuron_errors_dict = {}
+    for i in range(original_neuron_error_map.shape[0]):
+        for j in range(original_neuron_error_map.shape[1]):
+            neuron_errors_dict[f"{i}_{j}"] = original_neuron_error_map[i, j]
+
+    error_data = {
+        'total_quantization_error': total_quantization_error,
+        'neuron_quantization_errors': neuron_errors_dict
+    }
+    with open(json_file_path, 'w', encoding='utf-8') as f:
+        json.dump(error_data, f, ensure_ascii=False, indent=4)
+  
+
 def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str = 'viridis', save_legend: bool = True):
     """
     Unified Distance Matrix: vykreslí průměrné vzdálenosti mezi sousedy neuronů.
@@ -654,13 +680,16 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
         map_type=map_type
     )
 
-    # 5) Distance‑map (prům. kvantizační chyba)
+    # 5) Distance‑map (prům. kvantizační chyba) a uložení chyb do JSON
     codebook_vectors = som.weights.reshape(-1, som.dim)
     bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
-    neuron_error_map, _ = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))
+    original_neuron_error_map, total_quantization_error = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))    
+    # Uložení chyb do JSON
+    save_quantization_error_to_json(original_neuron_error_map, total_quantization_error, output_path)
+
     generate_distance_map_from_error_map(
         som,
-        neuron_error_map,
+        original_neuron_error_map,
         f"{output_path}/visualization/distance.png",
         map_type=map_type
     )
