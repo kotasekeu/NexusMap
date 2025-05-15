@@ -26,38 +26,41 @@
 												{if ! empty($cellDetail['extremes'])}
 													<div class="card-header text-danger"><strong>Extrémní hodnoty v clusteru ({count($cellDetail['extremes'])})</strong></div>
 													<div class="card-body table-responsive">
-														<table class="table table-striped table-sm">
+														<table class="table table-striped table-hover table-sm">
 															<thead>
-															<tr>
-																{foreach $cellDetail['extremes'] as $record}
-																	{foreach $record as $col => $value}
-																		<th>{$col}</th>
-																	{/foreach}
-																{/foreach}
-															</tr>
+																<tr>
+																	{if !empty($cellDetail['extremes'])}
+																		{var $firstExtremeRecord = reset($cellDetail['extremes'])}
+																		{if $firstExtremeRecord}
+																			{foreach $firstExtremeRecord as $col => $value}
+																				<th>{$col}</th>
+																			{/foreach}
+																		{/if}
+																	{/if}
+																</tr>
 															</thead>
 															<tbody>
-															{foreach $cellDetail['extremes'] as $record}
-																<tr>
-																	{foreach $record as $col => $value}
-																		{var $note = ''}
-																		{var $class = ''}
-																		{if isset($cellDetail['numerical_stats'][$col])}
-																			{var $num = floatval($value)}
-																			{var $min = $cellDetail['numerical_stats'][$col]['min']}
-																			{var $max = $cellDetail['numerical_stats'][$col]['max']}
-																			{if $num === $max}
-																				{var $note = ' (max)'}
-																				{var $class = 'text-danger fw-bold'}
-																			{elseif $num === $min}
-																				{var $note = ' (min)'}
-																				{var $class = 'text-success fw-bold'}
+																{foreach $cellDetail['extremes'] as $record}
+																	<tr>
+																		{foreach $record as $col => $value}
+																			{var $note = ''}
+																			{var $class = ''}
+																			{if isset($cellDetail['numerical_stats'][$col])}
+																				{var $num = floatval($value)}
+																				{var $min = $cellDetail['numerical_stats'][$col]['min']}
+																				{var $max = $cellDetail['numerical_stats'][$col]['max']}
+																				{if $num === $max}
+																					{var $note = ' (max)'}
+																					{var $class = 'text-danger fw-bold'}
+																				{elseif $num === $min}
+																					{var $note = ' (min)'}
+																					{var $class = 'text-success fw-bold'}
+																				{/if}
 																			{/if}
-																		{/if}
-																		<td title="Extrémní hodnota" class="{$class}" style="white-space: nowrap">{$value}{$note}</td>
-																	{/foreach}
-																</tr>
-															{/foreach}
+																			<td title="Extrémní hodnota" class="{$class}" style="white-space: nowrap">{$value}{$note}</td>
+																		{/foreach}
+																	</tr>
+																{/foreach}
 															</tbody>
 														</table>
 														<p class="small text-muted mt-2">Tyto záznamy byly označeny jako odlehlé na základě výrazné odlišnosti od ostatních hodnot v clusteru (např. pomocí směrodatné odchylky).</p>

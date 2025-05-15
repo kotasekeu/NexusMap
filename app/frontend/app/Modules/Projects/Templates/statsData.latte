@@ -3,90 +3,75 @@
 {block content}
 	<div class="page-body">
 		<div class="container-fluid">
-			<div class="page-title mb-3">
+			<div class="page-title mb-3 d-flex justify-content-between align-items-center">
 				<h4>
-					Přehled neuronů s daty
+					Přehled extrémních hodnot napříč neuronovou mapou
 					<br /><small class="text-primary">{$projectDetail->name}</small>
 				</h4>
+				<a n:href="Projects:detail, project_id => $projectDetail->project_id" class="btn btn-outline-secondary">Zpět na projekt</a>
 			</div>
 		</div>
+
 		<div class="container-fluid">
 			<div class="row">
 				<div class="col-sm-12">
-					<div class="card">
-						<div class="blog-single card-body">
-							<div class="blog-box blog-details">
-								<div class="blog-details">
-									<p class="text-muted">Zobrazení všech neuronů, které obsahují alespoň jeden záznam. Porovnání lokálních hodnot s globálními ukazuje výjimečnosti jednotlivých clusterů.</p>
-									<div class="row mb-4">
-										<div class="col-12">
-											<div class="card border-danger">
-												<div class="card-header text-danger"><strong>Neurony obsahující extrémy</strong></div>
-												<div class="card-body table-responsive">
+					<div class="card border-danger">
+						<div class="card-header text-danger"><strong>Všechny extrémní hodnoty v projektu</strong></div>
+						<div class="card-body table-responsive">
 
-													<table class="table table-sm table-striped table-hover">
-														<thead>
-														<tr>
-															<th>Neuron</th>
-															<th>Počet extrémů</th>
-															<th>Počet záznamů</th>
-															<th>Detail</th>
-														</tr>
-														</thead>
-														<tbody>
-														{foreach $extremes['by_cluster'] as $neuronId => $extremeRecords}
-															<tr>
-																<td>{$neuronId}</td>
-																<td>{count($extremeRecords)}</td>
-																<td>{$clustersWithData[$neuronId]['count'] ?? '–'}</td>
-																<td><a class="btn btn-sm btn-outline-primary" n:href="Projects:cell $projectDetail->project_id, $neuronId">Detail</a></td>
-															</tr>
-														{/foreach}
-														</tbody>
-													</table>
-												</div>
-											</div>
+							<table class="table table-sm table-striped table-hover align-middle">
+								<thead>
+								<tr>
+									<th>Neuron</th>
+									{foreach reset($records) as $col => $val}
+										<th>{$col}</th>
+									{/foreach}
+								</tr>
+								</thead>
+								<tbody>
+								{foreach $extremes['by_cluster'] as $neuronId => $uids}
+									{foreach $uids as $uid}
+										<tr>
+											<td>
+												<a class="btn btn-xs btn-success" n:href="Projects:cell $projectDetail->project_id, $neuronId">{$neuronId}</a>
+											</td>
+											{foreach $records[$uid] as $col => $value}
+												{var $note = ''}
+												{var $class = ''}
+												{if isset($globalStats['numerical'][$col])}
+													{var $val = floatval($value)}
+													{var $min = $globalStats['numerical'][$col]['min']}
+													{var $max = $globalStats['numerical'][$col]['max']}
+													{var $avg = $globalStats['numerical'][$col]['avg']}
+													{if $val === $min}
+														{var $note = ' (min)'}
+														{var $class = 'text-success fw-bold'}
+													{elseif $val === $max}
+														{var $note = ' (max)'}
+														{var $class = 'text-danger fw-bold'}
+													{else}
+														{var $delta = round($val - $avg, 2)}
+														{if abs($delta) >= 1}
+															{var $note = ' (Δ '.$delta.')'}
+															{var $class = 'text-muted'}
+														{/if}
+													{/if}
+												{/if}
+												<td class="{$class}" style="white-space: nowrap" title="Extrémní hodnota">{$value} <br />{$note}</td>
+											{/foreach}
+										</tr>
+									{/foreach}
+								{/foreach}
+								</tbody>
+							</table>
 
-
-											<div class="card border-danger">
-												<div class="card-header text-danger"><strong>Globální statistiky</strong></div>
-												<div class="card-body table-responsive">
-
-													<table class="table table-sm table-bordered">
-														<thead>
-														<tr>
-															<th>Proměnná</th>
-															<th>Min</th>
-															<th>Max</th>
-															<th>Průměr</th>
-															<th>Medián</th>
-														</tr>
-														</thead>
-														<tbody>
-														{foreach $globalStats['numerical'] as $col => $stat}
-															<tr>
-																<td>{$col}</td>
-																<td>{$stat['min']}</td>
-																<td>{$stat['max']}</td>
-																<td>{$stat['avg']}</td>
-																<td>{$stat['median']}</td>
-															</tr>
-														{/foreach}
-														</tbody>
-													</table>
-												</div>
-											</div>
-
-
-										</div>
-									</div>
-								</div>
-							</div>
+							<p class="small text-muted mt-2">
+								Tabulka zobrazuje extrémní záznamy napříč neuronovou mapou. Barevně jsou označeny hodnoty, které jsou minimem či maximem v celém datasetu. Pokud není hodnota extrémní v tomto smyslu, je uvedena její odchylka od průměru.
+							</p>
 						</div>
 					</div>
 				</div>
 			</div>
 		</div>
 	</div>
-
 {/block}

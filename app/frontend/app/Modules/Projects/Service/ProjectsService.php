@@ -418,13 +418,14 @@ class ProjectsService extends BaseService
 	public function getProjectConfigDescription(): array
 	{
 		return [
-			"selected_columns"		=> "Vybrané sloupce pro analýzu",
+			"selected_columns"		=> "Načtené sloupce z CSV",
 			"categorical_column"	=> "Kategorické sloupce",
 			"primary_id"			=> "Hlavní ID",
-			"analysis_columns"		=> "Sloupce pro analýzu",
-			"legend_column"			=> "Sloupec pro hledání extrémů",
+			"analysis_columns"		=> "Sloupce pro numerickou analýzu",
+			"segmentation_column"	=> "Sloupec pro segmentaci dat",
 			"numerical_column"		=> "Numerické sloupce",
 			"string_column"			=> "Textové sloupce",
+			"std_threshold"			=> "Prahová hodnota pro extrémní hodnoty",
 		];
 	}
 

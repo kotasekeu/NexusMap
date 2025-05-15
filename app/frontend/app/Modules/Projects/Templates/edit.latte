@@ -24,6 +24,156 @@
 				</div>
 			</div>
 		</div>
+
+		<div class="row mb-3">
+			<div class="col-sm-12 card">
+				<div class="card-body">
+					<h5 class="card-title">Nápověda k výběru sloupců</h5>
+					<p class="card-text">
+						Následující tabulka ukazuje, jak jednotlivá nastavení ovlivňují zpracování vašich dat v různých fázích analýzy.
+						Předpokládejme vzorový CSV soubor se sloupci: <code>ID_zaznamu</code>, <code>Nazev_produktu</code>, <code>Cena_EUR</code>, <code>Pocet_kusu</code>, <code>Datum_prodeje</code>, <code>Kategorie_produktu</code>, <code>Hodnoceni_zakaznika</code> (škála 1-5).
+					</p>
+					<div class="table-responsive">
+						<table class="table table-bordered table-sm" style="font-size: 0.85rem;">
+							<thead>
+								<tr>
+									<th>Fáze zpracování</th>
+									<th>ID_zaznamu</th>
+									<th>Nazev_produktu</th>
+									<th>Cena_EUR</th>
+									<th>Pocet_kusu</th>
+									<th>Datum_prodeje</th>
+									<th>Kategorie_produktu</th>
+									<th>Hodnoceni_zakaznika</th>
+									<th>Poznámka / Akce</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr>
+									<td class="fw-bold">Původní CSV data</td>
+									<td>101</td>
+									<td>Super Kniha</td>
+									<td>25</td>
+									<td>2</td>
+									<td>2023-10-01</td>
+									<td>Knihy</td>
+									<td>5</td>
+									<td rowspan="2"><em>Všechny sloupce z nahraného souboru.</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold text-white">.</td>
+									<td>102</td>
+									<td>Mega Hra</td>
+									<td>60</td>
+									<td>1</td>
+									<td>2023-10-02</td>
+									<td>Hry</td>
+									<td>4</td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Po <code>selected_columns</code></td>
+									<td>101</td>
+									<td>Super Kniha</td>
+									<td>25</td>
+									<td>2</td>
+									<td class="text-muted fst-italic">--vynecháno--</td>
+									<td>Knihy</td>
+									<td>5</td>
+									<td rowspan="2"><em>Např. vybrány všechny kromě <code>Datum_prodeje</code>. Jen tyto sloupce jsou dále dostupné.</em></td>
+								</tr>
+								 <tr>
+									<td class="fw-bold text-white">.</td>
+									<td>102</td>
+									<td>Mega Hra</td>
+									<td>60</td>
+									<td>1</td>
+									<td class="text-muted fst-italic">--vynecháno--</td>
+									<td>Hry</td>
+									<td>4</td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Identifikace typů</td>
+									<td class="table-info">Primary ID</td>
+									<td class="table-warning">Kategorický</td>
+									<td class="table-success">Numerický</td>
+									<td class="table-success">Numerický</td>
+									<td>-</td>
+									<td class="table-primary">Sloupec pro segmentaci dat</td>
+									<td class="table-success">Numerický</td>
+									<td><em><code>ID_zaznamu</code> jako <strong>Hlavní identifikátor</strong>.<br /><code>Kategorie_produktu</code> jako <strong>Sloupec legendy</strong>.<br />Ostatní dle datového typu (textové jako kategorické).</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Sloupce pro analýzu </td>
+									<td></td>
+									<td></td>
+									<td class="fw-bold">Cena_EUR</td>
+									<td class="fw-bold">Pocet_kusu</td>
+									<td></td>
+									<td></td>
+									<td class="fw-bold">Hodnoceni_zakaznika</td>
+									<td><em>Vybrány sloupce pro numerickou analýzu. Systém z nich použije jen numerické.</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Normalizace (pro SOM)</td>
+									<td></td>
+									<td></td>
+									<td>0.30</td>
+									<td>0.55</td>
+									<td></td>
+									<td></td>
+									<td>0.85</td>
+									<td><em>Numerické sloupce ze sloupců pro numerickou analýzu jsou normalizovány (např. na škálu 0-1). Hodnoty jsou ilustrativní.</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Vstup do SOM analýzy</td>
+									<td></td>
+									<td></td>
+									<td>0.30</td>
+									<td>0.55</td>
+									<td></td>
+									<td></td>
+									<td>0.85</td>
+									<td><em>Normalizované hodnoty vybraných numerických sloupců.</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Hledání extrémů</td>
+									<td></td>
+									<td></td>
+									<td>25</td>
+									<td>2</td>
+									<td></td>
+									<td></td>
+									<td>5</td>
+									<td><em>Na základě původních hodnot sloupců ze sloupců pro numerickou analýzu a nastavení prahové hodnoty.</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Použití hlavního ID</td>
+									<td class="fw-bold">101</td>
+									<td>Super Kniha</td>
+									<td>...</td>
+									<td>...</td>
+									<td></td>
+									<td>Knihy</td>
+									<td>...</td>
+									<td><em>Pro spojení výsledků analýzy (např. clusteru) zpět k původním záznamům.</em></td>
+								</tr>
+								<tr>
+									<td class="fw-bold">Použití sloupce pro segmentaci dat</td>
+									<td>...</td>
+									<td>...</td>
+									<td>...</td>
+									<td>...</td>
+									<td></td>
+									<td class="fw-bold">Kategorie: Knihy</td>
+									<td>...</td>
+									<td><em>Pro seskupení/segmentaci dat, např. "ukaž průměrné <code>Hodnoceni_zakaznika</code> pro <code>Kategorie_produktu</code> Knihy".</em></td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</div>
 	</div>
 </div>
 {/block}

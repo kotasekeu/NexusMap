@@ -86,4 +86,35 @@
     line-height: 1.4;
     min-width: 150px;
     transform: translate(15px, 15px);
+}
+
+/* Styles for map and legend layout - moved from map_square.latte */
+.map-layout-wrapper {
+    display: flex;
+    align-items: flex-start; /* Zarovná mapu a legendu k hornímu okraji */
+    gap: 20px; /* Mezera mezi mapou a legendou */
+}
+
+.map-visual-wrapper {
+    flex-grow: 1; /* Umožní mapě zabrat dostupný prostor, pokud je legenda úzká */
+}
+
+.legend-static-wrapper {
+    flex-shrink: 0; /* Zabrání smrštění legendy, pokud by mapa byla příliš široká */
+    /* Můžete nastavit max-width pro legendu, např. 200px nebo 25% */
+    /* border: 1px solid #eee; */ /* Volitelný rámeček kolem legendy */
+    padding: 5px;
+}
+
+.legend-static-image {
+    max-width: 100%; /* Legenda bude responzivní v rámci svého kontejneru */
+    height: auto;
+    display: block;
+    /* max-height: odstraňte odsud, bude řízeno JS pro přizpůsobení výšce mapy */
+}
+
+/* Ujistěte se, že existující styly pro mapu fungují dobře v tomto flex layoutu */
+/* Například, pokud má mapa pevnou šířku, bude to zde respektováno */
+.map-container.square-map {
+    /* Případné specifické úpravy, pokud jsou nutné po obalení do flex kontejneru */
 } 

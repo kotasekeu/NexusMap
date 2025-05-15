@@ -190,13 +190,21 @@
 												{foreach $projectFiles['visualization'] as $type => $files}
 													{foreach $files as $file}
 														<div class="col-md-4">
-															<h5>
+															<h5 class="mt-0 mb-1">
 																{if str_contains($type, '_')}
-																	{if isset($visualizationTypes[explode('_',$type)[0]])}
-																		{$visualizationTypes[explode('_',$type)[0]]} - {explode('_',$type)[1]}
+																	{var $parts = explode('_', $type)}
+																	{var $prefix = $parts[0]}
+																	{if isset($visualizationTypes[$prefix])}
+																		{$visualizationTypes[$prefix]} - {implode('_', array_slice($parts, 1))}
+																	{else}
+																		{$type} {* Fallback, pokud prefix není známý *}
 																	{/if}
 																{else}
-																	{$visualizationTypes[$type]}
+																	{if isset($visualizationTypes[$type])}
+																		{$visualizationTypes[$type]}
+																	{else}
+																		{$type} {* Fallback, pokud typ není známý *}
+																	{/if}
 																{/if}
 															</h5>
 															<p class="small">

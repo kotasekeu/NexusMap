@@ -115,23 +115,36 @@ final class ProjectFormFactory
 		$form->addMultiSelect('selected_columns', $columnsNames['selected_columns'], $columns)
 			->setRequired('Vyberte sloupce.')
 			->setHtmlAttribute('class', 'form-select')
-			->setOption('description', 'Vyberte sloupce, které budou použity pro analýzu dat. Neoznačené sloupce budou vynechány a použity pouze pro výslednou interpretaci dat.');
+			->setOption('description', 'Vyberte sloupce z CSV, které chcete načíst a mít k dispozici v projektu. Neoznačené sloupce budou ignorovány. Můžete vybrat numerické, textové i kategorické sloupce.');
 
 		$form->addSelect('primary_id', $columnsNames['primary_id'], $columns)
 			->setPrompt('Vyberte')
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte hlavní identifikátor')
-			->setOption('description', 'Hlavní identifikátor je unikátní ID každého záznamu, který se používá pro identifikaci jednotlivých záznamů.');
+			->setOption('description', 'Hlavní identifikátor je unikátní ID každého záznamu. Používá se pro identifikaci jednotlivých záznamů v průběhu analýzy, přiřazování k výsledkům (např. clusterům) a pro reportování odlehlých hodnot. Tento sloupec není přímo použit v numerických analytických výpočtech.');
 
 		$form->addMultiSelect('analysis_columns', $columnsNames['analysis_columns'], $columns)
 			->setRequired('Vyberte analytické sloupce')
 			->setHtmlAttribute('class', 'form-select')
-			->setOption('description', 'Analytické sloupce jsou použity pro něco... dopsat');
+			->setOption('description', 'Z výše načtených `selected_columns` zde vyberte ty, které se použijí pro numerické analýzy (např. shlukování, detekce extrémů). Systém z nich automaticky vybere pouze numerické datové typy.');
 
-		$form->addSelect('legend_column', $columnsNames['legend_column'], $columns)
+		$form->addSelect('segmentation_column', $columnsNames['segmentation_column'], $columns)
 			->setPrompt('Vyberte')
 			->setHtmlAttribute('class', 'form-select')
-			->setRequired('Vyberte sloupec legendy');
+			->setRequired('Vyberte sloupec legendy')
+			->setOption('description', 'Vyberte sloupec (typicky kategorický), jehož hodnoty se použijí pro seskupování či segmentaci dat pro specifické analýzy nebo vizualizace (např. odlišení kategorií v grafech, filtrování). Nepoužívá se pro přímé generování legendy grafu.');
+
+		$form->addText('std_threshold', 'Prahová hodnota pro extrémní hodnoty')
+			->setRequired('Vyplňte prahovou hodnotu')
+			->setHtmlAttribute('type', 'number')
+			->setHtmlAttribute('min', '1')
+			->setHtmlAttribute('max', '4')
+			->setHtmlAttribute('step', '0.1')
+			->addRule(Form::Float, 'Prahová hodnota musí být číslo')
+			->addRule(Form::Range, 'Prahová hodnota musí být mezi 1 a 4', [1, 4])
+			->setOption('description', 'Zadejte, kolik směrodatných odchylek od průměru musí hodnota překročit, aby byla považována za extrém. Např. hodnota 2 označí jen výrazné odchylky. Povolená hodnota je z intervalu 1 až 4.')
+			->setDefaultValue(2);
+
 
 		$form->addSubmit('submit', 'Uložit projekt');
 

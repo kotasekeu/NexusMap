@@ -142,7 +142,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
 
     # Výpočet statistik a detekce extrémů
     stats = compute_group_statistics(df_orig,
-                                   project_settings["legend_column"],
+                                   project_settings["segmentation_column"],
                                    project_settings["analysis_columns"],
                                    project_settings)
 
@@ -151,7 +151,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
                    clusters,
                    stats,
                    threshold=project_settings.get("std_threshold", 2),
-                   legend_column=project_settings["legend_column"],
+                   segmentation_column=project_settings["segmentation_column"],
                    analysis_columns=project_settings["analysis_columns"],
                    primary_id=project_settings["primary_id"],
                    project_settings=project_settings)
@@ -236,14 +236,14 @@ def process_project(uid_hash: str) -> None:
     log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
 
 def compute_group_statistics(df_orig: pd.DataFrame,
-                           group_by: str,
+                           segmentation_column: str,
                            analysis_columns: list[str],
                            project_settings: dict) -> dict[str, dict[str, tuple[float, float]]]:
     """Vypočítá statistiky pro skupiny dat.
     
     Args:
         df_orig (pd.DataFrame): Původní data
-        group_by (str): Sloupec pro seskupení
+        segmentation_column (str): Sloupec pro segmentaci
         analysis_columns (list[str]): Seznam sloupců pro analýzu
         project_settings (dict): Nastavení projektu
         
@@ -262,12 +262,12 @@ def compute_group_statistics(df_orig: pd.DataFrame,
         log_message("Varování: Žádné numerické sloupce pro analýzu.")
         return stats
 
-    if group_by not in df_orig.columns:
-        log_message(f"Varování: Sloupec {group_by} nenalezen v datech.")
+    if segmentation_column not in df_orig.columns:
+        log_message(f"Varování: Sloupec {segmentation_column} nenalezen v datech.")
         return stats
 
     # Výpočet statistik
-    grouped = df_orig.groupby(group_by)[numeric_columns]
+    grouped = df_orig.groupby(segmentation_column)[numeric_columns]
     agg = grouped.agg(['mean', 'std'])
 
     for key, row in agg.iterrows():
@@ -279,7 +279,7 @@ def detect_extremes(df_orig: pd.DataFrame,
                    clusters: dict[str, list[int]],
                    stats_by_group: dict[str, dict[str, tuple[float, float]]],
                    threshold: float,
-                   legend_column: str,
+                   segmentation_column: str,
                    analysis_columns: list[str],
                    primary_id: str,
                    project_settings: dict) -> dict:
@@ -291,7 +291,7 @@ def detect_extremes(df_orig: pd.DataFrame,
         clusters (dict): Slovník shluků
         stats_by_group (dict): Statistiky pro skupiny
         threshold (float): Prahová hodnota pro detekci extrémů
-        legend_column (str): Sloupec pro legendu
+        segmentation_column (str): Sloupec pro segmentaci
         analysis_columns (list[str]): Seznam sloupců pro analýzu
         primary_id (str): Název sloupce s primárním klíčem
         project_settings (dict): Nastavení projektu
@@ -312,12 +312,16 @@ def detect_extremes(df_orig: pd.DataFrame,
         return extremes
 
     # Detekce extrémů podle skupin
-    for group_val, cols_stats in stats_by_group.items():
-        mask = (df_orig[legend_column] == group_val)
+    unique_groups = df_orig[segmentation_column].unique()
+    for group_val in unique_groups:
+        mask = (df_orig[segmentation_column] == group_val)
         df_group = df_orig[mask]
+        # Přeskočíme, pokud je skupina prázdná nebo obsahuje pouze NaN hodnoty v numerických sloupcích
+        if df_group.shape[0] == 0 or df_group[numeric_columns].isnull().all().all():
+            continue
         for col in numeric_columns:
-            if col in cols_stats:
-                mean, std = cols_stats[col]
+            if col in stats_by_group[group_val]:
+                mean, std = stats_by_group[group_val][col]
                 if std and not np.isnan(std):
                     vals = df_group[col]
                     outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]

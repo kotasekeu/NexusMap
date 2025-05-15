@@ -6,12 +6,22 @@
 {block content}
 	<div class="page-body">
 		<div class="container-fluid">
-            {if $mapName === 'mqe-history'}
-                <div class="map-container hex-map " style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
-            {else}
-                <div class="map-container hex-map grid-size-{$projectDetail->som_settings->m}" id="map" data-size="{$projectDetail->som_settings->m|noescape}" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
-                <div class="map-tooltip" id="tooltip"></div>
-            {/if}
+			{if $mapName === 'mqe-history'}
+				{* Pro mqe-history se legenda tímto způsobem nezobrazuje, jedná se o graf historie *}
+				<div class="map-container hex-map" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');"></div>
+			{else}
+				<div class="map-layout-wrapper">
+					<div class="map-visual-wrapper">
+						<div class="map-container hex-map grid-size-{$projectDetail->som_settings->m}" id="map" data-size="{$projectDetail->som_settings->m|noescape}" style="background-image: url('{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/{$mapName}.png');">
+							{* Mřížkové buňky budou dynamicky přidány pomocí JavaScriptu zde *}
+						</div>
+					</div>
+					<div class="legend-static-wrapper" id="legendStaticWrapper" style="display: none;">
+						<img id="legendStaticImage" src="{$baseUrl}/userFiles/{$projectDetail->uid_hash}/visualization/legends/{$mapName}.png" alt="Legenda - {$mapName}" class="legend-static-image">
+					</div>
+				</div>
+				<div class="map-tooltip" id="tooltip"></div>
+			{/if}
 		</div>
 	</div>
 {/block}
@@ -136,6 +146,35 @@
 						});
 					}
 				});
+			});
+
+			// Skript pro zobrazení legendy (stejný jako pro map_square.latte)
+			document.addEventListener('DOMContentLoaded', function() {
+				const legendImage = document.getElementById('legendStaticImage');
+				const legendWrapper = document.getElementById('legendStaticWrapper');
+				const mapElement = document.getElementById('map');
+
+				if (legendImage && legendWrapper && mapElement) {
+					const legendSrc = legendImage.getAttribute('src');
+					if (legendSrc) {
+						fetch(legendSrc)
+							.then(response => {
+								if (response.ok) {
+									legendWrapper.style.display = 'block';
+									const mapHeight = mapElement.offsetHeight;
+									legendImage.style.maxHeight = mapHeight + 'px';
+								} else {
+									legendWrapper.style.display = 'none';
+								}
+							})
+							.catch(error => {
+								legendWrapper.style.display = 'none';
+								console.error('Chyba při načítání obrázku legendy:', error);
+							});
+					} else {
+						legendWrapper.style.display = 'none';
+					}
+				}
 			});
 		</script>
 	{/if}
