@@ -10,7 +10,7 @@
 					</h4>
 				</div>
 			</div>
-		</div>
+		</div>		
 
 		<div class="container-fluid">
 			<div class="row">
@@ -19,6 +19,19 @@
 						{control createProjectForm}
 					</div>
 				</div>
+			</div>
+		</div>
+
+		<div class="container-fluid">
+			<div class="alert alert-warning">
+				<strong>Nápověda pro CSV soubor:</strong>
+				<ul>
+					<li>Data musí být oddělená čárkou (<strong>,</strong>).</li>
+					<li>První řádek musí obsahovat názvy sloupců.</li>
+					<li>Názvy sloupců by měly být bezpečné (např. bez speciálních znaků, mezer; ideálně použijte camelCase nebo snake_case).</li>
+					<li>Jeden ze sloupců musí být pojmenován <strong>ID</strong> a jeho hodnoty budou použity jako primární klíč.</li>
+					<li>Po nahrání budou automaticky ze souboru odstraněny prázdné řádky a řádky s chybami.</li>
+				</ul>
 			</div>
 		</div>
 	</div>

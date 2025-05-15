@@ -180,7 +180,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Rychlost učení musí být číslo')
 			->addRule(Form::Range, 'Rychlost učení musí být mezi 0 a 1', [0, 1])
-			->setDefaultValue(0.9);
+			->setDefaultValue(0.9)
+			->setOption('description', 'Určuje, jak moc se váhy neuronů přizpůsobují na začátku trénování. Vyšší hodnota znamená rychlejší počáteční učení. (Rozmezí: 0.0 - 1.0)');
 
 		$form->addText('min_learning_rate', 'Koncová rychlost učení')
 			->setRequired('Vyplňte minimální rychlost učení')
@@ -190,7 +191,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('step', '0.001')
 			->addRule(Form::Float, 'Minimální rychlost učení musí být číslo')
 			->addRule(Form::Range, 'Minimální rychlost učení musí být mezi 0 a 1', [0, 1])
-			->setDefaultValue(0.1);
+			->setDefaultValue(0.1)
+			->setOption('description', 'Minimální hodnota rychlosti učení, na kterou klesne během trénování. (Rozmezí: 0.0 - 1.0)');
 
 		$form->addText('radius', 'Počáteční poloměr okolí')
 			->setHtmlAttribute('type', 'number')
@@ -199,7 +201,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('step', '1')
 			->addRule(Form::Float, 'Poloměr musí být číslo')
 			->addRule(Form::Range, 'Poloměr musí být mezi 0 a 100', [0, 100])
-			->setNullable();
+			->setNullable()
+			->setOption('description', 'Definuje velikost oblasti neuronů, které jsou aktualizovány spolu s vítězným neuronem na začátku. Větší poloměr ovlivňuje více neuronů. (Rozmezí: 0 - 100). Pokud není zadán, je automaticky použita polovina rozměru mapy R = m/2');
 
 		$form->addText('min_radius', 'Koncový poloměr okolí')
 			->setRequired('Vyplňte minimální poloměr')
@@ -209,7 +212,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('step', '0.1')
 			->addRule(Form::Float, 'Minimální poloměr musí být číslo')
 			->addRule(Form::Range, 'Minimální poloměr musí být mezi 0 a 100', [0, 100])
-			->setDefaultValue(1.0);
+			->setDefaultValue(1.0)
+			->setOption('description', 'Minimální hodnota poloměru okolí. (Rozmezí: 0 - 100, doporučená výchozí hodnota 1.0)');
 
 		$form->addText('num_batches', 'Počet sekcí rozdělení vstupního souboru')
 			->setRequired('Vyplňte počet částí rozdělení vstupnního souboru')
@@ -218,7 +222,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('max', '100')
 			->setHtmlAttribute('step', '1')
 			->addRule(Form::Range, 'Počet sekcí musí být mezi 0 a 100', [0, 100])
-			->setDefaultValue(10);
+			->setDefaultValue(10)
+			->setOption('description', 'Rozděluje vstupní data do několika částí (dávek) pro minimalizaci vynechání zpracování části vstupního souboru při použití stochastických přístupů.');
 
 		$form->addText('max_batch_percent', 'Maximální velikost dávky (%)')
 			->setRequired('Vyplňte maximální velikost dávky')
@@ -228,7 +233,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Maximální velikost dávky musí být číslo')
 			->addRule(Form::Range, 'Maximální velikost dávky musí být mezi 0 a 100', [0, 100])
-			->setDefaultValue(5.0);
+			->setDefaultValue(5.0)
+			->setOption('description', 'Maximální procentuální velikost jedné dávky dat z celého vstupního souboru. (Rozmezí: 0% - 100%). Koncová hodnota ke které cílí křivka vývoje počtu zpracovaných vstupních vektorů na jeden průchod.');
 
 		$form->addText('min_batch_percent', 'Minimální velikost dávky (%)')
 			->setRequired('Vyplňte minimální velikost dávky')
@@ -238,7 +244,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Minimální velikost dávky musí být číslo')
 			->addRule(Form::Range, 'Minimální velikost dávky musí být mezi 0 a 100', [0, 100])
-			->setDefaultValue(0.1);
+			->setDefaultValue(0.1)
+			->setOption('description', 'Minimální procentuální velikost jedné dávky dat z celého vstupního souboru. (Rozmezí: 0% - 100%). Počáteční hodnota ze které vychází křivka vývoje počtu zpracovaných vstupních vektorů na jeden průchod.');
 
 		$valuesUpdateType = [
 			'logarithmic' => 'Logaritmický',
@@ -252,17 +259,20 @@ final class ProjectFormFactory
 		$form->addSelect('lr_decay_type', 'Typ poklesu rychlosti učení', $valuesUpdateType)
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte typ poklesu rychlosti učení')
-			->setDefaultValue('linear-drop');
+			->setDefaultValue('linear-drop')
+			->setOption('description', 'Metoda, jakou se snižuje rychlost učení během trénování (např. lineární, exponenciální).');
 
 		$form->addSelect('radius_decay_type', 'Typ poklesu poloměru', $valuesUpdateType)
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte typ poklesu poloměru')
-			->setDefaultValue('linear-drop');
+			->setDefaultValue('linear-drop')
+			->setOption('description', 'Metoda, jakou se snižuje poloměr okolí během trénování.');
 
 		$form->addSelect('batch_growth_type', 'Typ růstu dávky', $valuesUpdateType)
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte typ růstu dávky')
-			->setDefaultValue('exp-growth');
+			->setDefaultValue('exp-growth')
+			->setOption('description', 'Metoda, jakou se případně mění velikost dávky během trénování (relevantní pro některé strategie).');
 
 		$form->addText('random_seed', 'Random seed')
 			->setHtmlAttribute('type', 'number')
@@ -270,7 +280,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('max', '1000')
 			->setHtmlAttribute('step', '1')
 			->addRule(Form::Range, 'Random seed musí být mezi 0 a 1000', [0, 1000])
-			->setNullable();
+			->setNullable()
+			->setOption('description', 'Číslo pro inicializaci generátoru náhodných čísel. Umožňuje reprodukovatelnost výsledků. ');
 
 		$form->addSelect('growth_g', 'Růst G', [
 			1 => '1',
@@ -282,7 +293,8 @@ final class ProjectFormFactory
 		])
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte hodnotu růstu G')
-			->setPrompt('Vyberte hodnotu');
+			->setPrompt('Vyberte hodnotu')
+			->setOption('description', 'Parametr ovlivňující dynamiku růstu/poklesu parametrů (např. rychlosti učení, poloměru). Konkrétní význam závisí na zvoleném typu poklesu/růstu.');
 
 		$form->addSelect('map_size', 'Velikost mapy', [
 			'10x10' => '10x10',
@@ -290,7 +302,8 @@ final class ProjectFormFactory
 			'30x30' => '30x30'
 		])
 			->setRequired('Vyberte velikost mapy')
-			->setDefaultValue('20x20');
+			->setDefaultValue('20x20')
+			->setOption('description', 'Rozměry mřížky neuronů (např. 10x10, 20x20).');
 
 		$form->addText('epoch_multiplier', 'Násobitel epoch')
 			->setRequired('Vyplňte násobitel epoch')
@@ -299,7 +312,8 @@ final class ProjectFormFactory
 			->setHtmlAttribute('max', '10000')
 			->setHtmlAttribute('step', '0.5')
 			->addRule(Form::Range, 'Násobitel epoch musí být mezi 0 a 10000', [0, 10000])
-			->setDefaultValue(1);
+			->setDefaultValue(1)
+			->setOption('description', 'Násobitel, kolikrát se má projít celý dataset nad rámec základního počtu epoch, který je roven počtu vstupních vektorů datasetu. [0,10000]');
 
 		$form->addText('min_q_error', 'Minimální chyba Q')
 			->setHtmlAttribute('type', 'number')
@@ -307,26 +321,30 @@ final class ProjectFormFactory
 			->setHtmlAttribute('max', '1')
 			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Float, 'Minimální chyba Q musí být číslo')
-			->addRule(Form::Range, 'Minimální chyba Q musí být mezi 0 a 1', [0, 1]);
+			->addRule(Form::Range, 'Minimální chyba Q musí být mezi 0 a 1', [0, 1])
+			->setOption('description', 'Pokud je nastavena, trénování se může zastavit, pokud průměrná vzdálenost datových bodů od jejich nejbližších neuronů klesne pod tuto hodnotu. (Rozmezí: 0.0 - 1.0)');
 
 		$form->addSelect('map_type', 'Typ mapy', [
 			'square' => 'Čtvercová',
 			'hex' => 'Hexagonální'
 		])
 			->setRequired('Vyberte typ mapy')
-			->setDefaultValue('square');
+			->setDefaultValue('square')
+			->setOption('description', 'Struktura sousedství neuronů (Čtvercová / Hexagonální). Hexagonální má rovnoměrnější pokrytí.');
 
 		$form->addSelect('normalize_weights_flag', 'Normalizovat váhy', [
 				0	=> "Ne", 1	=> "Ano"
 			])
-			->setRequired('Vyberte');
+			->setRequired('Vyberte')
+			->setOption('description', 'Určuje, zda se mají váhy neuronů normalizovat (na jednotkovou délku) po každé aktualizaci. (Ano/Ne)');
 
 		$form->addText('max_epochs_without_improvement', 'Maximální počet epoch bez zlepšení')
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
 			->setHtmlAttribute('max', '1000')
 			->setHtmlAttribute('step', '1')
-			->addRule(Form::Range, 'Maximální počet epoch bez zlepšení musí být mezi 0 a 1000', [0, 1000]);
+			->addRule(Form::Range, 'Maximální počet epoch bez zlepšení musí být mezi 0 a 1000', [0, 1000])
+			->setOption('description', 'Pokud je nastaveno, trénování se zastaví, pokud se chyba Q nezlepší po zadaný počet epoch. (Rozmezí: 0 - 1000)');
 
 		$form->addSubmit('submit', 'Uložit nastavení SOM');
 

@@ -5,15 +5,21 @@
 	<div class="container-fluid">
 		<div class="page-title">
 			<div class="row">
-				<div class="col-6">
+				<div class="col-4">
 					<h4>Detail projektu</h4>
 				</div>
-				<div class="col-md-6 project-list">
+				<div class="col-md-8 project-list">
+					<a class="btn btn-outline-danger-2x" n:href="delete!, project_id => $projectDetail->project_id"  onclick="return confirm('Opravdu chcete smazat tento projekt?');"> <i data-feather="trash-2"> </i>Odstranit projekt</a>
 					{if $projectDetail->ready_to_analyze == 0}
-						<a class="btn btn-primary" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="plus-square"> </i>Upravit projekt</a>
-						<a class="btn btn-warning" n:href="Projects:editSom, project_id => $projectDetail->project_id"> <i data-feather="settings"> </i>Upravit nastavení SOM</a>
+						<a class="btn btn-outline-primary-2x" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="edit-2"> </i>Upravit projekt</a>
+						<a class="btn btn-outline-warning-2x" n:href="Projects:editSom, project_id => $projectDetail->project_id"> <i data-feather="settings"> </i>Upravit nastavení SOM</a>
 					{/if}
-					<a class="btn btn-danger" n:href="delete!, project_id => $projectDetail->project_id"  onclick="return confirm('Opravdu chcete smazat tento projekt?');"> <i data-feather="plus-cros"> </i>Odstranit projekt</a>
+					{if $projectDetail->status == 1}
+						<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-outline-info-2x"> <i data-feather="bar-chart-2"> </i>Zobrazit analýzu</a>
+					{/if}
+					{if $projectDetail->ready_to_analyze == 0}
+						<a class="btn btn-outline-success-2x" n:href="submit!, project_id => $projectDetail->project_id"> <i data-feather="play"> </i>Spustit analýzu</a>
+					{/if}
 				</div>
 			</div>
 		</div>
@@ -27,12 +33,6 @@
 							<div class="blog-details">
 								<h4>
 									#{$projectDetail->project_id} {$projectDetail->name}
-									{if $projectDetail->status == 1}
-										<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-primary">Zobrazit analýzu</a>
-									{/if}
-									{if $projectDetail->ready_to_analyze == 0}
-										<a class="btn btn-warning" n:href="submit!, project_id => $projectDetail->project_id"> <i data-feather="plus-cros"> </i>Spustit analýzu</a>
-									{/if}
 								</h4>
 								<div class="single-blog-content-top">
 									<div class="card mt-4">

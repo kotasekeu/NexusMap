@@ -82,7 +82,7 @@
 					case 20:
 						baseHexWidth = 4.75;
 						baseHexHeight = 5.7;
-						initialVerticalOffsetPct = baseHexHeight * 0.3; // Upravený offset
+						initialVerticalOffsetPct = baseHexHeight * 0.48; // Upravený offset
 						break;
 					case 30:
 						baseHexWidth = 3.1666;
@@ -94,18 +94,28 @@
 						baseHexHeight = 11.4;
 						initialVerticalOffsetPct = 3.5;
 				}
+				
+				{* HEX 20 const verticalSpacing = baseHexHeight * 0.815; // Vertikální mezera mezi řádky 20x20
+				const horizontalSpacing = baseHexWidth * 1.025; // Zvětšený horizontální rozestup pro lepší zarovnání *}
 
-				const horizontalSpacing = baseHexWidth; // Horizontální mezera mezi hexagony
-				const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky
+				{* HEX 10 const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky 20x20
+				const horizontalSpacing = baseHexWidth * 1; // Zvětšený horizontální rozestup pro lepší zarovnání *}
+
+
+{*	SQUARE 10x10 i 20x20			const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky 20x20*}
+{*				const horizontalSpacing = baseHexWidth * 1; // Zvětšený horizontální rozestup pro lepší zarovnání*}
+
+				const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky 20x20
+				const horizontalSpacing = baseHexWidth * 1; // Zvětšený horizontální rozestup pro lepší zarovnání
 
 				for (let i = 0; i < gridSize; i++) {
 					const isOddRow = i % 2 === 1;
 					const verticalPosition = initialVerticalOffsetPct + (i * verticalSpacing);
-					
+
 					for (let j = 0; j < gridSize; j++) {
 						const id = `${ i}_${ j}`; // ID ve formátu "řádek_sloupec"
 						const horizontalPosition = (j * horizontalSpacing) + (isOddRow ? horizontalSpacing / 2 : 0);
-						
+
 						const $cell = $('<div/>', {
 							'class': 'hex-cell',
 							'data-id': id
