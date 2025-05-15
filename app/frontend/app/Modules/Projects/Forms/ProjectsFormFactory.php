@@ -161,7 +161,7 @@ final class ProjectFormFactory
 		return $form;
 	}
 
-	public function editSomForm(callable $onSuccess, int $projectId): Form
+	public function editSomForm(callable $onSuccess): Form
 	{
 		$form = $this->factory->create();
 

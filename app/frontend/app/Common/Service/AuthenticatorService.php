@@ -52,7 +52,7 @@ final class AuthenticatorService implements Nette\Security\IAuthenticator
 		
 		return new Nette\Security\SimpleIdentity(
 			$customer->customer_id,
-			'customer',
+			$customer->customer_type,
 			[
 				'email'		=> $customer->email,
 				'name'		=> $customer->name,

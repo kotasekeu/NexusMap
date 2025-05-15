@@ -29,6 +29,7 @@ class ProjectsPresenter extends BasePresenter
 	{
 		parent::startup();
 		$this->projectsService->setCustomerId($this->getUser()->getId());
+		$this->projectsService->setCustomerType($this->getUser()->getRoles()[0]);
 	}
 
 	public function renderDefault(): void
@@ -223,8 +224,7 @@ class ProjectsPresenter extends BasePresenter
 			function ($project_id): void {
 				$this->flashMessage('Projekt byl upraven.');
 				$this->redirect("Projects:detail", ['project_id' => $project_id]);
-			},
-			$this->projectDetail->project_id
+			}
 		);
 	}
 

@@ -25,7 +25,7 @@ class LoginRepository extends BaseRepository
 	 */
 	public function getCustomerByEmail(string $email): ?Row
 	{
-		return $this->db->select("customer_id, email, name, passhash,customer_settings")
+		return $this->db->select("customer_id, email, name, passhash,customer_settings, customer_type")
 			->from($this->table)
 			->where('email = %s', $email)
 			->where('visible = 1')

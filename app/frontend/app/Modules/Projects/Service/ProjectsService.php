@@ -156,6 +156,9 @@ class ProjectsService extends BaseService
 
 	private function uploadInputCsv(FileUpload $input_csv, array|ArrayHash $projectData): void
 	{
+		if ($this->getCustomerType() == "basic") {
+
+		}
 		$csvDir = WWW_DIR . '/userFiles/' . $projectData['uid_hash'] . '/csv';
 		if (!is_dir($csvDir)) {
 			mkdir($csvDir, 0777, true);

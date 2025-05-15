@@ -8,6 +8,7 @@ namespace App\Common\Service;
 abstract class BaseService
 {
 	private ?int $customer_id;
+	private ?string $customer_type;
 
 
     public function getUid(bool $moreEntropy = true): string
@@ -23,6 +24,16 @@ abstract class BaseService
 	public function setCustomerId(int $customer_id): void
 	{
 		$this->customer_id = $customer_id;
+	}
+
+	public function getCustomerType(): string
+	{
+		return $this->customer_type;
+	}
+
+	public function setCustomerType(string $customer_type): void
+	{
+		$this->customer_type = $customer_type;
 	}
 
 	public function transactionBegin(object $repository): void
