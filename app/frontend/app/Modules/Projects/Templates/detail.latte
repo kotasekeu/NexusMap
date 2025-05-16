@@ -49,8 +49,12 @@
 															<em>Hned, až na Váš projekt vyjde řada, bude analyzován a informace se zde zobrazí.</em>
 														</p>
 													{/if}
-
-
+													{if $projectDetail->status != 1 && $lastLogLine != ''}
+														<p>
+															<strong class="text-primary">Poslední zpráva z logu:</strong> <br />
+															{$lastLogLine}
+														</p>
+													{/if}
 
 													<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
 													

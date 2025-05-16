@@ -69,6 +69,7 @@
 											</div>
 										</div>
 									</div>
+									{if ! empty($cellDetail['records'])}
 									<!-- Všechny záznamy -->
 									<div class="row mb-4">
 										<div class="col-12">
@@ -99,7 +100,8 @@
 											</div>
 										</div>
 									</div>
-
+									{/if}
+									{if ! empty($cellDetail['numerical_stats'])}
 									<!-- Statistika numerických proměnných -->
 									<div class="row mb-4">
 										<div class="col-12">
@@ -137,6 +139,7 @@
 											</div>
 										</div>
 									</div>
+									{/if}
 								</div>
 							</div>
 						</div>

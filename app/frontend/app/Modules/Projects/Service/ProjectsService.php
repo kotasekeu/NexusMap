@@ -249,6 +249,27 @@ class ProjectsService extends BaseService
 		];
 	}
 
+	public function getLastLineKohonenLogFile(string $uid_hash): string
+	{
+		$logFile = WWW_DIR . '/userFiles/' . $uid_hash . '/kohonen-log.txt';
+		if (!file_exists($logFile)) {
+			return '';
+		}
+
+		$handle = fopen($logFile, 'r');
+		if ($handle === false) {
+			return '';
+		}
+
+		$lastLine = '';
+		while (($line = fgets($handle)) !== false) {
+			$lastLine = $line;
+		}
+		fclose($handle);
+
+		return trim($lastLine);
+	}
+
 	public function deleteProject(int $customer_id, Row $project): Result|int|null
 	{
 		if ($project->customer_id !== $customer_id) {

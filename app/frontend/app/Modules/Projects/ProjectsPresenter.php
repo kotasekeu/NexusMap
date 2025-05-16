@@ -56,6 +56,8 @@ class ProjectsPresenter extends BasePresenter
 
 		$this->getTemplate()->inputFileData = $this->projectsService->getInputFileData($projectDetail->project_id);
 
+		$this->getTemplate()->lastLogLine	= $this->projectsService->getLastLineKohonenLogFile($projectDetail->uid_hash);
+
 		$this->getTemplate()->visualizationTypes = [
 			'hit'        => 'Mapa návštěvnosti',
 			'u-matrix'   => 'U-Matrix',
