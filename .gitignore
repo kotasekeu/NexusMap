@@ -6,6 +6,7 @@ __pycache__/
 *.pdb
 .venv/
 .env
+admr.php
 
 # Docker
 docker-compose.override.yml

@@ -78,36 +78,32 @@
 						baseHexWidth = 9.5;
 						baseHexHeight = 11.4;
 						initialVerticalOffsetPct = 3.5; // Původní hodnota, zdá se OK pro 10x10
+
+						verticalSpacing = baseHexHeight * 0.795; // HEX 10
+						horizontalSpacing = baseHexWidth * 1;
+
 						break;
 					case 20:
 						baseHexWidth = 4.75;
 						baseHexHeight = 5.7;
 						initialVerticalOffsetPct = baseHexHeight * 0.48; // Upravený offset
+
+						verticalSpacing = baseHexHeight * 0.815; // HEX 20
+						horizontalSpacing = baseHexWidth * 1.025;
 						break;
 					case 30:
-						baseHexWidth = 3.1666;
-						baseHexHeight = 3.8;
-						initialVerticalOffsetPct = baseHexHeight * 0.2; // Upravený offset, menší pro hustší mřížku
+						baseHexWidth = 3.28;
+						baseHexHeight = 3.936;
+						initialVerticalOffsetPct = baseHexHeight * 0.7; // Upravený offset, menší pro hustší mřížku
+
+						verticalSpacing = baseHexHeight * 0.795; // HEX 30
+						horizontalSpacing = baseHexWidth * 1;
 						break;
 					default:
 						baseHexWidth = 9.5; // Fallback na 10x10
 						baseHexHeight = 11.4;
 						initialVerticalOffsetPct = 3.5;
 				}
-				
-				{* HEX 20 const verticalSpacing = baseHexHeight * 0.815; // Vertikální mezera mezi řádky 20x20
-				const horizontalSpacing = baseHexWidth * 1.025; // Zvětšený horizontální rozestup pro lepší zarovnání *}
-
-				{* HEX 10 const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky 20x20
-				const horizontalSpacing = baseHexWidth * 1; // Zvětšený horizontální rozestup pro lepší zarovnání *}
-
-
-{*	SQUARE 10x10 i 20x20			const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky 20x20*}
-{*				const horizontalSpacing = baseHexWidth * 1; // Zvětšený horizontální rozestup pro lepší zarovnání*}
-
-				const verticalSpacing = baseHexHeight * 0.795; // Vertikální mezera mezi řádky 20x20
-				const horizontalSpacing = baseHexWidth * 1; // Zvětšený horizontální rozestup pro lepší zarovnání
-
 				for (let i = 0; i < gridSize; i++) {
 					const isOddRow = i % 2 === 1;
 					const verticalPosition = initialVerticalOffsetPct + (i * verticalSpacing);

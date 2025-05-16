@@ -12,7 +12,6 @@
 
 .hex-map {
     aspect-ratio: 1.1;
-    /*1.125 pro 20x20*/
 }
 
 .square-map {
@@ -42,7 +41,6 @@
 
 .grid-cell:hover {
     background-color: rgba(255, 255, 255, 0.4);
-    background-color:black;
     outline: 2px solid rgba(255, 255, 255, 0.4);
 }
 
@@ -59,18 +57,17 @@
 }
 
 .grid-size-20 .hex-cell {
-    width: 5%; /* 9.5 / 2 */
-    height: 6%; /* 11.4 / 2 */
+    width: 5%;
+    height: 6%;
 }
 
 .grid-size-30 .hex-cell {
-    width: 3.1666%; /* 9.5 / 3 */
-    height: 3.8%;   /* 11.4 / 3 */
+    width: 3.28%;
+    height: 3.936%;
 }
 
 .hex-cell:hover {
     background-color: rgba(255, 255, 255, 0.2);
-    background-color:black;
     outline: none;
     filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
 }
