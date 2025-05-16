@@ -197,6 +197,7 @@ class KohonenSOM:
             samples_per_batch = math.ceil(total_samples_to_process / self.num_batches)
 
             # Zpracování dávek
+            
             for batch_idx in range(self.num_batches):
                 start_idx = batch_idx * (total_samples // self.num_batches)
                 end_idx = min((batch_idx + 1) * (total_samples // self.num_batches), total_samples)
@@ -279,12 +280,21 @@ class KohonenSOM:
             learning_rate (float): Aktuální rychlost učení
             radius (float): Aktuální poloměr sousedství
         """
+        # Vytvoření mřížky souřadnic
+        i_coords = np.arange(self.m)[:, np.newaxis]
+        j_coords = np.arange(self.n)[np.newaxis, :]
+        
+        # Výpočet vzdáleností pro všechny neurony najednou
+        distances = np.zeros((self.m, self.n))
         for i in range(self.m):
             for j in range(self.n):
-                distance_to_bmu = self.grid_distance((i, j), bmu_idx)
-                if distance_to_bmu <= radius:
-                    influence = np.exp(-distance_to_bmu ** 2 / (2 * (radius ** 2)))
-                    self.weights[i, j] += influence * learning_rate * (sample - self.weights[i, j])
+                distances[i, j] = self.grid_distance((i, j), bmu_idx)
+        
+        # Výpočet vlivu pro všechny neurony najednou
+        influence = np.exp(-distances ** 2 / (2 * (radius ** 2)))
+        
+        # Aktualizace vah pro všechny neurony najednou
+        self.weights += influence[:, :, np.newaxis] * learning_rate * (sample - self.weights)
 
     def grid_distance(self, a: tuple[int, int], b: tuple[int, int]) -> float:
         """Vypočítá vzdálenost mezi dvěma neurony v mřížce.

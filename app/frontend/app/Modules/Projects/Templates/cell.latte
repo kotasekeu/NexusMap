@@ -46,18 +46,33 @@
 																			{var $note = ''}
 																			{var $class = ''}
 																			{if isset($cellDetail['numerical_stats'][$col])}
-																				{var $num = floatval($value)}
+																				{var $val = floatval($value)}
 																				{var $min = $cellDetail['numerical_stats'][$col]['min']}
 																				{var $max = $cellDetail['numerical_stats'][$col]['max']}
-																				{if $num === $max}
-																					{var $note = ' (max)'}
-																					{var $class = 'text-danger fw-bold'}
-																				{elseif $num === $min}
+																				{var $avg = $cellDetail['numerical_stats'][$col]['avg']}
+																				{if $val === $min}
 																					{var $note = ' (min)'}
 																					{var $class = 'text-success fw-bold'}
+																				{elseif $val === $max}
+																					{var $note = ' (max)'}
+																					{var $class = 'text-danger fw-bold'}
+																				{else}
+																					{var $delta = round($val - $avg, 2)}
+																					{var $relDelta = round(($delta / abs($avg)) * 100, 1)}
+																					{if abs($delta) >= 1}
+																						{var $class = 'text-muted'}
+																						{var $note = ' (Δ '.$delta.')'}
+																						{if abs($relDelta) >= 50}
+																							{var $class = 'text-danger fw-bold'}
+																							{var $note = ' (Δ '.$delta.', '.$relDelta.'%)'}
+																						{elseif abs($relDelta) >= 20}
+																							{var $class = 'text-warning fw-bold'}
+																							{var $note = ' (Δ '.$delta.', '.$relDelta.'%)'}
+																						{/if}
+																					{/if}
 																				{/if}
 																			{/if}
-																			<td title="Extrémní hodnota" class="{$class}" style="white-space: nowrap">{$value}{$note}</td>
+																			<td class="{$class}" style="white-space: nowrap" title="Extrémní hodnota">{$value} <br />{$note}</td>
 																		{/foreach}
 																	</tr>
 																{/foreach}
