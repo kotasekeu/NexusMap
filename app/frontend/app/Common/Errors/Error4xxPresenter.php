@@ -9,10 +9,17 @@ use Nette\Application\BadRequestException;
 use Nette\Application\Request;
 use Nette\Application\UI\ComponentReflection;
 
+/**
+ * Base presenter for handling 4xx HTTP error responses
+ */
 abstract class Error4xxPresenter
 {
 	/**
-	 * Common presenter method
+	 * Common presenter startup method
+	 * Checks if the request is a forward and handles error state
+	 * 
+	 * TODO: Consider adding logging for error states
+	 * TODO: Consider adding custom error handling for specific error codes
 	 */
 	public function startup(): void
 	{
@@ -23,6 +30,15 @@ abstract class Error4xxPresenter
 		$this->error();
 	}
 
+	/**
+	 * Renders the error template based on the exception code
+	 * 
+	 * @param BadRequestException $exception The exception that triggered the error
+	 * 
+	 * TODO: Consider adding support for custom error templates per module
+	 * TODO: Consider adding error tracking/analytics
+	 * TODO: Consider adding support for different template formats (not just latte)
+	 */
 	public function renderDefault(BadRequestException $exception): void
 	{
 		$rf1 = new ComponentReflection(static::class);

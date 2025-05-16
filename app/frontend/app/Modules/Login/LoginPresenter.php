@@ -9,16 +9,19 @@ use App\Modules\Login\Forms\LoginFormFactory;
 use Nette\Forms\Form;
 
 /**
- * LoginPresenter class
+ * Presenter for handling user authentication
+ * 
+ * @package App\Modules\Login
  */
 class LoginPresenter extends BasePresenter
 {
-	/** @var LoginFormFactory */
+	/** @var LoginFormFactory Factory for creating login forms */
 	private LoginFormFactory $loginFormFactory;
 
 	/**
-	 * Constructor for LoginPresenter class
-	 * @param LoginFormFactory $loginFormFactory
+	 * Constructor for LoginPresenter
+	 * 
+	 * @param LoginFormFactory $loginFormFactory Factory for creating login forms
 	 */
 	public function __construct(LoginFormFactory $loginFormFactory)
 	{
@@ -26,7 +29,8 @@ class LoginPresenter extends BasePresenter
 	}
 
 	/**
-	 * Renders the default view
+	 * Renders the default view - login form
+	 * Redirects to dashboard if user is already logged in
 	 */
 	public function renderDefault()
 	{
@@ -37,7 +41,8 @@ class LoginPresenter extends BasePresenter
 
 	/**
 	 * Creates and returns the login form component
-	 * @return Form
+	 * 
+	 * @return Form The configured login form
 	 */
 	public function createComponentLoginForm(): Form
 	{
@@ -49,12 +54,15 @@ class LoginPresenter extends BasePresenter
 		);
 	}
 
+	/**
+	 * Handles user logout
+	 * Logs out the user and redirects to login page
+	 */
 	public function actionLogout(): void
 	{
 		$this->getUser()->logout();
 
 		$this->flashMessage('You have been logged out.', 'success');
 		$this->redirect('Login:default');
-
 	}
 }

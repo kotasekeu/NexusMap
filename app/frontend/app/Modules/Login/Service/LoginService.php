@@ -9,19 +9,19 @@ use App\Modules\Login\Repository\LoginRepository;
 use Dibi\Row;
 
 /**
- * LoginService class
+ * Service for handling user authentication and customer information
  * 
- * This class is responsible for authentication and retrieving customer information.
+ * @package App\Modules\Login\Service
  */
 class LoginService extends BaseService
 {
-	/** @var LoginRepository */
+	/** @var LoginRepository Repository for accessing customer data */
 	private $loginRepository;
 
 	/**
-	 * Constructor for LoginService class
+	 * Constructor for LoginService
 	 * 
-	 * @param LoginRepository $loginRepository Login repository.
+	 * @param LoginRepository $loginRepository Repository for accessing customer data
 	 */
 	public function __construct(
 		LoginRepository					$loginRepository)
@@ -30,10 +30,13 @@ class LoginService extends BaseService
 	}
 
 	/**
-	 * Retrieves a customer by email.
+	 * Retrieves a customer by email
 	 * 
-	 * @param string $email Customer email.
-	 * @return ?Row Customer or null if not found.
+	 * @param string $email Customer email
+	 * @return ?Row Customer data or null if not found
+	 * 
+	 * TODO: Consider adding caching for frequently accessed customers
+	 * TODO: Consider adding rate limiting for failed login attempts
 	 */
 	public function getCustomerByEmail(string $email): ?Row
 	{
