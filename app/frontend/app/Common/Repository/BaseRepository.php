@@ -156,17 +156,31 @@ abstract class BaseRepository
 			->where("visible = 1")
 			->execute();
 	}
-
+	/**
+	 * Begins a transaction.
+	 * 
+	 * This method starts a database transaction.
+	 */
 	public function transactionBegin(): void
 	{
 		$this->db->begin();
 	}
 
+	/**
+	 * Commits a transaction.
+	 * 
+	 * This method commits the current database transaction.
+	 */
 	public function transactionCommit(): void
 	{
 		$this->db->commit();
 	}
 
+	/**
+	 * Rolls back a transaction.
+	 * 
+	 * This method rolls back the current database transaction.
+	 */
 	public function transactionRollback(): void
 	{
 		$this->db->rollback();

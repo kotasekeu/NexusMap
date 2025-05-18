@@ -9,6 +9,9 @@ use App\Modules\Projects\Forms\ProjectFormFactory;
 use App\Modules\Projects\Service\ProjectsService;
 use Nette\Application\UI\Form;
 
+/**
+ * Presenter for handling project-related operations
+ */
 class ProjectsPresenter extends BasePresenter
 {
 	private ProjectsService $projectsService;
@@ -16,6 +19,10 @@ class ProjectsPresenter extends BasePresenter
 
 	private $projectDetail;
 
+	/**
+	 * @param ProjectsService $projectsService Service for project operations
+	 * @param ProjectFormFactory $projectFormFactory Factory for project forms
+	 */
 	public function __construct(
 		ProjectsService				$projectsService,
 		ProjectFormFactory			$projectFormFactory
@@ -25,6 +32,11 @@ class ProjectsPresenter extends BasePresenter
 		$this->projectFormFactory	= $projectFormFactory;
 	}
 
+	/**
+	 * Initialize presenter and set customer data
+	 * 
+	 * @return void
+	 */
 	public function startup()
 	{
 		parent::startup();
@@ -32,11 +44,23 @@ class ProjectsPresenter extends BasePresenter
 		$this->projectsService->setCustomerType($this->getUser()->getRoles()[0]);
 	}
 
+	/**
+	 * Render default view with list of projects
+	 * 
+	 * @return void
+	 */
 	public function renderDefault(): void
 	{
 		$this->getTemplate()->projects = $this->projectsService->getProjects($this->getUser()->getId());
+
 	}
 
+	/**
+	 * Render project detail view
+	 * 
+	 * @param int $project_id ID of the project
+	 * @return void
+	 */
 	public function renderDetail(int $project_id)
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -79,7 +103,12 @@ class ProjectsPresenter extends BasePresenter
 		];
 	}
 
-
+	/**
+	 * Render statistical data view
+	 * 
+	 * @param int $project_id ID of the project
+	 * @return void
+	 */
 	public function renderStatsData(int $project_id): void
 	{
 		$this->getTemplate()->title = "Statistická data";
@@ -100,6 +129,13 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->qError		= $this->projectsService->getQuantizationError($projectDetail->uid_hash);
 	}
 
+	/**
+	 * Render map view
+	 * 
+	 * @param int $project_id ID of the project
+	 * @param string $map_name Name of the map to display
+	 * @return void
+	 */
 	public function renderMap(int $project_id, string $map_name): void
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -126,6 +162,13 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->cellLink = $this->presenter->link('Projects:cell', ['project_id' => $project_id, 'cell_id' => ""]);
 	}
 
+	/**
+	 * Render cell detail view
+	 * 
+	 * @param int $project_id ID of the project
+	 * @param string $cell_id ID of the cell
+	 * @return void
+	 */
 	public function renderCell(int $project_id, string $cell_id): void
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -143,6 +186,12 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->globalStats	= $this->projectsService->getGlobalStats($projectDetail, $records);
 	}
 
+	/**
+	 * Handle project deletion
+	 * 
+	 * @param int $project_id ID of the project to delete
+	 * @return void
+	 */
 	public function handleDelete(int $project_id)
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -156,6 +205,12 @@ class ProjectsPresenter extends BasePresenter
 		$this->redirect('Projects:default');
 	}
 
+	/**
+	 * Handle project submission for analysis
+	 * 
+	 * @param int $project_id ID of the project to submit
+	 * @return void
+	 */
 	public function handleSubmit(int $project_id)
 	{
 		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -169,6 +224,12 @@ class ProjectsPresenter extends BasePresenter
 		$this->redirect('Projects:default');
 	}
 
+	/**
+	 * Action for editing project
+	 * 
+	 * @param int $project_id ID of the project to edit
+	 * @return void
+	 */
 	public function actionEdit(int $project_id): void
 	{
 		$this->projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -187,6 +248,12 @@ class ProjectsPresenter extends BasePresenter
 			));
 	}
 
+	/**
+	 * Action for editing SOM settings
+	 * 
+	 * @param int $project_id ID of the project to edit
+	 * @return void
+	 */
 	public function actionEditSom(int $project_id): void
 	{
 		$this->projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
@@ -210,6 +277,11 @@ class ProjectsPresenter extends BasePresenter
 			));
 	}
 
+	/**
+	 * Create component for project creation form
+	 * 
+	 * @return Form Project creation form
+	 */
 	public function createComponentCreateProjectForm(): Form
 	{
 		return $this->projectFormFactory->createForm(
@@ -220,6 +292,11 @@ class ProjectsPresenter extends BasePresenter
 		);
 	}
 
+	/**
+	 * Create component for SOM settings edit form
+	 * 
+	 * @return Form SOM settings edit form
+	 */
 	public function createComponentEditSomProjectForm(): Form
 	{
 		return $this->projectFormFactory->editSomForm(
@@ -230,6 +307,11 @@ class ProjectsPresenter extends BasePresenter
 		);
 	}
 
+	/**
+	 * Create component for project edit form
+	 * 
+	 * @return Form Project edit form
+	 */
 	public function createComponentEditProjectForm(): Form
 	{
 		return $this->projectFormFactory->editForm(

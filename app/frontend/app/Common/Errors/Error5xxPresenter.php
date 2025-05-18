@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Common\Error;
+namespace App\Common\Errors;
 
 use Nette\Application\BadRequestException;
 use Nette\Application\Helpers;

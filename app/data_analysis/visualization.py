@@ -601,6 +601,43 @@ def generate_mqe_history_plot(som, output_file: str):
     plt.savefig(output_file)
     plt.close()
 
+def generate_parameters_history_plot(som, output_file: str):
+    """Vykreslí graf vývoje parametrů učení během trénování.
+    
+    Args:
+        som: Instance SOM s vlastnostmi learning_rate_history, radius_history, batch_size_history a epochs_history
+        output_file: Cesta k výstupnímu souboru
+    """
+    check_folder(output_file)
+    
+    fig, ax1 = plt.subplots(figsize=(12, 6))
+    
+    # Vykreslení learning rate a radius na primární ose y
+    ax1.plot(som.epochs_history, som.learning_rate_history, 'b-', label='Learning rate', linewidth=2)
+    ax1.plot(som.epochs_history, som.radius_history, 'r-', label='Radius', linewidth=2)
+    ax1.set_xlabel('Epocha')
+    ax1.set_ylabel('Hodnota parametru', color='b')
+    ax1.tick_params(axis='y', labelcolor='b')
+    
+    # Vytvoření sekundární osy y pro velikost dávky
+    ax2 = ax1.twinx()
+    ax2.plot(som.epochs_history, som.batch_size_history, 'g-', label='Velikost dávky', linewidth=2)
+    ax2.set_ylabel('Velikost dávky', color='g')
+    ax2.tick_params(axis='y', labelcolor='g')
+    
+    # Přidání legendy
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
+    
+    plt.title('Vývoj parametrů učení během trénování')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    
+    # Uložení grafu
+    plt.tight_layout()
+    plt.savefig(output_file)
+    plt.close()
+
 def generate_maps(som, data, preprocess_file, output_path, som_settings, settings):
     # parametr mřížky
     map_type = som_settings.get("map_type", "square")
@@ -683,7 +720,7 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
     # 5) Distance‑map (prům. kvantizační chyba) a uložení chyb do JSON
     codebook_vectors = som.weights.reshape(-1, som.dim)
     bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
-    original_neuron_error_map, total_quantization_error = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n))    
+    original_neuron_error_map, total_quantization_error = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n), compute_neuron_map=True)    
     # Uložení chyb do JSON
     save_quantization_error_to_json(original_neuron_error_map, total_quantization_error, output_path)
 
@@ -699,6 +736,15 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
         generate_mqe_history_plot(
             som,
             f"{output_path}/visualization/mqe-history.png"
+        )
+
+    # 7) Graf vývoje parametrů učení
+    if (hasattr(som, 'learning_rate_history') and len(som.learning_rate_history) > 0 and
+        hasattr(som, 'radius_history') and len(som.radius_history) > 0 and
+        hasattr(som, 'batch_size_history') and len(som.batch_size_history) > 0):
+        generate_parameters_history_plot(
+            som,
+            f"{output_path}/visualization/parameters-history.png"
         )
 
     # Vykreslení jednotlivých kategoriálních sloupců

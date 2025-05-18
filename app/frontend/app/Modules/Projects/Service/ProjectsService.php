@@ -11,19 +11,30 @@ use Dibi\Result;
 use Dibi\Row;
 use Nette\Http\FileUpload;
 use Nette\Utils\ArrayHash;
-use PHP_CodeSniffer\Tests\Core\Tokenizers\PHP\StableCommentWhitespaceTest;
 
+/**
+ * Service class for handling project-related operations
+ */
 class ProjectsService extends BaseService
 {
     use BaseCrudServiceTrait;
 
     private ProjectsRepository $projectsRepository;
 
+    /**
+     * @param ProjectsRepository $projectsRepository
+     */
     public function __construct(ProjectsRepository $projectsRepository)
     {
         $this->projectsRepository = $projectsRepository;
     }
 
+    /**
+     * Get all projects for a specific customer
+     * 
+     * @param int $customer_id The ID of the customer
+     * @return array Array of prepared project data
+     */
     public function getProjects(int $customer_id)
     {
 		$projects = $this->projectsRepository->getProjectsForCustomer($customer_id);
@@ -31,6 +42,12 @@ class ProjectsService extends BaseService
 		return $this->prepareProjects($projects);
     }
 
+    /**
+     * Prepare multiple projects for output
+     * 
+     * @param array $projects Array of project data
+     * @return array Array of prepared projects
+     */
 	private function prepareProjects(array $projects): array
 	{
 		$returnProjects = [];
@@ -46,12 +63,25 @@ class ProjectsService extends BaseService
 		return $returnProjects;
 	}
 
+    /**
+     * Get detailed information about a specific project
+     * 
+     * @param int $customer_id The ID of the customer
+     * @param int $project_id The ID of the project
+     * @return Row|null Prepared project data or null if not found
+     */
 	public function getProjectDetail(int $customer_id, int $project_id): ?Row
 	{
 		$projectDetail = $this->projectsRepository->getProjectDetail($customer_id, $project_id);
 		return $projectDetail ? $this->prepareProject($projectDetail) : null;
 	}
 
+    /**
+     * Prepare a single project for output
+     * 
+     * @param Row $project Project data row
+     * @return Row Prepared project data
+     */
 	private function prepareProject(Row $project)
 	{
 		$project->som_settings 		= $this->getSomSettings($project->som_settings);
@@ -61,7 +91,12 @@ class ProjectsService extends BaseService
 		return $project;
 	}
 
-
+    /**
+     * Get SOM settings from JSON string
+     * 
+     * @param string $som_settings JSON string containing SOM settings
+     * @return \stdClass|null Decoded SOM settings or null if empty
+     */
 	private function getSomSettings(string $som_settings) : ?\stdClass
 	{
 		if (empty($som_settings) || $som_settings == '') {
@@ -84,8 +119,12 @@ class ProjectsService extends BaseService
 		return $returnData;
 	}
 
-
-
+    /**
+     * Create a new project
+     * 
+     * @param array|ArrayHash $data Project data
+     * @return int ID of the created project
+     */
 	public function createProject(array|ArrayHash $data): int
 	{
 		$projectData = $this->prepareProjectForDb($data);
@@ -97,6 +136,13 @@ class ProjectsService extends BaseService
 		return $projectId;
 	}
 
+    /**
+     * Clean and validate CSV data
+     * 
+     * @param FileUpload $input_csv Uploaded CSV file
+     * @return array Cleaned CSV data with header and rows
+     * @throws \RuntimeException If file cannot be opened or is empty
+     */
 	private function cleanCsvData(FileUpload $input_csv): array
 	{
 		$handle = fopen($input_csv->getTemporaryFile(), 'r');
@@ -139,6 +185,13 @@ class ProjectsService extends BaseService
 		];
 	}
 
+    /**
+     * Save input CSV data to database
+     * 
+     * @param FileUpload $input_csv Uploaded CSV file
+     * @param int $project_id ID of the project
+     * @return void
+     */
 	public function saveInputCsvData(FileUpload $input_csv, int $project_id): void
 	{
 		$cleanedData = $this->cleanCsvData($input_csv);
@@ -154,6 +207,14 @@ class ProjectsService extends BaseService
 		$this->projectsRepository->saveInputFileData($csvData);
 	}
 
+    /**
+     * Upload and process input CSV file
+     * 
+     * @param FileUpload $input_csv Uploaded CSV file
+     * @param array|ArrayHash $projectData Project data
+     * @return void
+     * @throws \RuntimeException If file operations fail
+     */
 	private function uploadInputCsv(FileUpload $input_csv, array|ArrayHash $projectData): void
 	{
 		if ($this->getCustomerType() == "basic") {
@@ -188,6 +249,12 @@ class ProjectsService extends BaseService
 		fclose($handle);
 	}
 
+    /**
+     * Save project data
+     * 
+     * @param array|ArrayHash $data Project data
+     * @return int ID of the saved project
+     */
 	public function saveProject(array|ArrayHash $data): int
 	{
 		return $this->saveWithTransaction(
@@ -197,6 +264,12 @@ class ProjectsService extends BaseService
 		);
 	}
 
+    /**
+     * Save project settings
+     * 
+     * @param array|ArrayHash $data Project settings data
+     * @return int ID of the project
+     */
 	public function saveProjectSettings(array|ArrayHash $data): int
 	{
 		$project_id = intval($data->project_id);
@@ -208,6 +281,12 @@ class ProjectsService extends BaseService
 		return $project_id;
 	}
 
+    /**
+     * Save SOM settings for a project
+     * 
+     * @param array|ArrayHash $data SOM settings data
+     * @return int ID of the project
+     */
 	public function saveProjectSomSettings(array|ArrayHash $data): int
 	{
 		$project_id = intval($data->project_id);
@@ -238,6 +317,12 @@ class ProjectsService extends BaseService
 		return $project_id;
 	}
 
+    /**
+     * Prepare project data for database storage
+     * 
+     * @param array|ArrayHash $data Project data
+     * @return array Prepared project data
+     */
 	private function prepareProjectForDb(array|ArrayHash $data): array
 	{
 		return [
@@ -249,6 +334,12 @@ class ProjectsService extends BaseService
 		];
 	}
 
+    /**
+     * Get the last line from Kohonen log file
+     * 
+     * @param string $uid_hash Unique identifier hash
+     * @return string Last line of the log file or empty string if file doesn't exist
+     */
 	public function getLastLineKohonenLogFile(string $uid_hash): string
 	{
 		$logFile = WWW_DIR . '/userFiles/' . $uid_hash . '/kohonen-log.txt';
@@ -270,6 +361,14 @@ class ProjectsService extends BaseService
 		return trim($lastLine);
 	}
 
+    /**
+     * Delete a project
+     * 
+     * @param int $customer_id ID of the customer
+     * @param Row $project Project data
+     * @return Result|int|null Result of deletion operation
+     * @throws \Exception If customer doesn't have permission
+     */
 	public function deleteProject(int $customer_id, Row $project): Result|int|null
 	{
 		if ($project->customer_id !== $customer_id) {
@@ -282,6 +381,14 @@ class ProjectsService extends BaseService
 		);
 	}
 
+    /**
+     * Submit project for analysis
+     * 
+     * @param int $customer_id ID of the customer
+     * @param Row $project Project data
+     * @return Result|int|null Result of submission
+     * @throws \Exception If customer doesn't have permission
+     */
 	public function submitProject(int $customer_id, Row $project): Result|int|null
 	{
 		if ($project->customer_id !== $customer_id) {
@@ -291,6 +398,15 @@ class ProjectsService extends BaseService
 		return $this->projectsRepository->submitProjectToAnalyze($project->project_id, $customer_id);
 	}
 
+    /**
+     * Get project files by type
+     * 
+     * @param int $customer_id ID of the customer
+     * @param string $uid_hash Unique identifier hash
+     * @param string|null $type Type of files to retrieve
+     * @return array Array of project files
+     * @throws \Exception If invalid file type is specified
+     */
 	public function getProjectFiles(int $customer_id, string $uid_hash, ?string $type = null): array
 	{
 		if ($type === null) {
@@ -315,6 +431,12 @@ class ProjectsService extends BaseService
 		}
 	}
 
+    /**
+     * Scan directory for files
+     * 
+     * @param string $directory Directory path to scan
+     * @return array Array of file names
+     */
 	private function scanDirectoryForFiles(string $directory): array
 	{
 		if (!is_dir($directory)) {
@@ -334,6 +456,13 @@ class ProjectsService extends BaseService
 		return $result;
 	}
 
+    /**
+     * Get project visualizations
+     * 
+     * @param int $customer_id ID of the customer
+     * @param string $uid_hash Unique identifier hash
+     * @return array Array of visualization files
+     */
 	private function getProjectVisualizations(int $customer_id, string $uid_hash): array
 	{
 		$visualizationDir = WWW_DIR . '/userFiles/' . $uid_hash . '/visualization';
@@ -349,18 +478,38 @@ class ProjectsService extends BaseService
 		return $visualizations;
 	}
 
+    /**
+     * Get project CSV files
+     * 
+     * @param int $customer_id ID of the customer
+     * @param string $uid_hash Unique identifier hash
+     * @return array Array of CSV files
+     */
 	private function getProjectCsvFiles(int $customer_id, string $uid_hash): array
 	{
 		$csvDir = WWW_DIR . '/userFiles/' . $uid_hash . '/csv';
 		return $this->scanDirectoryForFiles($csvDir);
 	}
 
+    /**
+     * Get project JSON files
+     * 
+     * @param int $customer_id ID of the customer
+     * @param string $uid_hash Unique identifier hash
+     * @return array Array of JSON files
+     */
 	private function getProjectJsonFiles(int $customer_id, string $uid_hash): array
 	{
 		$jsonDir = WWW_DIR . '/userFiles/' . $uid_hash . '/json';
 		return $this->scanDirectoryForFiles($jsonDir);
 	}
 
+    /**
+     * Get project configuration
+     * 
+     * @param mixed $projectDetail Project detail data
+     * @return array Project configuration
+     */
 	public function getProjectConfig($projectDetail): array
 	{
 		$defaultConfig = $this->getDefaultConfig();
@@ -376,6 +525,11 @@ class ProjectsService extends BaseService
 		return $config;
 	}
 
+    /**
+     * Get default configuration
+     * 
+     * @return array Default configuration values
+     */
 	private function getDefaultConfig(): array
 	{
 		// Výchozí hodnoty z KohonenSOM.__init__
@@ -400,6 +554,11 @@ class ProjectsService extends BaseService
 		];
 	}
 
+    /**
+     * Get configuration descriptions
+     * 
+     * @return array Array of configuration descriptions
+     */
 	public function getConfigDescription(): array
 	{
 		return [
@@ -425,20 +584,11 @@ class ProjectsService extends BaseService
 		];
 	}
 
-	public function getConfigSelectValues(): array
-	{
-		return [
-			'lr_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
-			'radius_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
-			'batch_growth_type' => ['exp-growth', 'linear-growth'],
-			'map_type' => ['hex', 'rect'],
-			'lr_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
-			'radius_decay_type' => ['exp-drop', 'exp-inc', 'linear-drop', 'linear-inc'],
-			'batch_growth_type' => ['exp-growth', 'linear-growth'],
-			'map_size' => ['10x10', '20x20', '30x30'],
-		];
-	}
-
+    /**
+     * Get project configuration descriptions
+     * 
+     * @return array Array of project configuration descriptions
+     */
 	public function getProjectConfigDescription(): array
 	{
 		return [
@@ -453,6 +603,12 @@ class ProjectsService extends BaseService
 		];
 	}
 
+    /**
+     * Get input file columns
+     * 
+     * @param int $project_id ID of the project
+     * @return array Array of column names
+     */
 	public function getInputFileColumns(int $project_id): array
 	{
 		$projectInputFileData = $this->getInputFileData($project_id);
@@ -460,6 +616,12 @@ class ProjectsService extends BaseService
 		return $projectInputFileData['column_names'];
 	}
 
+    /**
+     * Get input file data
+     * 
+     * @param int $project_id ID of the project
+     * @return Row Input file data
+     */
 	public function getInputFileData(int $project_id): Row
 	{
 		$fileData = $this->projectsRepository->getInputFileData($project_id);
@@ -472,6 +634,13 @@ class ProjectsService extends BaseService
 		return $fileData;
 	}
 
+    /**
+     * Get clusters data
+     * 
+     * @param string $uid_hash Unique identifier hash
+     * @param string|null $cell Cell identifier
+     * @return array|null Clusters data or null if file doesn't exist
+     */
 	public function getClustersData(string $uid_hash, ?string $cell = null): ?array
 	{
 		$clustersJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/clusters.json';
@@ -493,6 +662,13 @@ class ProjectsService extends BaseService
 		return $clustersData;
 	}
 
+    /**
+     * Get extremes data
+     * 
+     * @param string $uid_hash Unique identifier hash
+     * @param string|null $cell Cell identifier
+     * @return array|null Extremes data or null if file doesn't exist
+     */
 	public function getExtremesData(string $uid_hash, ?string $cell = null): ?array
 	{
 		$extremesJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/extremes.json';
@@ -515,6 +691,12 @@ class ProjectsService extends BaseService
 		return $extremesData;
 	}
 
+    /**
+     * Get quantization error data
+     * 
+     * @param string $uid_hash Unique identifier hash
+     * @return array|null Quantization error data or null if file doesn't exist
+     */
 	public function getQuantizationError(string $uid_hash): ?array
 	{
 		$qErrorJson = WWW_DIR . '/userFiles/' . $uid_hash . '/json/quantization_error.json';
@@ -528,6 +710,13 @@ class ProjectsService extends BaseService
 		return $qErrorData;
 	}
 
+    /**
+     * Get records data
+     * 
+     * @param string $uid_hash Unique identifier hash
+     * @param string $primary_id Primary identifier
+     * @return array|null Records data or null if file doesn't exist
+     */
 	public function getRecordsData(string $uid_hash, string $primary_id): ?array
 	{
 		$csvFile = WWW_DIR . '/userFiles/' . $uid_hash . '/csv/input.csv';
@@ -559,6 +748,15 @@ class ProjectsService extends BaseService
 		return $records;
 	}
 
+    /**
+     * Get statistics data from various sources
+     * 
+     * @param array $clusters Clusters data
+     * @param array $extremes Extremes data
+     * @param array $records Records data
+     * @param Row $projectDetail Project detail data
+     * @return array Statistics data
+     */
 	public function getStatsDataFromSources($clusters, $extremes, $records, $projectDetail): array
 	{
 		$clustersWithData = [];
@@ -629,6 +827,15 @@ class ProjectsService extends BaseService
 		return $clustersWithData;
 	}
 
+    /**
+     * Get statistics data from sources for map
+     * 
+     * @param array $clusters Clusters data
+     * @param array $extremes Extremes data
+     * @param array $records Records data
+     * @param Row $projectDetail Project detail data
+     * @return array Statistics data for map
+     */
 	public function getStatsDataFromSourcesForMap($clusters, $extremes, $records, $projectDetail): array
 	{
 		$clustersWithData = [];
@@ -666,6 +873,13 @@ class ProjectsService extends BaseService
 		return $clustersWithData;
 	}
 
+    /**
+     * Get cell data
+     * 
+     * @param Row $projectDetail Project detail data
+     * @param string $cell_id Cell identifier
+     * @return array|null Cell data or null if no data available
+     */
 	public function getCellData(Row $projectDetail, string $cell_id): ?array
 	{
 		$clusters = $this->getClustersData($projectDetail->uid_hash, $cell_id);
@@ -724,6 +938,13 @@ class ProjectsService extends BaseService
 		return $returnData;
 	}
 
+    /**
+     * Get global statistics
+     * 
+     * @param Row $projectDetail Project detail data
+     * @param array $records Records data
+     * @return array|null Global statistics or null if no data available
+     */
 	public function getGlobalStats(Row $projectDetail, array $records): ?array
 	{
 		$numerical_column = $projectDetail->project_settings->numerical_column ?? [];
@@ -767,6 +988,12 @@ class ProjectsService extends BaseService
 		];
 	}
 
+    /**
+     * Calculate median value from array of numbers
+     * 
+     * @param array $values Array of numeric values
+     * @return float Median value
+     */
 	private function calculateMedian(array $values): float
 	{
 		sort($values);

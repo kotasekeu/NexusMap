@@ -172,6 +172,18 @@ final class ProjectFormFactory
 		$form->addText('name', 'Název projektu')
 			->setDisabled(true);
 
+		$processingTypes = [
+			"stochastic"	=> "Stochastický",
+			"deterministic"	=> "Deterministický",
+			"hybrid"		=> "Hybridní stochastický přístup se škálovanou granularitou"
+		]
+		$form->addSelect('processing_type', 'Typ zpracování souboru', $processingTypes)
+			->setHtmlAttribute('class', 'form-select')
+			->setRequired('Vyberte typ způsobu zpracování souboru')
+			->setDefaultValue('stochastic')
+			->setOption('description', 'Metoda, jakou se případně mění velikost dávky během trénování (relevantní pro některé strategie).');
+
+
 		$form->addText('learning_rate', 'Počáteční rychlost učení')
 			->setHtmlAttribute('type', 'number')
 			->setRequired('Vyplňte rychlost učení')
@@ -248,12 +260,13 @@ final class ProjectFormFactory
 			->setOption('description', 'Minimální procentuální velikost jedné dávky dat z celého vstupního souboru. (Rozmezí: 0% - 100%). Počáteční hodnota ze které vychází křivka vývoje počtu zpracovaných vstupních vektorů na jeden průchod.');
 
 		$valuesUpdateType = [
-			'logarithmic' => 'Logaritmický',
-			'linear-growth' => 'Lineární růst',
-			'linear-drop' => 'Lineární pokles',
-			'exponential' => 'Exponenciální',
-			'exp-growth' => 'Exponenciální růst',
-			'exp-drop' => 'Exponenciální pokles'
+			'logarithmic'	=> 'Logaritmický',
+			'linear-growth'	=> 'Lineární růst',
+			'linear-drop'	=> 'Lineární pokles',
+			'exponential'	=> 'Exponenciální',
+			'exp-growth'	=> 'Exponenciální růst',
+			'exp-drop'		=> 'Exponenciální pokles',
+			'static'		=> 'Statický'
 		];
 
 		$form->addSelect('lr_decay_type', 'Typ poklesu rychlosti učení', $valuesUpdateType)
@@ -310,7 +323,7 @@ final class ProjectFormFactory
 			->setHtmlAttribute('type', 'number')
 			->setHtmlAttribute('min', '0')
 			->setHtmlAttribute('max', '10000')
-			->setHtmlAttribute('step', '0.5')
+			->setHtmlAttribute('step', '0.01')
 			->addRule(Form::Range, 'Násobitel epoch musí být mezi 0 a 10000', [0, 10000])
 			->setDefaultValue(1)
 			->setOption('description', 'Násobitel, kolikrát se má projít celý dataset nad rámec základního počtu epoch, který je roven počtu vstupních vektorů datasetu. [0,10000]');

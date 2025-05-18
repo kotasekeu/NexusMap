@@ -14,16 +14,7 @@ docker-compose.override.yml
 *.log
 
 # Logs and runtime data
-var/cache/
-var/db/
-var/log/
-var/projects/
-var/backup/
-#   --- odstranit jenom odklad
-var/smazat
-var/empty_module_Api
-var/*
-#   --- odstranit jenom odklad
+var/
 *.log
 *log.txt
 
@@ -36,12 +27,6 @@ var/*
 .DS_Store
 Thumbs.db
 
-# Tests
-htmlcov/
-.coverage
-pytest_cache/
-.tox/
-
 # Config sensitive files
 config/mysql.env
 app/config/settings.py
@@ -50,29 +35,18 @@ app/config/settings.py
 local.neon
 app/frontend/temp/cache
 app/frontend/temp/sessions
-app/frontend/public/userfiles
+app/frontend/public/userFiles
+app/frontend/public/userFiles_back
 app/frontend/log
 
-app/api/temp/cache
-app/api/temp/sessions
-app/api/public/userfiles
-app/api/log
-
 #vendor
-app/api/vendor
 app/frontend/vendor
 
-app/core/backup
-app/core/backup/export
-
-app/log.txt
-
 *.key
-
-app/frontend/public/template/*
 
 phpstan_output.txt
 phpcs_output.txt
 
 .phpdoc
-docs/api/*
+
+docs/frontend

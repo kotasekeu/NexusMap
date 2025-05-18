@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Projects\Repository;
 
 use App\Common\Repository\BaseRepository;
-use Dibi\Connection;
-use Dibi\DriverException;
 use Dibi\Row;
 
 /**
@@ -40,6 +38,13 @@ class ProjectsRepository extends BaseRepository
 			->fetchAll();
 	}
 
+	/**
+	 * Retrieves project details for a specific project and customer.
+	 * 
+	 * @param int $customer_id Customer ID.
+	 * @param int $project_id Project ID.
+	 * @return ?Row Project details or null if not found.
+	 */
 	public function getProjectDetail(int $customer_id, int $project_id): ?Row
 	{
 		return $this->db->select('P.*, SF.row_count, SF.column_count, SF.column_names, SF.file_size')
@@ -52,11 +57,22 @@ class ProjectsRepository extends BaseRepository
 			->fetch();
 	}
 
+	/**
+	 * Saves input file data to the database.
+	 * 
+	 * @param array $fileData Array of file data to be saved.
+	 */
 	public function saveInputFileData(array $fileData): void
 	{
 		$this->createToTable($fileData, $this->sourceFileTable, $this->targetFilePrimaryKey);
 	}
 
+	/**
+	 * Retrieves input file data for a specific project.
+	 * 
+	 * @param int $project_id Project ID.
+	 * @return Row Input file data.
+	 */
 	public function getInputFileData(int $project_id): Row
 	{
 		return $this->db->select('*')
@@ -65,6 +81,13 @@ class ProjectsRepository extends BaseRepository
 			->fetch();
 	}
 
+	/**
+	 * Updates project settings for a specific project and customer.
+	 * 
+	 * @param int $project_id Project ID.
+	 * @param int $customer_id Customer ID.
+	 * @param string $jsonData JSON data for project settings.
+	 */
 	public function updateProjectSettings(int $project_id, int $customer_id, string $jsonData): void
 	{
 		$this->db->update($this->getTable(), ['project_settings' => $jsonData])
@@ -74,6 +97,13 @@ class ProjectsRepository extends BaseRepository
 			->execute();
 	}
 
+	/**
+	 * Updates SOM settings for a specific project and customer.
+	 * 
+	 * @param int $project_id Project ID.
+	 * @param int $customer_id Customer ID.
+	 * @param string $jsonData JSON data for SOM settings.
+	 */
 	public function updateProjectSomSettings(int $project_id, int $customer_id, string $jsonData): void
 	{
 		$this->db->update($this->getTable(), ['som_settings' => $jsonData])
@@ -83,6 +113,13 @@ class ProjectsRepository extends BaseRepository
 			->execute();
 	}
 
+	/**
+	 * Submits a project for analysis.
+	 * 
+	 * @param int $project_id Project ID.
+	 * @param int $customer_id Customer ID.
+	 * @return int|null|\Dibi\Result Result of the update operation.
+	 */
 	public function submitProjectToAnalyze(int $project_id, int $customer_id): int|null|\Dibi\Result
 	{
 		return $this->db->update($this->getTable(), ['ready_to_analyze' => 1])

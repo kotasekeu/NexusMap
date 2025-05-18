@@ -25,7 +25,7 @@
 		"tracy/tracy": "^2.10",
 		"dibi/dibi": "^5.0",
 		"guzzlehttp/guzzle": "^7.9",
-    "erusev/parsedown": "^1.7"
+    	"erusev/parsedown": "^1.7"
 	},
 	"require-dev": {
 		"nette/tester": "^2.5",

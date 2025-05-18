@@ -8,6 +8,7 @@ Tento modul poskytuje implementaci Kohonenovy SOM sítě s následujícími vlas
 - Early stopping na základě MQE
 - Normalizace vah
 - Vektorizované operace pro lepší výkon
+- Tři režimy zpracování: deterministický, stochastický a hybridní
 """
 
 import numpy as np
@@ -16,6 +17,8 @@ from utils import log_message
 from sklearn.metrics import pairwise_distances_argmin_min
 from collections import defaultdict
 import sys
+from tqdm import tqdm
+from datetime import datetime, timedelta
 
 class KohonenSOM:
     """Implementace Kohonenovy Self-Organizing Map sítě.
@@ -28,6 +31,7 @@ class KohonenSOM:
         min_learning_rate (float, optional): Minimální rychlost učení. Výchozí hodnota je 0.1
         radius (float, optional): Počáteční poloměr sousedství. Pokud None, použije se max(m,n)/2
         min_radius (float, optional): Minimální poloměr sousedství. Výchozí hodnota je 0.1
+        processing_type (str, optional): Typ zpracování ('deterministic', 'stochastic', 'hybrid'). Výchozí hodnota je 'hybrid'
         num_batches (int, optional): Počet dávek pro zpracování. Výchozí hodnota je 10
         min_batch_percent (float, optional): Minimální procento vzorků v dávce. Výchozí hodnota je 0.1
         max_batch_percent (float, optional): Maximální procento vzorků v dávce. Výchozí hodnota je 5
@@ -43,8 +47,12 @@ class KohonenSOM:
         max_epochs_without_improvement (int, optional): Maximální počet epoch bez zlepšení pro early stopping
         mqe_recording_interval (int, optional): Interval pro záznam kvantizační chyby. Výchozí hodnota je 10
 
-        
     Note:
+        Podporované typy zpracování:
+        - 'deterministic': Zpracování všech vstupních vektorů v každé epoše
+        - 'stochastic': Zpracování jednoho náhodného vektoru v každé epoše
+        - 'hybrid': Adaptivní velikost dávky podle parametrů batch_growth_type, min_batch_percent, max_batch_percent
+        
         Podporované typy útlumu:
         - 'logarithmic': Logaritmický útlum
         - 'linear-growth': Lineární růst
@@ -55,7 +63,7 @@ class KohonenSOM:
     """
     
     def __init__(self, dim, m, n, learning_rate=0.9, min_learning_rate=0.1,
-                 radius=None, min_radius=0.1,
+                 radius=None, min_radius=0.1, processing_type='hybrid',
                  num_batches=10, min_batch_percent=0.1, max_batch_percent=5,
                  lr_decay_type='exp-drop', radius_decay_type='exp-drop', batch_growth_type='exp-growth',
                  random_seed=None, growth_g=15.0, normalize_weights_flag=False, epoch_multiplier=1.0, map_type='hex', min_q_error=None,
@@ -78,7 +86,12 @@ class KohonenSOM:
             self.radius = radius    
         self.min_radius = min_radius
         
-        # Parametry dávkového zpracování
+        # Typ zpracování
+        if processing_type not in ['deterministic', 'stochastic', 'hybrid']:
+            raise ValueError("Typ zpracování musí být 'deterministic', 'stochastic' nebo 'hybrid'")
+        self.processing_type = processing_type
+        
+        # Parametry dávkového zpracování (pouze pro hybridní režim)
         self.num_batches = num_batches
         self.max_batch_percent = max_batch_percent if max_batch_percent > min_batch_percent else min_batch_percent
         self.min_batch_percent = min_batch_percent
@@ -97,13 +110,14 @@ class KohonenSOM:
         self.max_epochs_without_improvement = max_epochs_without_improvement
         self.mqe_recording_interval = mqe_recording_interval
 
-
         # Metriky trénování
         self.total_weight_updates = 0
         self.best_mqe = float('inf')
         self.mqe_history = []  # Seznam pro ukládání historie kvantizační chyby
         self.epochs_history = []  # Seznam pro ukládání čísel epoch
-
+        self.learning_rate_history = []  # Seznam pro ukládání historie learning rate
+        self.radius_history = []  # Seznam pro ukládání historie radius
+        self.batch_size_history = []  # Seznam pro ukládání historie velikosti dávky
 
         # Inicializace vah
         if random_seed is not None:
@@ -135,7 +149,9 @@ class KohonenSOM:
         Raises:
             ValueError: Pokud je zadán neznámý typ útlumu
         """
-        if decay_type == 'logarithmic':
+        if decay_type == 'static':
+            return start
+        elif decay_type == 'logarithmic':
             return start - (np.log10(t + 1) / np.log10(N)) * (start - end)
         elif decay_type == 'linear-growth':
             return start + (t / (N - 1)) * (end - start)
@@ -169,18 +185,9 @@ class KohonenSOM:
         
         Args:
             data (np.ndarray): Vstupní data ve tvaru (n_samples, n_features)
-            
-        Note:
-            Proces trénování:
-            1. Rozdělení dat do dávek
-            2. Pro každou dávku:
-               - Výběr náhodných vzorků
-               - Aktualizace vah pro každý vzorek
-            3. Kontrola podmínek pro ukončení:
-               - Dosažení minimální MQE
-               - Žádné zlepšení po N epochách
-            4. Logování průběhu každých N epoch
         """
+        start_time = datetime.now()
+        log_message(f"Začátek trénování: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
         log_message(f"Epocha|počet zpracovanych vektorů celkem|počet vektorů zpracovaných v batch|radius|lr|MQE")
         total_samples = data.shape[0]
         total_epochs = int(total_samples * self.epoch_multiplier)
@@ -190,69 +197,117 @@ class KohonenSOM:
         self.mqe_history = []  # Reset historie MQE
         self.epochs_history = []  # Reset historie epoch
         
+        # Vytvoření progress baru s informacemi o čase
+        pbar = tqdm(total=total_epochs, desc=f"Epochy (začátek: {start_time.strftime('%H:%M:%S')})", 
+                   bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
+        
         for epoch in range(total_epochs):
-            # Příprava dávky
-            batch_percent = self.get_batch_percent(epoch, total_epochs)
-            total_samples_to_process = math.ceil(total_samples * batch_percent / 100)
-            samples_per_batch = math.ceil(total_samples_to_process / self.num_batches)
+            # Příprava dávky podle typu zpracování
+            if self.processing_type == 'deterministic':
+                batch_percent = 100
+                total_samples_to_process = total_samples
+                samples_per_batch = total_samples
+            elif self.processing_type == 'stochastic':
+                batch_percent = 1
+                total_samples_to_process = 1
+                samples_per_batch = 1
+            else:  # hybridní režim
+                batch_percent = self.get_batch_percent(epoch, total_epochs)
+                total_samples_to_process = math.ceil(total_samples * batch_percent / 100)
+                samples_per_batch = math.ceil(total_samples_to_process / self.num_batches)
 
             # Zpracování dávek
-            
-            for batch_idx in range(self.num_batches):
-                start_idx = batch_idx * (total_samples // self.num_batches)
-                end_idx = min((batch_idx + 1) * (total_samples // self.num_batches), total_samples)
-                batch_data = data[start_idx:end_idx]
-
-                if samples_per_batch < len(batch_data):
-                    batch_indices = np.random.choice(len(batch_data), samples_per_batch, replace=False)
-                    batch_data = batch_data[batch_indices]
-
-                # Aktualizace parametrů učení
+            if self.processing_type == 'stochastic':
+                # Pro stochastický režim vybereme jeden náhodný vzorek
+                batch_data = data[np.random.choice(total_samples, 1)]
                 current_lr = self.get_decay_value(epoch, total_epochs, self.learning_rate, self.min_learning_rate, self.lr_decay_type)
                 current_radius = self.get_decay_value(epoch, total_epochs, self.radius, self.min_radius, self.radius_decay_type)
+                bmu_idx = self.find_bmu(batch_data[0])
+                self.update_weights(batch_data[0], bmu_idx, current_lr, current_radius)
+                self.total_weight_updates += 1
+            else:
+                # Pro deterministický a hybridní režim zpracováváme dávky
+                for batch_idx in range(self.num_batches):
+                    start_idx = batch_idx * (total_samples // self.num_batches)
+                    end_idx = min((batch_idx + 1) * (total_samples // self.num_batches), total_samples)
+                    batch_data = data[start_idx:end_idx]
 
-                # Aktualizace vah pro každý vzorek
-                for sample in batch_data:
-                    bmu_idx = self.find_bmu(sample)
-                    self.update_weights(sample, bmu_idx, current_lr, current_radius)
-                    self.total_weight_updates += 1
+                    # Náhodný výběr pouze pokud není batch_percent 100%
+                    if batch_percent < 100 and samples_per_batch < len(batch_data):
+                        batch_indices = np.random.choice(len(batch_data), samples_per_batch, replace=False)
+                        batch_data = batch_data[batch_indices]
+
+                    # Aktualizace parametrů učení
+                    current_lr = self.get_decay_value(epoch, total_epochs, self.learning_rate, self.min_learning_rate, self.lr_decay_type)
+                    current_radius = self.get_decay_value(epoch, total_epochs, self.radius, self.min_radius, self.radius_decay_type)
+
+                    # Aktualizace vah pro každý vzorek
+                    for sample in batch_data:
+                        bmu_idx = self.find_bmu(sample)
+                        self.update_weights(sample, bmu_idx, current_lr, current_radius)
+                        self.total_weight_updates += 1
 
             # Normalizace vah pokud je požadována
             if self.normalize_weights_flag:
-                self.normalize_weights()        
+                self.normalize_weights()
 
-            # Výpočet MQE
-            codebook_vectors = self.weights.reshape(-1, self.dim)
-            bmu_indexes = np.array([self.find_bmu(x)[0] * self.n + self.find_bmu(x)[1] for x in data])
-            neuron_error_map, total_qe = self.compute_quantization_error(data, codebook_vectors, bmu_indexes, (self.m, self.n))
+            # Výpočet MQE podle typu zpracování
+            should_compute_mqe = False
+            total_qe = None  # Inicializace total_qe
+            
+            # Výpočet MQE v každé epoše pro deterministický režim, jinak podle intervalu
+            if self.processing_type == 'deterministic' or epoch % (total_epochs // 500) == 0:
+                should_compute_mqe = True
 
-              # Ukládání historie MQE v zadaném intervalu
-            if epoch % self.mqe_recording_interval == 0:
+            if should_compute_mqe:
+                # Výpočet MQE
+                codebook_vectors = self.weights.reshape(-1, self.dim)
+                bmu_indexes = np.array([self.find_bmu(x)[0] * self.n + self.find_bmu(x)[1] for x in data])
+                _, total_qe = self.compute_quantization_error(data, codebook_vectors, bmu_indexes, (self.m, self.n), compute_neuron_map=False)
+
+                # Ukládání historie MQE a parametrů
                 self.mqe_history.append(total_qe)
                 self.epochs_history.append(epoch)
+                self.learning_rate_history.append(current_lr)
+                self.radius_history.append(current_radius)
+                self.batch_size_history.append(samples_per_batch)
 
-            # Kontrola podmínek pro ukončení
-            if self.min_q_error is not None and total_qe <= self.min_q_error:
-                log_message(f"Dosažena limitní MQE {self.min_q_error}. Ukončuji trénování.")
-                break
-
-            if total_qe < self.best_mqe:
-                self.best_mqe = total_qe
-                no_improvement_count = 0
-            else:
-                no_improvement_count += 1
-                if self.max_epochs_without_improvement is not None and no_improvement_count >= self.max_epochs_without_improvement:
-                    log_message(f"Žádné zlepšení po {self.max_epochs_without_improvement} epochách. Ukončuji trénování.")
+                # Kontrola podmínek pro ukončení
+                if self.min_q_error is not None and total_qe <= self.min_q_error:
+                    log_message(f"Dosažena limitní MQE {self.min_q_error}. Ukončuji trénování.")
                     break
 
-            # Logování průběhu
-            if epoch % 100 == 0:                
-                log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{total_qe:.6f}")                
+                if total_qe < self.best_mqe:
+                    self.best_mqe = total_qe
+                    no_improvement_count = 0
+                else:
+                    no_improvement_count += 1
+                    if self.max_epochs_without_improvement is not None and no_improvement_count >= self.max_epochs_without_improvement:
+                        log_message(f"Žádné zlepšení po {self.max_epochs_without_improvement} epochách. Ukončuji trénování.")
+                        break
 
-            self.epochs_run = epoch + 1  # Uložíme skutečný počet epoch (i při předčasném ukončení)
+            # Logování průběhu
+            if epoch % 100 == 0:
+                elapsed_time = datetime.now() - start_time
+                if total_qe is not None:
+                    log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{total_qe:.6f} (čas: {str(elapsed_time).split('.')[0]})")
+                else:
+                    log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|N/A (čas: {str(elapsed_time).split('.')[0]})")
+
+            # Aktualizace progress baru
+            pbar.update(1)
+            self.epochs_run = epoch + 1
+
+        # Zavření progress baru
+        pbar.close()
 
         # Výpis souhrnných informací
+        end_time = datetime.now()
+        total_time = end_time - start_time
         print(f"\nSouhrn trénování:")
+        print(f"Začátek: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Konec: {end_time.strftime('%Y-%m-%d %H:%M:%S')}")
+        print(f"Celkový čas: {str(total_time).split('.')[0]}")
         print(f"Celkový počet aktualizací vah: {self.total_weight_updates}")
         print(f"Nejlepší dosažená MQE: {self.best_mqe:.6f}")
 
@@ -324,7 +379,8 @@ class KohonenSOM:
         return (abs(x1 - x2) + abs(y1 - y2) + abs(z1 - z2)) / 2
     
     def compute_quantization_error(self, data: np.ndarray, codebook_vectors: np.ndarray, 
-                                 bmu_indexes: np.ndarray, som_shape: tuple[int, int]) -> tuple[np.ndarray, float]:
+                                 bmu_indexes: np.ndarray, som_shape: tuple[int, int],
+                                 compute_neuron_map: bool = False) -> tuple[np.ndarray | None, float]:
         """Vypočítá kvantizační chybu pro jednotlivé neurony a celkovou chybu.
         
         Args:
@@ -332,33 +388,31 @@ class KohonenSOM:
             codebook_vectors (np.ndarray): Váhové vektory neuronů
             bmu_indexes (np.ndarray): Indexy BMU pro každý vzorek
             som_shape (tuple[int, int]): Tvar mřížky SOM
+            compute_neuron_map (bool): Zda počítat mapu chyb pro jednotlivé neurony
             
         Returns:
-            tuple[np.ndarray, float]: Mapa chyb neuronů a celková kvantizační chyba
+            tuple[np.ndarray | None, float]: Mapa chyb neuronů (None pokud compute_neuron_map=False) a celková kvantizační chyba
         """
-        n_neurons = codebook_vectors.shape[0]
-        neuron_errors = defaultdict(list)
+        # Získání vah vítězných neuronů pro každý vzorek
+        winning_weights = codebook_vectors[bmu_indexes]
+        
+        # Výpočet celkové kvantizační chyby
+        total_qe = np.linalg.norm(data - winning_weights, axis=1).mean()
 
-        # Výpočet vzdáleností k BMU
-        distances = []
-        for x, bmu in zip(data, bmu_indexes):
-            dist = np.linalg.norm(x - codebook_vectors[bmu])
-            distances.append(dist)
-            neuron_errors[bmu].append(dist)
-
-        # Průměrná chyba pro každý neuron
-        neuron_error_map = np.zeros(n_neurons)
-        for i in range(n_neurons):
-            if neuron_errors[i]:
-                neuron_error_map[i] = np.mean(neuron_errors[i])
-            else:
-                neuron_error_map[i] = 0.0
-
-        # Přetvoření do tvaru mřížky
-        neuron_error_map = neuron_error_map.reshape(som_shape)
-
-        # Celková kvantizační chyba
-        total_qe = np.mean(distances)
+        # Výpočet mapy chyb pro neurony (pouze pokud je požadována)
+        neuron_error_map = None
+        if compute_neuron_map:
+            # Vytvoření masky pro každý neuron
+            neuron_masks = np.zeros((len(codebook_vectors), len(data)), dtype=bool)
+            neuron_masks[bmu_indexes, np.arange(len(data))] = True
+            
+            # Výpočet průměrné chyby pro každý neuron
+            neuron_errors = np.zeros(len(codebook_vectors))
+            for i in range(len(codebook_vectors)):
+                if np.any(neuron_masks[i]):
+                    neuron_errors[i] = np.linalg.norm(data[neuron_masks[i]] - codebook_vectors[i], axis=1).mean()
+            
+            neuron_error_map = neuron_errors.reshape(som_shape)
 
         return neuron_error_map, total_qe
     

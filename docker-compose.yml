@@ -42,7 +42,6 @@ services:
       - ./config/php:/usr/local/etc/php
       - ./app/frontend:/var/www
       - ./app/frontend/public:/var/www/html
-      - ./tests/:/var/www/tests
     networks:
       shared_network:
         ipv4_address: 172.23.0.101
