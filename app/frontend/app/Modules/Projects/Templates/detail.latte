@@ -165,19 +165,26 @@
 																		</tr>
 																	</thead>
 																	<tbody>
-																		{foreach $somConfig as $key => $value}
-																			{continueIf ! isset($somConfigDescription[$key])}
+																		{foreach $somConfigDescription as $key => $value}
 																			<tr>
-																				<td><strong>{$somConfigDescription[$key]}</strong></td>
 																				<td>
-																					{if is_array($value)}
-																						{implode(', ', $value)}
-																					{elseif is_bool($value)}
-																						{if $value}Ano{else}Ne{/if}
-																					{elseif $value === null}
-																						-
+																					<strong>
+																						{if is_array($value)}
+																							{implode(', ', $value)}
+																						{elseif is_bool($value)}
+																							{if $value}Ano{else}Ne{/if}
+																						{elseif $value === null}
+																							-
+																						{else}
+																							{$value}
+																						{/if}
+																					</strong>
+																				</td>
+																				<td>
+																					{if isset($somConfig[$key])}
+																						{$somConfig[$key]}
 																					{else}
-																						{$value}
+																						-
 																					{/if}
 																				</td>
 																			</tr>

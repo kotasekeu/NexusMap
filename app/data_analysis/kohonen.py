@@ -153,31 +153,36 @@ class KohonenSOM:
 
         if decay_type == 'static':
             return start
+
         elif decay_type == 'linear-drop':
             return start - (t / (N - 1)) * (start - end)
+
         elif decay_type == 'linear-growth':
             return start + (t / (N - 1)) * (end - start)
-        elif decay_type == 'exponential':
-            k = np.log(start / end) / N
-            return start * np.exp(-k * t)
+
         elif decay_type == 'exp-drop':
-            return end + (start - end) * (1 - np.exp(-self.growth_g * t / N)) / (1 - np.exp(-self.growth_g))
+            norm = (1 - np.exp(-self.growth_g * t / N)) / (1 - np.exp(-self.growth_g))
+            return start - norm * (start - end)
+
         elif decay_type == 'exp-growth':
             return start + (end - start) * (np.exp(self.growth_g * t / N) - 1) / (np.exp(self.growth_g) - 1)
+
         elif decay_type == 'log-drop':
-            return end + (start - end) * (np.log(self.growth_g * t + 1) / np.log(self.growth_g * N + 1))
+            norm = np.log(self.growth_g * t + 1) / np.log(self.growth_g * N + 1)
+            return start - norm * (start - end)
+
         elif decay_type == 'log-growth':
             return start + (end - start) * (np.log(self.growth_g * t + 1) / np.log(self.growth_g * N + 1))
 
         elif decay_type == 'step-down':
-            # 10 kroků, každých 10 % epoch, každé snížení o 30 %
             step_count = 10
             step_size = N // step_count
             current_step = min(t // step_size, step_count - 1)
-            factor = 0.7 ** current_step  # 30 % dolů každý krok
+            factor = 0.7 ** current_step
             return max(end, start * factor)
+
         else:
-            raise ValueError(f"Neznámý decay_type: {decay_type}")
+            raise ValueError(f"Unknown decay_type: {decay_type}")
 
     def get_batch_percent(self, t: int, N: int) -> float:
         """Vypočítá procento vzorků pro aktuální dávku.
@@ -295,9 +300,6 @@ class KohonenSOM:
                 if self.processing_type == 'hybrid':
                     self.batch_size_history.append(samples_per_batch)
                                 
-                if self.processing_type == 'hybrid':
-                    print(f"  Batch size history: {len(self.batch_size_history)} záznamů")
-
                 # Kontrola podmínek pro ukončení
                 if self.min_q_error is not None and total_qe <= self.min_q_error:
                     log_message(f"Dosažena limitní MQE {self.min_q_error}. Ukončuji trénování.")

@@ -237,13 +237,13 @@ final class ProjectFormFactory
 		$form->addSelect('lr_decay_type', 'Typ poklesu rychlosti učení', $valuesUpdateTypeDrop)
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte typ poklesu rychlosti učení')
-			->setDefaultValue('linear-drop')
+			->setDefaultValue('exp-drop')
 			->setOption('description', 'Metoda, jakou se snižuje rychlost učení během trénování (např. lineární, exponenciální).');
 
 		$form->addSelect('radius_decay_type', 'Typ poklesu poloměru', $valuesUpdateTypeDrop)
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte typ poklesu poloměru')
-			->setDefaultValue('linear-drop')
+			->setDefaultValue('exp-drop')
 			->setOption('description', 'Metoda, jakou se snižuje poloměr okolí během trénování.');
 
 		$form->addSelect('growth_g', 'Modifikátor růstových a poklesových křivek (exponenciální a logaritmická)', [
@@ -256,7 +256,7 @@ final class ProjectFormFactory
 			100 => '100'
 		])
 			->setHtmlAttribute('class', 'form-select')
-			->setRequired('Vyberte hodnotu růstu G')
+			->setRequired('Vyberte hodnotu modifikátoru křivky')
 			->setPrompt('Vyberte hodnotu')
 			->setOption('description', 'Parametr ovlivňující dynamiku růstu/poklesu parametrů (např. rychlosti učení, poloměru). Konkrétní význam závisí na zvoleném typu poklesu/růstu.');
 
