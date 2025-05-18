@@ -129,4 +129,24 @@ class ProjectsRepository extends BaseRepository
 			->execute();
 	}
 
+
+	public function resubmitProjectToAnalyze(int $project_id, int $customer_id): int|null|\Dibi\Result
+	{
+		return $this->db->update($this->getTable(), ['status' => 0])
+			->where('project_id = %i', $project_id)
+			->where('customer_id = %i', $customer_id)
+			->where('visible = 1')
+			->execute();
+	}
+
+	public function unlockProjectToAnalyze(int $project_id, int $customer_id): int|null|\Dibi\Result
+	{
+		return $this->db->update($this->getTable(), ['status' => 0, 'ready_to_analyze' => 0])
+			->where('project_id = %i', $project_id)
+			->where('customer_id = %i', $customer_id)
+			->where('visible = 1')
+			->execute();
+	}
+
+
 }

@@ -224,6 +224,32 @@ class ProjectsPresenter extends BasePresenter
 		$this->redirect('Projects:default');
 	}
 
+	public function handleResubmit(int $project_id)
+	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.', 'success');
+			$this->redirect('Projects:default');
+		}
+		$this->projectsService->resubmitProject($this->getUser()->getId(), $projectDetail);
+
+		$this->flashMessage('Projekt byl znovu odeslán na analýzu.', 'success');
+		$this->redirect('this');
+	}
+
+	public function handleReedit(int $project_id)
+	{
+		$projectDetail = $this->projectsService->getProjectDetail($this->getUser()->getId(), $project_id);
+		if (!$projectDetail) {
+			$this->flashMessage('Projekt nenalezen.', 'success');
+			$this->redirect('Projects:default');
+		}
+		$this->projectsService->unlockProjectEdit($this->getUser()->getId(), $projectDetail);
+
+		$this->flashMessage('Projekt byl odemknut pro editaci.', 'success');
+		$this->redirect('this');
+	}
+
 	/**
 	 * Action for editing project
 	 * 

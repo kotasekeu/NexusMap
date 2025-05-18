@@ -590,52 +590,51 @@ def generate_mqe_history_plot(som, output_file: str):
     ax.plot(best_epoch, best_mqe, 'ro', markersize=10, label=f'Nejlepší MQE: {best_mqe:.6f}')
     
     # Nastavení popisků
-    ax.set_xlabel('Epocha')
-    ax.set_ylabel('Kvantizační chyba (MQE)')
-    ax.set_title('Vývoj kvantizační chyby během trénování')
+    ax.set_xlabel('Číslo epochy', fontsize=12)
+    ax.set_ylabel('Kvantizační chyba (MQE)', fontsize=12)
+    ax.set_title('Vývoj kvantizační chyby během trénování', fontsize=14, pad=20)
     ax.grid(True, linestyle='--', alpha=0.7)
-    ax.legend()
+    ax.legend(fontsize=10)
+    
+    # Nastavení formátu os
+    ax.tick_params(axis='both', which='major', labelsize=10)
     
     # Uložení grafu
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
     plt.close()
 
 def generate_parameters_history_plot(som, output_file: str):
-    """Vykreslí graf vývoje parametrů učení během trénování.
-    
-    Args:
-        som: Instance SOM s vlastnostmi learning_rate_history, radius_history, batch_size_history a epochs_history
-        output_file: Cesta k výstupnímu souboru
-    """
+    """Vykreslí grafy vývoje parametrů učení během trénování."""
     check_folder(output_file)
-    
-    fig, ax1 = plt.subplots(figsize=(12, 6))
-    
-    # Vykreslení learning rate a radius na primární ose y
-    ax1.plot(som.epochs_history, som.learning_rate_history, 'b-', label='Learning rate', linewidth=2)
-    ax1.plot(som.epochs_history, som.radius_history, 'r-', label='Radius', linewidth=2)
-    ax1.set_xlabel('Epocha')
-    ax1.set_ylabel('Hodnota parametru', color='b')
-    ax1.tick_params(axis='y', labelcolor='b')
-    
-    # Vytvoření sekundární osy y pro velikost dávky
-    ax2 = ax1.twinx()
-    ax2.plot(som.epochs_history, som.batch_size_history, 'g-', label='Velikost dávky', linewidth=2)
-    ax2.set_ylabel('Velikost dávky', color='g')
-    ax2.tick_params(axis='y', labelcolor='g')
-    
-    # Přidání legendy
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc='upper right')
-    
-    plt.title('Vývoj parametrů učení během trénování')
-    plt.grid(True, linestyle='--', alpha=0.7)
-    
-    # Uložení grafu
+
+    epochs = range(len(som.learning_rate_history))
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))
+
+    ax1.plot(epochs, som.learning_rate_history, 'b-', linewidth=2)
+    ax1.set_xlabel('Číslo epochy', fontsize=12)
+    ax1.set_ylabel('Learning rate', fontsize=12)
+    ax1.set_title('Vývoj learning rate během trénování', fontsize=14, pad=20)
+    ax1.grid(True, linestyle='--', alpha=0.7)
+    ax1.tick_params(axis='both', which='major', labelsize=10)
+
+    ax2.plot(epochs, som.radius_history, 'r-', linewidth=2)
+    ax2.set_xlabel('Číslo epochy', fontsize=12)
+    ax2.set_ylabel('Poloměr sousedství', fontsize=12)
+    ax2.set_title('Vývoj poloměru sousedství během trénování', fontsize=14, pad=20)
+    ax2.grid(True, linestyle='--', alpha=0.7)
+    ax2.tick_params(axis='both', which='major', labelsize=10)
+
+    ax3.plot(epochs, som.batch_size_history, 'g-', linewidth=2)
+    ax3.set_xlabel('Číslo epochy', fontsize=12)
+    ax3.set_ylabel('Velikost dávky', fontsize=12)
+    ax3.set_title('Vývoj velikosti dávky během trénování', fontsize=14, pad=20)
+    ax3.grid(True, linestyle='--', alpha=0.7)
+    ax3.tick_params(axis='both', which='major', labelsize=10)
+
     plt.tight_layout()
-    plt.savefig(output_file)
+    plt.savefig(output_file, dpi=300, bbox_inches='tight')
     plt.close()
 
 def generate_maps(som, data, preprocess_file, output_path, som_settings, settings):

@@ -115,24 +115,19 @@ final class ProjectFormFactory
 		$form->addMultiSelect('selected_columns', $columnsNames['selected_columns'], $columns)
 			->setRequired('Vyberte sloupce.')
 			->setHtmlAttribute('class', 'form-select')
-			->setOption('description', 'Vyberte sloupce z CSV, které chcete načíst a mít k dispozici v projektu. Neoznačené sloupce budou ignorovány. Můžete vybrat numerické, textové i kategorické sloupce.');
+			->setOption('description', 'Vyberte sloupce z CSV, které chcete načíst a zpracovat. Neoznačené sloupce budou ignorovány pro organizaci mapy, ale budou zobrazeny ve výsledných analýzách. Systém sám rozdělí sloupce na numerické, kategorické a textové. Numerické a kategorické budou použity pro generování map a hledání extrémů.');
 
 		$form->addSelect('primary_id', $columnsNames['primary_id'], $columns)
 			->setPrompt('Vyberte')
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte hlavní identifikátor')
-			->setOption('description', 'Hlavní identifikátor je unikátní ID každého záznamu. Používá se pro identifikaci jednotlivých záznamů v průběhu analýzy, přiřazování k výsledkům (např. clusterům) a pro reportování odlehlých hodnot. Tento sloupec není přímo použit v numerických analytických výpočtech.');
-
-		$form->addMultiSelect('analysis_columns', $columnsNames['analysis_columns'], $columns)
-			->setRequired('Vyberte analytické sloupce')
-			->setHtmlAttribute('class', 'form-select')
-			->setOption('description', 'Z výše načtených `selected_columns` zde vyberte ty, které se použijí pro numerické analýzy (např. shlukování, detekce extrémů). Systém z nich automaticky vybere pouze numerické datové typy.');
+			->setOption('description', 'Hlavní identifikátor je unikátní ID každého záznamu. Používá se pro identifikaci jednotlivých záznamů v průběhu analýzy, přiřazování k výsledkům (např. clusterům) a pro reportování odlehlých hodnot. Tento sloupec není přímo použit při analýze dat ani při analytických výpočtech.');
 
 		$form->addSelect('segmentation_column', $columnsNames['segmentation_column'], $columns)
 			->setPrompt('Vyberte')
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte sloupec legendy')
-			->setOption('description', 'Vyberte sloupec (typicky kategorický), jehož hodnoty se použijí pro seskupování či segmentaci dat pro specifické analýzy nebo vizualizace (např. odlišení kategorií v grafech, filtrování). Nepoužívá se pro přímé generování legendy grafu.');
+			->setOption('description', 'Vyberte sloupec (typicky kategorický), jehož hodnoty se použijí pro hledání extrémů dle tohoto parametru.');
 
 		$form->addText('std_threshold', 'Prahová hodnota pro extrémní hodnoty')
 			->setRequired('Vyplňte prahovou hodnotu')
@@ -176,12 +171,13 @@ final class ProjectFormFactory
 			"stochastic"	=> "Stochastický",
 			"deterministic"	=> "Deterministický",
 			"hybrid"		=> "Hybridní stochastický přístup se škálovanou granularitou"
-		]
+		];
+		
 		$form->addSelect('processing_type', 'Typ zpracování souboru', $processingTypes)
 			->setHtmlAttribute('class', 'form-select')
 			->setRequired('Vyberte typ způsobu zpracování souboru')
 			->setDefaultValue('stochastic')
-			->setOption('description', 'Metoda, jakou se případně mění velikost dávky během trénování (relevantní pro některé strategie).');
+			->setOption('description', 'Strategie, která ovlivňuje přístup k organizaci mapy.');
 
 
 		$form->addText('learning_rate', 'Počáteční rychlost učení')

@@ -78,13 +78,8 @@ class KohonenSOM:
         self.min_learning_rate = min_learning_rate
         
         # Nastavení poloměru
-        if radius is None:
-            self.radius = max(m, n) / 2
-        elif radius < min_radius:
-            self.radius = min_radius
-        else:
-            self.radius = radius    
         self.min_radius = min_radius
+        self.set_radius(radius)
         
         # Typ zpracování
         if processing_type not in ['deterministic', 'stochastic', 'hybrid']:
@@ -120,6 +115,7 @@ class KohonenSOM:
         self.batch_size_history = []  # Seznam pro ukládání historie velikosti dávky
 
         # Inicializace vah
+        self.base_seed = random_seed
         if random_seed is not None:
             np.random.seed(random_seed)
         self.weights = np.random.rand(m, n, dim)
@@ -149,6 +145,9 @@ class KohonenSOM:
         Raises:
             ValueError: Pokud je zadán neznámý typ útlumu
         """
+        if N <= 1:
+            return start
+            
         if decay_type == 'static':
             return start
         elif decay_type == 'logarithmic':
@@ -188,9 +187,9 @@ class KohonenSOM:
         """
         start_time = datetime.now()
         log_message(f"Začátek trénování: {start_time.strftime('%Y-%m-%d %H:%M:%S')}")
-        log_message(f"Epocha|počet zpracovanych vektorů celkem|počet vektorů zpracovaných v batch|radius|lr|MQE")
-        total_samples = data.shape[0]
+        total_samples = data.shape[0]               
         total_epochs = int(total_samples * self.epoch_multiplier)
+        
         no_improvement_count = 0
 
         self.epochs_run = 0
@@ -202,50 +201,57 @@ class KohonenSOM:
                    bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]')
         
         for epoch in range(total_epochs):
-            # Příprava dávky podle typu zpracování
-            if self.processing_type == 'deterministic':
-                batch_percent = 100
-                total_samples_to_process = total_samples
-                samples_per_batch = total_samples
-            elif self.processing_type == 'stochastic':
-                batch_percent = 1
-                total_samples_to_process = 1
-                samples_per_batch = 1
-            else:  # hybridní režim
+            samples_per_batch = 1;
+            # Výpočet parametrů učení pro celou epochu
+            current_lr = self.get_decay_value(epoch, total_epochs, self.learning_rate, self.min_learning_rate, self.lr_decay_type)
+            current_radius = self.get_decay_value(epoch, total_epochs, self.radius, self.min_radius, self.radius_decay_type)
+
+            # Inicializace samples_per_batch pouze pro hybridní režim
+            if self.processing_type == 'hybrid':
                 batch_percent = self.get_batch_percent(epoch, total_epochs)
-                total_samples_to_process = math.ceil(total_samples * batch_percent / 100)
-                samples_per_batch = math.ceil(total_samples_to_process / self.num_batches)
+                samples_per_batch = math.ceil(total_samples * batch_percent / 100)
 
             # Zpracování dávek
             if self.processing_type == 'stochastic':
-                # Pro stochastický režim vybereme jeden náhodný vzorek
-                batch_data = data[np.random.choice(total_samples, 1)]
-                current_lr = self.get_decay_value(epoch, total_epochs, self.learning_rate, self.min_learning_rate, self.lr_decay_type)
-                current_radius = self.get_decay_value(epoch, total_epochs, self.radius, self.min_radius, self.radius_decay_type)
-                bmu_idx = self.find_bmu(batch_data[0])
-                self.update_weights(batch_data[0], bmu_idx, current_lr, current_radius)
-                self.total_weight_updates += 1
-            else:
-                # Pro deterministický a hybridní režim zpracováváme dávky
+                # Pro stochastický režim použijeme náhodné indexy
+                if self.base_seed is not None:
+                    np.random.seed(self.base_seed + epoch)
+                indices = np.random.permutation(total_samples)
+                for idx in indices:
+                    sample = data[idx]
+                    bmu_idx = self.find_bmu(sample)
+                    self.update_weights(sample, bmu_idx, current_lr, current_radius)
+            elif self.processing_type == 'deterministic':
+                # Pro deterministický režim zpracujeme všechny vzorky postupně
+                for sample in data:
+                    bmu_idx = self.find_bmu(sample)
+                    self.update_weights(sample, bmu_idx, current_lr, current_radius)
+            else:  # hybridní režim
+                # Pro hybridní režim použijeme náhodné indexy pro dávky
+                if self.base_seed is not None:
+                    np.random.seed(self.base_seed + epoch)
+                indices = np.random.permutation(total_samples)
+                # Rozdělení indexů na dávky
                 for batch_idx in range(self.num_batches):
                     start_idx = batch_idx * (total_samples // self.num_batches)
                     end_idx = min((batch_idx + 1) * (total_samples // self.num_batches), total_samples)
-                    batch_data = data[start_idx:end_idx]
+                    batch_indices = indices[start_idx:end_idx]
 
-                    # Náhodný výběr pouze pokud není batch_percent 100%
-                    if batch_percent < 100 and samples_per_batch < len(batch_data):
-                        batch_indices = np.random.choice(len(batch_data), samples_per_batch, replace=False)
-                        batch_data = batch_data[batch_indices]
+                    # Omezení velikosti dávky pokud je potřeba
+                    if samples_per_batch < len(batch_indices):
+                        batch_indices = batch_indices[:samples_per_batch]
 
-                    # Aktualizace parametrů učení
-                    current_lr = self.get_decay_value(epoch, total_epochs, self.learning_rate, self.min_learning_rate, self.lr_decay_type)
-                    current_radius = self.get_decay_value(epoch, total_epochs, self.radius, self.min_radius, self.radius_decay_type)
-
-                    # Aktualizace vah pro každý vzorek
-                    for sample in batch_data:
+                    # Aktualizace vah pro každý vzorek v dávce
+                    for idx in batch_indices:
+                        sample = data[idx]
                         bmu_idx = self.find_bmu(sample)
                         self.update_weights(sample, bmu_idx, current_lr, current_radius)
-                        self.total_weight_updates += 1
+
+            # Aktualizace počítadla aktualizací vah
+            if self.processing_type == 'stochastic':
+                self.total_weight_updates += 1
+            else:
+                self.total_weight_updates += total_samples
 
             # Normalizace vah pokud je požadována
             if self.normalize_weights_flag:
@@ -256,8 +262,13 @@ class KohonenSOM:
             total_qe = None  # Inicializace total_qe
             
             # Výpočet MQE v každé epoše pro deterministický režim, jinak podle intervalu
-            if self.processing_type == 'deterministic' or epoch % (total_epochs // 500) == 0:
+            if self.processing_type == 'deterministic':
                 should_compute_mqe = True
+            else:
+                # Přizpůsobení intervalu podle počtu epoch
+                interval = max(1, total_epochs // 500)
+                if epoch % interval == 0:
+                    should_compute_mqe = True
 
             if should_compute_mqe:
                 # Výpočet MQE
@@ -270,7 +281,8 @@ class KohonenSOM:
                 self.epochs_history.append(epoch)
                 self.learning_rate_history.append(current_lr)
                 self.radius_history.append(current_radius)
-                self.batch_size_history.append(samples_per_batch)
+                if self.processing_type == 'hybrid':
+                    self.batch_size_history.append(samples_per_batch)
 
                 # Kontrola podmínek pro ukončení
                 if self.min_q_error is not None and total_qe <= self.min_q_error:
@@ -290,9 +302,9 @@ class KohonenSOM:
             if epoch % 100 == 0:
                 elapsed_time = datetime.now() - start_time
                 if total_qe is not None:
-                    log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{total_qe:.6f} (čas: {str(elapsed_time).split('.')[0]})")
+                    log_message(f"{epoch}|{total_samples}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{total_qe:.6f} (čas: {str(elapsed_time).split('.')[0]})")
                 else:
-                    log_message(f"{epoch}|{total_samples_to_process}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|N/A (čas: {str(elapsed_time).split('.')[0]})")
+                    log_message(f"{epoch}|{total_samples}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|N/A (čas: {str(elapsed_time).split('.')[0]})")        
 
             # Aktualizace progress baru
             pbar.update(1)
@@ -415,4 +427,17 @@ class KohonenSOM:
             neuron_error_map = neuron_errors.reshape(som_shape)
 
         return neuron_error_map, total_qe
+    
+    def set_radius(self, radius: float | None) -> None:
+        """Nastaví počáteční poloměr sousedství.
+        
+        Args:
+            radius (float | None): Počáteční poloměr sousedství. Pokud None, použije se max(m,n)/2
+        """
+        if radius is None:
+            self.radius = max(self.m, self.n) / 2
+        elif radius < self.min_radius:
+            self.radius = self.min_radius
+        else:
+            self.radius = radius
     

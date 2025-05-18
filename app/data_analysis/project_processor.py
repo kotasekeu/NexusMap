@@ -143,7 +143,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
     # Výpočet statistik a detekce extrémů
     stats = compute_group_statistics(df_orig,
                                    project_settings["segmentation_column"],
-                                   project_settings["analysis_columns"],
+                                   project_settings["selected_columns"],
                                    project_settings)
 
     detect_extremes(df_orig,
@@ -152,7 +152,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
                    stats,
                    threshold=project_settings.get("std_threshold", 2),
                    segmentation_column=project_settings["segmentation_column"],
-                   analysis_columns=project_settings["analysis_columns"],
+                   selected_columns=project_settings["selected_columns"],
                    primary_id=project_settings["primary_id"],
                    project_settings=project_settings)
 
@@ -237,14 +237,14 @@ def process_project(uid_hash: str) -> None:
 
 def compute_group_statistics(df_orig: pd.DataFrame,
                            segmentation_column: str,
-                           analysis_columns: list[str],
+                           selected_columns: list[str],
                            project_settings: dict) -> dict[str, dict[str, tuple[float, float]]]:
     """Vypočítá statistiky pro skupiny dat.
     
     Args:
         df_orig (pd.DataFrame): Původní data
         segmentation_column (str): Sloupec pro segmentaci
-        analysis_columns (list[str]): Seznam sloupců pro analýzu
+        selected_columns (list[str]): Seznam vybraných sloupců pro analýzu
         project_settings (dict): Nastavení projektu
         
     Returns:
@@ -256,7 +256,7 @@ def compute_group_statistics(df_orig: pd.DataFrame,
     if 'numerical_column' in project_settings:
         numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
     else:
-        numeric_columns = df_orig[analysis_columns].select_dtypes(include=[np.number]).columns.tolist()
+        numeric_columns = df_orig[selected_columns].select_dtypes(include=[np.number]).columns.tolist()
     
     if not numeric_columns:
         log_message("Varování: Žádné numerické sloupce pro analýzu.")
@@ -280,7 +280,7 @@ def detect_extremes(df_orig: pd.DataFrame,
                    stats_by_group: dict[str, dict[str, tuple[float, float]]],
                    threshold: float,
                    segmentation_column: str,
-                   analysis_columns: list[str],
+                   selected_columns: list[str],
                    primary_id: str,
                    project_settings: dict) -> dict:
     """Detekuje extrémní hodnoty v datech.
@@ -292,7 +292,7 @@ def detect_extremes(df_orig: pd.DataFrame,
         stats_by_group (dict): Statistiky pro skupiny
         threshold (float): Prahová hodnota pro detekci extrémů
         segmentation_column (str): Sloupec pro segmentaci
-        analysis_columns (list[str]): Seznam sloupců pro analýzu
+        selected_columns (list[str]): Seznam vybraných sloupců pro analýzu
         primary_id (str): Název sloupce s primárním klíčem
         project_settings (dict): Nastavení projektu
         
@@ -305,7 +305,7 @@ def detect_extremes(df_orig: pd.DataFrame,
     if 'numerical_column' in project_settings:
         numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
     else:
-        numeric_columns = df_orig[analysis_columns].select_dtypes(include=[np.number]).columns.tolist()
+        numeric_columns = df_orig[selected_columns].select_dtypes(include=[np.number]).columns.tolist()
     
     if not numeric_columns:
         log_message("Varování: Žádné numerické sloupce pro detekci extrémů.")

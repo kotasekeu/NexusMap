@@ -11,11 +11,13 @@
 				<div class="col-md-8 project-list">
 					<a class="btn btn-outline-danger-2x" n:href="delete!, project_id => $projectDetail->project_id"  onclick="return confirm('Opravdu chcete smazat tento projekt?');"> <i data-feather="trash-2"> </i>Odstranit projekt</a>
 					{if $projectDetail->ready_to_analyze == 0}
-						<a class="btn btn-outline-primary-2x" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="edit-2"> </i>Upravit projekt</a>
-						<a class="btn btn-outline-warning-2x" n:href="Projects:editSom, project_id => $projectDetail->project_id"> <i data-feather="settings"> </i>Upravit nastavení SOM</a>
+						<a class="btn btn-outline-primary-2x" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="edit"> </i>Upravit projekt</a>
+						<a class="btn btn-outline-info-2x" n:href="Projects:editSom, project_id => $projectDetail->project_id"> <i data-feather="sliders"> </i>Upravit nastavení SOM</a>
 					{/if}
 					{if $projectDetail->status == 1}
-						<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-outline-info-2x"> <i data-feather="bar-chart-2"> </i>Zobrazit analýzu</a>
+						<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-outline-success-2x"> <i data-feather="bar-chart-2"> </i>Zobrazit analýzu</a>
+						<a class="btn btn-outline-warning-2x" n:href="resubmit!, project_id => $projectDetail->project_id"> <i data-feather="refresh-cw"> </i>Odeslat znova na analýzu</a>
+						<a class="btn btn-outline-primary-2x" n:href="reedit!, project_id => $projectDetail->project_id"> <i data-feather="edit-2"> </i>Povolit editaci</a>
 					{/if}
 					{if $projectDetail->ready_to_analyze == 0}
 						<a class="btn btn-outline-success-2x" n:href="submit!, project_id => $projectDetail->project_id"> <i data-feather="play"> </i>Spustit analýzu</a>

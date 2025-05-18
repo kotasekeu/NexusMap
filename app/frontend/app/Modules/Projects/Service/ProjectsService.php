@@ -398,6 +398,25 @@ class ProjectsService extends BaseService
 		return $this->projectsRepository->submitProjectToAnalyze($project->project_id, $customer_id);
 	}
 
+	public function resubmitProject(int $customer_id, Row $project): Result|int|null
+	{
+		if ($project->customer_id !== $customer_id) {
+			throw new \Exception('Tento zákazník nemá oprávnění k úpravě tohoto projektu.');
+		}
+
+		return $this->projectsRepository->resubmitProjectToAnalyze($project->project_id, $customer_id);
+	}
+
+	public function unlockProjectEdit(int $customer_id, Row $project): Result|int|null
+	{
+		if ($project->customer_id !== $customer_id) {
+			throw new \Exception('Tento zákazník nemá oprávnění k úpravě tohoto projektu.');
+		}
+
+		return $this->projectsRepository->unlockProjectToAnalyze($project->project_id, $customer_id);
+	}
+
+
     /**
      * Get project files by type
      * 
