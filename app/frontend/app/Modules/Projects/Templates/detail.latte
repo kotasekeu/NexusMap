@@ -19,6 +19,9 @@
 						<a class="btn btn-outline-warning-2x" n:href="resubmit!, project_id => $projectDetail->project_id"> <i data-feather="refresh-cw"> </i>Odeslat znova na analýzu</a>
 						<a class="btn btn-outline-primary-2x" n:href="reedit!, project_id => $projectDetail->project_id"> <i data-feather="edit-2"> </i>Povolit editaci</a>
 					{/if}
+					{if $projectDetail->status == 2}
+						<a class="btn btn-outline-warning-2x" n:href="resubmit!, project_id => $projectDetail->project_id"> <i data-feather="refresh-cw"> </i>Zastavit a odeslat znova na analýzu</a>
+					{/if}
 					{if $projectDetail->ready_to_analyze == 0}
 						<a class="btn btn-outline-success-2x" n:href="submit!, project_id => $projectDetail->project_id"> <i data-feather="play"> </i>Spustit analýzu</a>
 					{/if}

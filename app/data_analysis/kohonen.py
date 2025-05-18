@@ -97,7 +97,7 @@ class KohonenSOM:
         self.batch_growth_type = batch_growth_type
 
         # Další parametry
-        self.growth_g = growth_g
+        self.growth_g = float(growth_g)
         self.epoch_multiplier = float(epoch_multiplier)
         self.map_type = map_type
         self.normalize_weights_flag = normalize_weights_flag    
@@ -116,6 +116,7 @@ class KohonenSOM:
 
         # Inicializace vah
         self.base_seed = random_seed
+
         if random_seed is not None:
             np.random.seed(random_seed)
         self.weights = np.random.rand(m, n, dim)
@@ -130,53 +131,65 @@ class KohonenSOM:
                     self.weights[i, j] /= norm
 
     def get_decay_value(self, t: int, N: int, start: float, end: float, decay_type: str) -> float:
-        """Vypočítá hodnotu útlumu pro daný časový krok.
-        
+        """Vypočítá hodnotu útlumu nebo růstu pro daný časový krok.
+
         Args:
             t (int): Aktuální časový krok
             N (int): Celkový počet kroků
             start (float): Počáteční hodnota
             end (float): Koncová hodnota
-            decay_type (str): Typ útlumu
-            
+            decay_type (str): Typ útlumu nebo růstu
+                - Pro pokles (LR, R): 'static', 'logarithmic-drop', 'linear-drop', 'exponential', 'exp-drop'
+                - Pro růst (batch size): 'linear-growth', 'logarithmic-growth', 'exp-growth'
+
         Returns:
-            float: Hodnota útlumu
-            
+            float: Hodnota útlumu nebo růstu
+
         Raises:
-            ValueError: Pokud je zadán neznámý typ útlumu
+            ValueError: Pokud je zadán neznámý typ útlumu/růstu
         """
         if N <= 1:
             return start
-            
+
         if decay_type == 'static':
             return start
-        elif decay_type == 'logarithmic':
-            return start - (np.log10(t + 1) / np.log10(N)) * (start - end)
-        elif decay_type == 'linear-growth':
-            return start + (t / (N - 1)) * (end - start)
         elif decay_type == 'linear-drop':
             return start - (t / (N - 1)) * (start - end)
+        elif decay_type == 'linear-growth':
+            return start + (t / (N - 1)) * (end - start)
         elif decay_type == 'exponential':
             k = np.log(start / end) / N
             return start * np.exp(-k * t)
+        elif decay_type == 'exp-drop':
+            return end + (start - end) * (1 - np.exp(-self.growth_g * t / N)) / (1 - np.exp(-self.growth_g))
         elif decay_type == 'exp-growth':
             return start + (end - start) * (np.exp(self.growth_g * t / N) - 1) / (np.exp(self.growth_g) - 1)
-        elif decay_type == 'exp-drop':
-            log_max = np.log(N + 1)
-            return end + (np.log(N - t + 1) / log_max) * (start - end)
+        elif decay_type == 'log-drop':
+            return end + (start - end) * (np.log(self.growth_g * t + 1) / np.log(self.growth_g * N + 1))
+        elif decay_type == 'log-growth':
+            return start + (end - start) * (np.log(self.growth_g * t + 1) / np.log(self.growth_g * N + 1))
+
+        elif decay_type == 'step-down':
+            # 10 kroků, každých 10 % epoch, každé snížení o 30 %
+            step_count = 10
+            step_size = N // step_count
+            current_step = min(t // step_size, step_count - 1)
+            factor = 0.7 ** current_step  # 30 % dolů každý krok
+            return max(end, start * factor)
         else:
-            raise ValueError("Neznámý typ útlumu")
+            raise ValueError(f"Neznámý decay_type: {decay_type}")
 
     def get_batch_percent(self, t: int, N: int) -> float:
         """Vypočítá procento vzorků pro aktuální dávku.
-        
+
         Args:
             t (int): Aktuální časový krok
             N (int): Celkový počet kroků
-            
+
         Returns:
             float: Procento vzorků pro dávku
         """
+        # Pro růstové decay typy: 'linear-growth', 'logarithmic-growth', 'exp-growth'
         return self.get_decay_value(t, N, self.min_batch_percent, self.max_batch_percent, self.batch_growth_type)
 
     def train(self, data: np.ndarray) -> None:
@@ -213,14 +226,12 @@ class KohonenSOM:
 
             # Zpracování dávek
             if self.processing_type == 'stochastic':
-                # Pro stochastický režim použijeme náhodné indexy
                 if self.base_seed is not None:
                     np.random.seed(self.base_seed + epoch)
-                indices = np.random.permutation(total_samples)
-                for idx in indices:
-                    sample = data[idx]
-                    bmu_idx = self.find_bmu(sample)
-                    self.update_weights(sample, bmu_idx, current_lr, current_radius)
+                idx = np.random.randint(0, total_samples)
+                sample = data[idx]
+                bmu_idx = self.find_bmu(sample)
+                self.update_weights(sample, bmu_idx, current_lr, current_radius)
             elif self.processing_type == 'deterministic':
                 # Pro deterministický režim zpracujeme všechny vzorky postupně
                 for sample in data:
@@ -283,6 +294,9 @@ class KohonenSOM:
                 self.radius_history.append(current_radius)
                 if self.processing_type == 'hybrid':
                     self.batch_size_history.append(samples_per_batch)
+                                
+                if self.processing_type == 'hybrid':
+                    print(f"  Batch size history: {len(self.batch_size_history)} záznamů")
 
                 # Kontrola podmínek pro ukončení
                 if self.min_q_error is not None and total_qe <= self.min_q_error:

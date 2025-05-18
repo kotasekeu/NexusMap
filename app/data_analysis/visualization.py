@@ -610,7 +610,7 @@ def generate_parameters_history_plot(som, output_file: str):
 
     epochs = range(len(som.learning_rate_history))
 
-    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
 
     ax1.plot(epochs, som.learning_rate_history, 'b-', linewidth=2)
     ax1.set_xlabel('Číslo epochy', fontsize=12)
@@ -625,13 +625,6 @@ def generate_parameters_history_plot(som, output_file: str):
     ax2.set_title('Vývoj poloměru sousedství během trénování', fontsize=14, pad=20)
     ax2.grid(True, linestyle='--', alpha=0.7)
     ax2.tick_params(axis='both', which='major', labelsize=10)
-
-    ax3.plot(epochs, som.batch_size_history, 'g-', linewidth=2)
-    ax3.set_xlabel('Číslo epochy', fontsize=12)
-    ax3.set_ylabel('Velikost dávky', fontsize=12)
-    ax3.set_title('Vývoj velikosti dávky během trénování', fontsize=14, pad=20)
-    ax3.grid(True, linestyle='--', alpha=0.7)
-    ax3.tick_params(axis='both', which='major', labelsize=10)
 
     plt.tight_layout()
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
@@ -739,12 +732,50 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
 
     # 7) Graf vývoje parametrů učení
     if (hasattr(som, 'learning_rate_history') and len(som.learning_rate_history) > 0 and
-        hasattr(som, 'radius_history') and len(som.radius_history) > 0 and
-        hasattr(som, 'batch_size_history') and len(som.batch_size_history) > 0):
-        generate_parameters_history_plot(
-            som,
-            f"{output_path}/visualization/parameters-history.png"
-        )
+        hasattr(som, 'radius_history') and len(som.radius_history) > 0):
+        print(f"Debug - Historie parametrů:")
+        print(f"Learning rate history: {len(som.learning_rate_history)} záznamů")
+        print(f"Radius history: {len(som.radius_history)} záznamů")
+        print(f"Batch size history: {len(som.batch_size_history) if hasattr(som, 'batch_size_history') else 0} záznamů")
+        
+        # Vytvoření grafu s 2 nebo 3 subploty podle dostupnosti batch_size_history
+        if hasattr(som, 'batch_size_history') and len(som.batch_size_history) > 0:
+            fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))
+        else:
+            fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10))
+
+        epochs = range(len(som.learning_rate_history))
+
+        ax1.plot(epochs, som.learning_rate_history, 'b-', linewidth=2)
+        ax1.set_xlabel('Číslo epochy', fontsize=12)
+        ax1.set_ylabel('Learning rate', fontsize=12)
+        ax1.set_title('Vývoj learning rate během trénování', fontsize=14, pad=20)
+        ax1.grid(True, linestyle='--', alpha=0.7)
+        ax1.tick_params(axis='both', which='major', labelsize=10)
+
+        ax2.plot(epochs, som.radius_history, 'r-', linewidth=2)
+        ax2.set_xlabel('Číslo epochy', fontsize=12)
+        ax2.set_ylabel('Poloměr sousedství', fontsize=12)
+        ax2.set_title('Vývoj poloměru sousedství během trénování', fontsize=14, pad=20)
+        ax2.grid(True, linestyle='--', alpha=0.7)
+        ax2.tick_params(axis='both', which='major', labelsize=10)
+
+        if hasattr(som, 'batch_size_history') and len(som.batch_size_history) > 0:
+            ax3.plot(epochs, som.batch_size_history, 'g-', linewidth=2)
+            ax3.set_xlabel('Číslo epochy', fontsize=12)
+            ax3.set_ylabel('Velikost dávky', fontsize=12)
+            ax3.set_title('Vývoj velikosti dávky během trénování', fontsize=14, pad=20)
+            ax3.grid(True, linestyle='--', alpha=0.7)
+            ax3.tick_params(axis='both', which='major', labelsize=10)
+
+        plt.tight_layout()
+        plt.savefig(f"{output_path}/visualization/parameters-history.png", dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        print("Debug - Chybí historie parametrů:")
+        print(f"Learning rate history existuje: {hasattr(som, 'learning_rate_history')}, délka: {len(som.learning_rate_history) if hasattr(som, 'learning_rate_history') else 0}")
+        print(f"Radius history existuje: {hasattr(som, 'radius_history')}, délka: {len(som.radius_history) if hasattr(som, 'radius_history') else 0}")
+        print(f"Batch size history existuje: {hasattr(som, 'batch_size_history')}, délka: {len(som.batch_size_history) if hasattr(som, 'batch_size_history') else 0}")
 
     # Vykreslení jednotlivých kategoriálních sloupců
     for column_name in settings['categorical_column']:

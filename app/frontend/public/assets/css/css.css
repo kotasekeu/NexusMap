@@ -2,3 +2,11 @@
     font-style:italic;
     color:green;
 }
+fieldset {
+    border-bottom:2px dashed #666;
+}
+
+fieldset legend {
+    margin-top:1em;
+    color:rgb(13 110 253);
+}
