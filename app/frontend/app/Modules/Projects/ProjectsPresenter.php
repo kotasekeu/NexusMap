@@ -83,7 +83,7 @@ class ProjectsPresenter extends BasePresenter
 		$this->getTemplate()->lastLogLine	= $this->projectsService->getLastLineKohonenLogFile($projectDetail->uid_hash);
 
 		$this->getTemplate()->visualizationTypes = [
-			'hit'        => 'Mapa návštěvnosti',
+			'hit'        => 'Hit mapa',
 			'u-matrix'   => 'U-Matrix',
 			'pie-map'    => 'Koláčová mapa',
 			'component'  => 'Mapa atributů',
@@ -97,7 +97,7 @@ class ProjectsPresenter extends BasePresenter
 			'u-matrix'   => 'Zobrazuje vzdálenosti mezi sousedními neurony pro identifikaci hranic.',
 			'pie-map'    => 'Pro každou buňku vykresluje koláčový graf složení kategorií ve vzorcích.',
 			'component'  => 'Heatmapa hodnot jednotlivých vstupních atributů v každém neuronu.',
-			'distance'   => 'Průměrná kvantizační chyba (vzdálenost vzorku od BMU) pro každý neuron.',
+			'distance'   => 'Průměrná kvantizační chyba pro každý neuron.',
 			'cluster'    => 'Zobrazení přiřazení původních vzorků ke klastrům (neurony).',
 			'mqe-history'=> 'Graf zobrazuje vývoj kvantizační chyby v čase. '
 		];

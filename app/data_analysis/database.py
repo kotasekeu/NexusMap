@@ -91,3 +91,29 @@ def update_project_results(uid_hash, results):
     finally:
         cursor.close()
         db.close()
+
+def get_next_project():
+    """
+    Získá nejstarší projekt, který je připraven k analýze.
+    
+    :return: Informace o projektu nebo None, pokud není žádný projekt připraven
+    :rtype: dict or None
+    """
+    db = get_db_connection()
+    cursor = db.cursor(dictionary=True)
+
+    try:
+        # Získá nejstarší projekt, který je připraven k analýze (status = 0 a ready_to_analyze = 1)
+        # změnit na order podle data spuštění na analýzu
+        query = """
+            SELECT * FROM projects 
+            WHERE status = 0 AND ready_to_analyze = 1 
+            ORDER BY project_id ASC  
+            LIMIT 1
+        """
+        cursor.execute(query)
+        result = cursor.fetchone()
+    finally:
+        cursor.close()
+        db.close()
+    return result

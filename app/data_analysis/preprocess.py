@@ -80,31 +80,40 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     categorical_column = []
     numerical_column = []
     string_column = []
-    categorical_groups = {}  # Slovník pro skupiny kategoriálních sloupců
+    categorical_groups = {}
     
     for col in cols:
         series = data[col]
         
-        # Speciální případ pro ID sloupce
+        # Speciální případ pro ID sloupec
         if col.startswith('id_') or col.endswith('_id'):
             processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
             categorical_column.append(col)
             log_message(f"Sloupec '{col}': typ kategoriální (ID sloupec)")
             continue
             
+        # Kontrola počtu unikátních hodnot pro všechny sloupce
+        n_uniques = series.nunique(dropna=True)
+        
         if pd.api.types.is_numeric_dtype(series):
-            # Číselné sloupce: převod na numerický typ a náhrada NaN
-            num = pd.to_numeric(series, errors="coerce")
-            num = num.fillna(nan_replacement.get(col, 0))
-            processed[col] = num
-            numerical_column.append(col)
+            if n_uniques <= 30:  # Číselné sloupce s malým počtem unikátních hodnot jsou kategorické
+                processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
+                categorical_column.append(col)
+                log_message(f"Sloupec '{col}': typ kategoriální (číselný s {n_uniques} unikáty)")
+            else:
+                # Číselné sloupce s více unikáty jsou numerické
+                num = pd.to_numeric(series, errors="coerce")
+                num = num.fillna(nan_replacement.get(col, 0))
+                processed[col] = num
+                numerical_column.append(col)
+                log_message(f"Sloupec '{col}': typ číselný ({n_uniques} unikátů)")
         else:
-            # Textové sloupce: rozhodnutí podle počtu unikátních hodnot
-            n_uniques = series.nunique(dropna=True)
+            # Textové sloupce
             if n_uniques <= 30:
                 # Kategorické sloupce: label-encoding
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 categorical_column.append(col)
+                log_message(f"Sloupec '{col}': typ kategoriální (textový s {n_uniques} unikáty)")
                 
                 # Seskupení podle prefixu
                 parts = col.split('_')
@@ -114,11 +123,10 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
                         categorical_groups[prefix] = []
                     categorical_groups[prefix].append(col)
             else:
-                # Textové sloupce: factorize
+                # Textové sloupce s mnoha unikáty
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 string_column.append(col)
-                
-        log_message(f"Sloupec '{col}': typ {'číselný' if pd.api.types.is_numeric_dtype(data[col]) else 'kategoriální'} (unikátů {data[col].nunique(dropna=True)})")
+                log_message(f"Sloupec '{col}': typ textový ({n_uniques} unikátů)")
 
     # Odstranění primary_id z numerických a kategorických sloupců
     primary_id = settings.get('primary_id')

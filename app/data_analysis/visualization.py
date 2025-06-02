@@ -329,6 +329,9 @@ def generate_legend(
         figsize (tuple): Velikost figury (šířka, výška)
         legend_type (str): Typ legendy ('colorbar' nebo 'categorical')
     """
+    # Nastavení fontu pro matplotlib
+    plt.rcParams['font.family'] = 'DejaVu Sans'
+    
     # Vytvoření cesty pro legendu
     output_dir = os.path.dirname(output_file)
     legends_dir = os.path.join(output_dir, 'legends')
