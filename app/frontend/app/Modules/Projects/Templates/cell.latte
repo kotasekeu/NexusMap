@@ -33,6 +33,7 @@
 																		{var $firstExtremeRecord = reset($cellDetail['extremes'])}
 																		{if $firstExtremeRecord}
 																			{foreach $firstExtremeRecord as $col => $value}
+																				{continueIf ! in_array($col, $projectDetail->project_settings->selected_columns)}
 																				<th>{$col}</th>
 																			{/foreach}
 																		{/if}
@@ -43,6 +44,7 @@
 																{foreach $cellDetail['extremes'] as $record}
 																	<tr>
 																		{foreach $record as $col => $value}
+																			{continueIf ! in_array($col, $projectDetail->project_settings->selected_columns)}
 																			{var $note = ''}
 																			{var $class = ''}
 																			{if isset($cellDetail['numerical_stats'][$col])}
@@ -72,7 +74,7 @@
 																					{/if}
 																				{/if}
 																			{/if}
-																			<td class="{$class}" style="white-space: nowrap" title="Extrémní hodnota">{$value} <br />{$note}</td>
+																			<td class="{$class}" style="white-space: nowrap" title="Extrémní hodnota">{if $value == ""}-{else}{$value}{/if} <br />{$note}</td>
 																		{/foreach}
 																	</tr>
 																{/foreach}
@@ -95,6 +97,7 @@
 														<thead>
 														<tr>
 															{foreach reset($cellDetail['records']) as $key => $val}
+																{continueIf ! in_array($key, $projectDetail->project_settings->selected_columns)}
 																<th>{$key}</th>
 															{/foreach}
 														</tr>
@@ -103,8 +106,9 @@
 														<!-- Všechny záznamy -->
 														{foreach $cellDetail['records'] as $id => $record}
 															<tr class="{isset($cellDetail['extremes'][$id]) ? 'table-danger' : ''}">
-																{foreach $record as $value}
-																	<td {ifset $cellDetail['extremes'][$id]}title="Součást extrémního záznamu"{/ifset}>{$value}</td>
+																{foreach $record as $key => $value}
+																	{continueIf ! in_array($key, $projectDetail->project_settings->selected_columns)}
+																	<td {ifset $cellDetail['extremes'][$id]} title="Součást extrémního záznamu"{/ifset}>{if $value == ""}-{else}{$value}{/if}</td>
 																{/foreach}
 															</tr>
 														{/foreach}

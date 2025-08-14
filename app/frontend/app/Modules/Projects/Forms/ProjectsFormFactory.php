@@ -57,7 +57,8 @@ final class ProjectFormFactory
 			->setRequired('Nahrání souboru je povinné')
 			->setHtmlAttribute('class', 'form-control')
 			->addRule(Form::MaxFileSize, 'Maximální velikost je 32MB', 32 * 1024 * 1024)
-			->addRule(Form::MimeType, 'Povoleny jsou pouze CSV soubory', "text/csv");
+			->addRule(Form::MimeType, 'Povoleny jsou pouze CSV soubory', "text/csv")
+			->setOption('description', 'Soubor musí obsahovat sloupec s názvem ID, který obsahuje unikátní identifikátor každé položky v souboru, může být textový [položka-42], ale preferovaný je číselný identifikátor.');
 
 		$form->addSubmit('submit', 'Uložit projekt');
 
@@ -126,7 +127,6 @@ final class ProjectFormFactory
 		$form->addSelect('segmentation_column', $columnsNames['segmentation_column'], $columns)
 			->setPrompt('Vyberte')
 			->setHtmlAttribute('class', 'form-select')
-			->setRequired('Vyberte sloupec legendy')
 			->setOption('description', 'Vyberte sloupec (typicky kategorický), jehož hodnoty se použijí pro hledání extrémů dle tohoto parametru.');
 
 		$form->addText('std_threshold', 'Prahová hodnota pro extrémní hodnoty')
@@ -141,14 +141,13 @@ final class ProjectFormFactory
 			->setDefaultValue(2);
 
 
-		$form->addSubmit('submit', 'Uložit projekt');
+        $form->addSubmit('submit', 'Uložit projekt');
 
 		$form->onValidate[] = function (Form $form, ArrayHash $values): void {
 			// form validation
 		};
 
 		$form->onSuccess[] = function (Form $form, ArrayHash $values) use ($onSuccess): void {
-
 			$project_id = $this->projectsService->saveProjectSettings($values);
 			$onSuccess($project_id);
 		};

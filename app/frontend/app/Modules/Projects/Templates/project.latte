@@ -46,12 +46,15 @@
 						{($duration / 3600)|round:1} hod
 					{/if}
 				</div>
-				<div class="col-8"> <span>Počet průchodů/epoch</span></div>
-				<div class="col-4 font-black">{$projectDetail->results->epochs}</div>
-				<div class="col-8"> <span>Počet aktualizovaných vah</span></div>
-				<div class="col-4 font-black">{$projectDetail->results->total_weight_updates}</div>
-				<div class="col-8"> <span>Dosažena kvantizační chyba</span></div>
-				<div class="col-4 font-black">{$projectDetail->results->best_mqe|round:4}</div>
+				{if in_array('expert', $user->roles)}
+					<div class="col-8"> <span>Počet průchodů/epoch</span></div>
+					<div class="col-4 font-black">{$projectDetail->results->epochs}</div>
+					<div class="col-8"> <span>Počet aktualizovaných vah</span></div>
+					<div class="col-4 font-black">{$projectDetail->results->total_weight_updates}</div>
+					<div class="col-8"> <span>Dosažena kvantizační chyba</span></div>
+					<div class="col-4 font-black">{$projectDetail->results->best_mqe|round:4}</div>
+				{/if}
+
 			{/if}
 		</div>
 		<a href="{plink Projects:detail, $projectDetail->project_id}" class="btn btn-success btn-xs">Detail</a>

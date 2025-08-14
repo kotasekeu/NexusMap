@@ -55,7 +55,7 @@ def main():
             logging.error(f"Neočekávaná chyba v hlavní smyčce: {str(e)}")
         
         # Počkáme 60 sekund před další kontrolou
-        time.sleep(300)
+        time.sleep(10)
 
 if __name__ == "__main__":
     main()

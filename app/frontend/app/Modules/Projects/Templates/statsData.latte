@@ -24,11 +24,12 @@
 									<p class="mb-0">V projektu nebyly nalezeny žádné extrémní hodnoty. To může znamenat, že data jsou velmi homogenní nebo že ještě nebyla provedena analýza extrémů.</p>
 								</div>
 							{else}
-							<table class="table table-sm table-striped table-hover align-middle">
+							<table class="table table-sm table-striped table-hover align-middle table-responsive">
 								<thead>
 								<tr>
 									<th>Neuron</th>
 									{foreach reset($records) as $col => $val}
+										{continueIf ! in_array($col, $projectDetail->project_settings->selected_columns)}
 										<th>{$col}</th>
 									{/foreach}
 								</tr>
@@ -41,6 +42,7 @@
 												<a class="btn btn-xs btn-success" n:href="Projects:cell $projectDetail->project_id, $neuronId">{$neuronId}</a>
 											</td>
 											{foreach $records[$uid] as $col => $value}
+												{continueIf ! in_array($col, $projectDetail->project_settings->selected_columns)}
 												{var $note = ''}
 												{var $class = ''}
 												{if isset($globalStats['numerical'][$col])}

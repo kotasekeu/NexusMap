@@ -1,6 +1,6 @@
 uvicorn[standard]
 fastapi
-mysql-connector-python #nevim proc se ta kravina nechce nainstalovat. zatim je to rucne nainstalovane v kontejneru
+mysql-connector-python
 passlib
 pydantic
 pytest

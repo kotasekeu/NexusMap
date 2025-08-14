@@ -34,7 +34,7 @@ abstract class BasePresenter extends Presenter
 		parent::startup();
 
 		if (!$this->getUser()->isLoggedIn() && !($this->getPresenter()->getName() == 'Modules:Login'
-			&& $this->getPresenter()->getAction() == 'default')) {
+			&& in_array($this->getPresenter()->getAction(), ['default', 'autologin']))) {
 			$this->redirect('Login:default');
 		}
 	}

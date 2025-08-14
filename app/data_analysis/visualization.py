@@ -753,10 +753,6 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
     # 7) Graf vývoje parametrů učení
     if (hasattr(som, 'learning_rate_history') and len(som.learning_rate_history) > 0 and
         hasattr(som, 'radius_history') and len(som.radius_history) > 0):
-        print(f"Debug - Historie parametrů:")
-        print(f"Learning rate history: {len(som.learning_rate_history)} záznamů")
-        print(f"Radius history: {len(som.radius_history)} záznamů")
-        print(f"Batch size history: {len(som.batch_size_history) if hasattr(som, 'batch_size_history') else 0} záznamů")
         
         generate_parameters_history_plot(
             som,

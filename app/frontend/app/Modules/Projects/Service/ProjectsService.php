@@ -131,8 +131,28 @@ class ProjectsService extends BaseService
 		$input_csv = $data['input_csv'] ?? null;
 
 		$projectId = $this->projectsRepository->create($projectData);
-		
+
 		$this->uploadInputCsv($input_csv, $projectData);
+
+		// Automatické zpracování souboru pokud je uživatel základní.
+		if ($this->getCustomerType() == 'basic') {
+			$hybridSomSettings = $this->projectsRepository->getHybridSomSettings($projectId);
+
+			$this->saveProjectSomSettings(array_merge($hybridSomSettings, ['project_id' => $projectId]));
+
+			$inputFileData = $this->getInputFileData($projectId);
+			$columnNames = array_values($inputFileData->column_names);
+
+			$projectData = [
+				'selected_columns' => $columnNames,
+				'std_threshold' => 2,
+				'segmentation_column' => '',
+				'primary_id' => 'ID',
+			];
+
+			$this->saveProjectSettings(array_merge($projectData, ['project_id' => $projectId]));
+		}
+
 		return $projectId;
 	}
 
@@ -217,9 +237,6 @@ class ProjectsService extends BaseService
      */
 	private function uploadInputCsv(FileUpload $input_csv, array|ArrayHash $projectData): void
 	{
-		if ($this->getCustomerType() == "basic") {
-
-		}
 		$csvDir = WWW_DIR . '/userFiles/' . $projectData['uid_hash'] . '/csv';
 		if (!is_dir($csvDir)) {
 			mkdir($csvDir, 0777, true);
@@ -272,8 +289,8 @@ class ProjectsService extends BaseService
      */
 	public function saveProjectSettings(array|ArrayHash $data): int
 	{
-		$project_id = intval($data->project_id);
-		unset($data->project_id);
+		$project_id = intval($data['project_id']);
+		unset($data['project_id']);
 		$projectJsonData = json_encode($data);
 
 		$this->projectsRepository->updateProjectSettings($project_id, $this->getCustomerId(), $projectJsonData);
@@ -289,20 +306,20 @@ class ProjectsService extends BaseService
      */
 	public function saveProjectSomSettings(array|ArrayHash $data): int
 	{
-		$project_id = intval($data->project_id);
-		unset($data->project_id);
+		$project_id = intval($data['project_id']);
+		unset($data['project_id']);
 
 		foreach ($data as $key => $value) {
 			if (empty($value) || $value == '') {
-				unset($data->$key);
+				unset($data[$key]);
 			}
 		}
 
-		if (isset($data->map_size)) {
-			$mn = explode('x', $data->map_size);
+		if (isset($data['map_size'])) {
+			$mn = explode('x', $data['map_size']);
 			$data->m = intval($mn[0]);
 			$data->n = intval($mn[1]);
-			unset($data->map_size);
+			unset($data['map_size']);
 		}
 		$intValFields = ['max_epochs_without_improvement', 'random_seed', 'num_batches', 'project_id'];
 		foreach ($intValFields as $value) {
@@ -581,6 +598,7 @@ class ProjectsService extends BaseService
 	public function getConfigDescription(): array
 	{
 		return [
+			'processing_type'	=> 'Způsob organizace dat',
 			'm' => 'Počet řádků mapy',
 			'n' => 'Počet sloupců mapy',
 			'learning_rate'		=> 'Počáteční hodnota parametru učení',
@@ -611,7 +629,7 @@ class ProjectsService extends BaseService
 	public function getProjectConfigDescription(): array
 	{
 		return [
-			"selected_columns"		=> "Načtené sloupce z CSV",
+			"selected_columns"		=> "Načtené sloupce ze souboru",
 			"categorical_column"	=> "Kategorické sloupce",
 			"primary_id"			=> "Hlavní ID",
 			"analysis_columns"		=> "Sloupce pro numerickou analýzu",
@@ -669,6 +687,10 @@ class ProjectsService extends BaseService
 		$jsonData = file_get_contents($clustersJson);
 
 		$clustersData = json_decode($jsonData, true);
+
+        if (empty($clustersData)) {
+            return [];
+        }
 		ksort($clustersData);
 
 		if (! empty($cell)) {

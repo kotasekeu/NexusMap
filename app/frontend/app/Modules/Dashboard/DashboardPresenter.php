@@ -37,6 +37,7 @@ class DashboardPresenter extends BasePresenter
 	 */
 	public function renderDefault()
 	{
+		$this->redirect("Projects:default");
 		// TODO: Implement dashboard data fetching
 		// $q = $this->dashboardService->fetchUsers();
 	}

@@ -42,9 +42,9 @@ final class AuthenticatorService implements Nette\Security\IAuthenticator
 	 * Returns IIdentity on success or throws AuthenticationException
 	 * @throws Nette\Security\AuthenticationException
 	 */
-	public function authenticate(Row $customer, string $password): IIdentity
+	public function authenticate(Row $customer, string $password, bool $isCombinedPassword = false): IIdentity
 	{
-		$combinedPassword = $this->generatePassword($customer->email, $password);
+		$combinedPassword = $isCombinedPassword ? $password : $this->generatePassword($customer->email, $password);
 
 		if (!$this->password->verify($combinedPassword, $customer->passhash)) {
 			throw new Nette\Security\AuthenticationException('Kombinace e-mailu a hesla je neplatná.');

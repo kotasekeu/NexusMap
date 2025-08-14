@@ -7,6 +7,8 @@ namespace App\Modules\Login;
 use App\Common\Presenter\BasePresenter;
 use App\Modules\Login\Forms\LoginFormFactory;
 use Nette\Forms\Form;
+use App\Common\Service\AuthenticatorService;
+use App\Modules\Login\Service\LoginService;
 
 /**
  * Presenter for handling user authentication
@@ -23,9 +25,11 @@ class LoginPresenter extends BasePresenter
 	 * 
 	 * @param LoginFormFactory $loginFormFactory Factory for creating login forms
 	 */
-	public function __construct(LoginFormFactory $loginFormFactory)
+	public function __construct(
+		LoginFormFactory $loginFormFactory
+    )
 	{
-		$this->loginFormFactory = $loginFormFactory;
+		$this->loginFormFactory	= $loginFormFactory;
 	}
 
 	/**
@@ -35,7 +39,7 @@ class LoginPresenter extends BasePresenter
 	public function renderDefault()
 	{
 		if ($this->getUser()->isLoggedIn()) {
-			$this->redirect('Dashboard:default');
+			$this->redirect('Projects:default');
 		}
 	}
 
@@ -49,7 +53,7 @@ class LoginPresenter extends BasePresenter
 		return $this->loginFormFactory->loginForm(
 			function ($identity): void {
 				$this->getUser()->login($identity);
-				$this->redirect('Dashboard:default');
+				$this->redirect('Projects:default');
 			}
 		);
 	}

@@ -9,6 +9,7 @@
 							<h6>CSV - datové soubory</h6>
 							<div class="row">
 								{foreach $projectFiles['csv'] as $csvFile}
+									{continueIf !in_array('expert', $user->roles) && $csvFile !== 'input.csv'}
 									<div class="col-md-4">
 										<div class="file-box d-flex align-items-center">
 											<div class="flex-shrink-0 file-left">
@@ -41,6 +42,7 @@
 							<h6>Json - konfigurační soubory</h6>
 							<div class="row">
 								{foreach $projectFiles['json'] as $jsonFile}
+									{continueIf !in_array('expert', $user->roles) && !in_array($jsonFile, ['clusters.json', 'extremes.json'])}
 									<div class="col-md-4">
 										<div class="file-box d-flex align-items-center">
 											<div class="flex-shrink-0 file-left">

@@ -41,6 +41,7 @@ def get_project_detail(uid_hash: str) -> dict:
     project = fetch_project(uid_hash)
     if not project:
         log_message(f"Projekt s UID {uid_hash} nenalezen nebo analýza již byla dokončena.")
+        print(f"Projekt s UID {uid_hash} nenalezen nebo analýza již byla dokončena.")
         sys.exit(1)
     return project
 
@@ -262,9 +263,14 @@ def compute_group_statistics(df_orig: pd.DataFrame,
         log_message("Varování: Žádné numerické sloupce pro analýzu.")
         return stats
 
-    if segmentation_column not in df_orig.columns:
-        log_message(f"Varování: Sloupec {segmentation_column} nenalezen v datech.")
-        return stats
+    # Pokud je segmentation_column prázdná, použij první kategorický sloupec
+    if not segmentation_column or segmentation_column not in df_orig.columns:
+        if 'categorical_column' in project_settings and project_settings['categorical_column']:
+            segmentation_column = project_settings['categorical_column'][0]
+            log_message(f"Používám první kategorický sloupec '{segmentation_column}' pro segmentaci.")
+        else:
+            log_message("Varování: Žádný sloupec pro segmentaci není k dispozici.")
+            return stats
 
     # Výpočet statistik
     grouped = df_orig.groupby(segmentation_column)[numeric_columns]
@@ -312,21 +318,24 @@ def detect_extremes(df_orig: pd.DataFrame,
         return extremes
 
     # Detekce extrémů podle skupin
-    unique_groups = df_orig[segmentation_column].unique()
-    for group_val in unique_groups:
-        mask = (df_orig[segmentation_column] == group_val)
-        df_group = df_orig[mask]
-        # Přeskočíme, pokud je skupina prázdná nebo obsahuje pouze NaN hodnoty v numerických sloupcích
-        if df_group.shape[0] == 0 or df_group[numeric_columns].isnull().all().all():
-            continue
-        for col in numeric_columns:
-            if col in stats_by_group[group_val]:
-                mean, std = stats_by_group[group_val][col]
-                if std and not np.isnan(std):
-                    vals = df_group[col]
-                    outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
-                    if not outliers.empty:
-                        extremes['by_group'][group_val] = outliers.tolist()
+    if segmentation_column and segmentation_column in df_orig.columns:
+        unique_groups = df_orig[segmentation_column].unique()
+        for group_val in unique_groups:
+            mask = (df_orig[segmentation_column] == group_val)
+            df_group = df_orig[mask]
+            # Přeskočíme, pokud je skupina prázdná nebo obsahuje pouze NaN hodnoty v numerických sloupcích
+            if df_group.shape[0] == 0 or df_group[numeric_columns].isnull().all().all():
+                continue
+            for col in numeric_columns:
+                if col in stats_by_group[group_val]:
+                    mean, std = stats_by_group[group_val][col]
+                    if std and not np.isnan(std):
+                        vals = df_group[col]
+                        outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
+                        if not outliers.empty:
+                            # Převedení numpy.int64 na standardní Python int
+                            group_key = str(group_val) if isinstance(group_val, (np.integer, np.floating)) else group_val
+                            extremes['by_group'][group_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in outliers.tolist()]
 
     # Detekce extrémů podle shluků
     for cl_key, pid_list in clusters.items():
@@ -339,7 +348,7 @@ def detect_extremes(df_orig: pd.DataFrame,
             if std and not np.isnan(std):
                 outliers = df_cluster.loc[np.abs(df_cluster[col] - mean) > threshold * std, primary_id]
                 if not outliers.empty:
-                    extremes['by_cluster'][cl_key] = outliers.tolist()
+                    extremes['by_cluster'][cl_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in outliers.tolist()]
 
     # Uložení výsledků
     os.makedirs(f"{output_path}json", exist_ok=True)
@@ -426,6 +435,8 @@ def extract_and_save_pie_data_from_clusters(df_orig: pd.DataFrame,
         for pos, pid_list in clusters.items():
             ctr = Counter()
             for pid in pid_list:
+                if pd.isna(pid) or pid not in pid_to_row:
+                    continue
                 label = pid_to_row[pid][col]
                 ctr[label] += 1
             counts_out[pos] = {

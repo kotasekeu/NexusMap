@@ -10,14 +10,16 @@
 				</div>
 				<div class="col-md-8 project-list">
 					<a class="btn btn-outline-danger-2x" n:href="delete!, project_id => $projectDetail->project_id"  onclick="return confirm('Opravdu chcete smazat tento projekt?');"> <i data-feather="trash-2"> </i>Odstranit projekt</a>
-					{if $projectDetail->ready_to_analyze == 0}
+					{if $projectDetail->ready_to_analyze == 0 && in_array('expert', $user->roles)}
 						<a class="btn btn-outline-primary-2x" n:href="Projects:edit, project_id => $projectDetail->project_id"> <i data-feather="edit"> </i>Upravit projekt</a>
 						<a class="btn btn-outline-info-2x" n:href="Projects:editSom, project_id => $projectDetail->project_id"> <i data-feather="sliders"> </i>Upravit nastavení SOM</a>
 					{/if}
 					{if $projectDetail->status == 1}
 						<a n:href="Projects:statsData, $projectDetail->project_id" class="btn btn-outline-success-2x"> <i data-feather="bar-chart-2"> </i>Zobrazit analýzu</a>
 						<a class="btn btn-outline-warning-2x" n:href="resubmit!, project_id => $projectDetail->project_id"> <i data-feather="refresh-cw"> </i>Odeslat znova na analýzu</a>
-						<a class="btn btn-outline-primary-2x" n:href="reedit!, project_id => $projectDetail->project_id"> <i data-feather="edit-2"> </i>Povolit editaci</a>
+						{if in_array('expert', $user->roles)}
+							<a class="btn btn-outline-primary-2x" n:href="reedit!, project_id => $projectDetail->project_id"> <i data-feather="edit-2"> </i>Povolit editaci</a>
+						{/if}
 					{/if}
 					{if $projectDetail->status == 2}
 						<a class="btn btn-outline-warning-2x" n:href="resubmit!, project_id => $projectDetail->project_id"> <i data-feather="refresh-cw"> </i>Zastavit a odeslat znova na analýzu</a>
@@ -36,17 +38,22 @@
 					<div class="blog-single card-body">
 						<div class="blog-box blog-details">
 							<div class="blog-details">
-								<h4>
-									#{$projectDetail->project_id} {$projectDetail->name}
-								</h4>
+								<div class="col-md-6">
+									<h4>
+										#{$projectDetail->project_id} {$projectDetail->name}
+									{if $projectDetail->status == 1}
+											<span class="badge badge-success">Analýza byla dokončena</span>
+										{/if}
+									</h4>
+									<strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}
+								</div>
 								<div class="single-blog-content-top">
 									<div class="card mt-4">
 										<div class="card-body">
 											<div class="row">
 												<div class="col-md-6">
-													<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
-													{if $projectDetail->status == 1}
-														<p><span class="badge badge-success">Analýza byla dokončena</span></p>
+													{if in_array('expert', $user->roles)}
+														<p><strong>UID hash:</strong> {$projectDetail->uid_hash}</p>
 													{/if}
 													{if $projectDetail->status == 0 && $projectDetail->ready_to_analyze == 1}
 														<p>
@@ -54,14 +61,12 @@
 															<em>Hned, až na Váš projekt vyjde řada, bude analyzován a informace se zde zobrazí.</em>
 														</p>
 													{/if}
-													{if $projectDetail->status != 1 && $lastLogLine != ''}
+													{if $projectDetail->status != 1 && $lastLogLine != '' && in_array('expert', $user->roles)}
 														<p>
 															<strong class="text-primary">Poslední zpráva z logu:</strong> <br />
 															{$lastLogLine}
 														</p>
 													{/if}
-
-													<p><strong>Datum vytvoření:</strong> {$projectDetail->added|date:'j.n.Y'}</p>
 													
 													{if ! empty($projectDetail->project_settings)}
 														<div class="card mt-4">
@@ -79,6 +84,7 @@
 																	<tbody>
 																		{foreach $projectDetail->project_settings as $key => $value}
 																			{continueIf ! isset($projectConfigDescription[$key])}
+																			{continueIf !in_array('expert', $user->roles) && in_array($key, ['primary_id', 'segmentation_column', 'std_threshold'])}																		
 																			<tr>
 																				<td><strong>{$projectConfigDescription[$key]}</strong></td>
 																				<td>
@@ -96,10 +102,21 @@
 																		{/foreach}
 																	</tbody>
 																</table>
+																{if !in_array('expert', $user->roles)}
+																	<div class="card-footer">
+																		<ul class="list-unstyled">
+																			<li><strong class="text-success">Numerické sloupce:</strong> <br /> Obsahují číselné hodnoty, které lze matematicky zpracovat (např. věk, cena, počet). <br /><br /></li>
+																			<li><strong class="text-success">Kategorické sloupce:</strong> <br /> Obsahují hodnoty z omezené množiny možností (např. vzdělání, kraj). Kategorické sloupce mohou být i numerické s malým počtem odlišných hodnot v souboru <br /><br /></li>
+																			<li><strong class="text-success">Textové sloupce:</strong> <br /> Obsahují volný text nebo popisné informace (např. poznámky, popis, komentáře).</li>
+																		</ul>
+																	</div>
+																{/if}
 															</div>
 														</div>
 													{/if}
 
+												</div>
+												<div class="col-md-6">
 													{if ! empty($projectDetail->results)}
 														<div class="card mt-4">
 															<div class="card-header">
@@ -114,22 +131,23 @@
 																	</tr>
 																	</thead>
 																	<tbody>
-																		<tr>
-																			<td>Dimenze (počet sloupců)</td>
-																			<td>{$projectDetail->column_count}</td>
-																		</tr>
-																		<tr>
-																			<td>Rozměr (počet řádků)</td>
-																			<td>{$projectDetail->row_count}</td>
-																		</tr>
-																		<tr>
-																			<td>Velikost souboru</td>
-																			<td>{$projectDetail->file_size} MB</td>
-																		</tr>
-																		<tr>
-																			<td>Délka zpracování</td>
-																			<td>{$projectDetail->results->duration|round:2}s</td>
-																		</tr>
+																	<tr>
+																		<td>Dimenze (počet sloupců)</td>
+																		<td>{$projectDetail->column_count}</td>
+																	</tr>
+																	<tr>
+																		<td>Rozměr (počet řádků)</td>
+																		<td>{$projectDetail->row_count}</td>
+																	</tr>
+																	<tr>
+																		<td>Velikost souboru</td>
+																		<td>{$projectDetail->file_size} MB</td>
+																	</tr>
+																	<tr>
+																		<td>Délka zpracování</td>
+																		<td>{$projectDetail->results->duration|round:2}s</td>
+																	</tr>
+																	{if in_array('expert', $user->roles)}
 																		<tr>
 																			<td>Počet průchodů/epoch</td>
 																			<td>{$projectDetail->results->epochs}</td>
@@ -142,16 +160,14 @@
 																			<td>Dosažena kvantizační chyba</td>
 																			<td>{$projectDetail->results->best_mqe|round:4}</td>
 																		</tr>
+																	{/if}
 																	</tbody>
 																</table>
 															</div>
 														</div>
 													{/if}
 
-													
-												</div>
-												<div class="col-md-6">
-													{if ! empty($projectDetail->som_settings)}
+													{if ! empty($projectDetail->som_settings) && in_array('expert', $user->roles)}
 														<div class="card mt-4">
 															<div class="card-header">
 																<h5>Nastavení parametrů SOM</h5>
@@ -203,8 +219,10 @@
 									<div class="card mt-4">
 										<div class="card-body">
 											<div class="row">
-												{foreach $projectFiles['visualization'] as $type => $files}
+												{foreach $projectFiles['visualization'] as $type => $files}																											
+												{continueIf !in_array('expert', $user->roles) && in_array($type, ['u-matrix', 'parameters-history', 'mqe-history', 'distance', 'cluster'])}
 													{foreach $files as $file}
+
 														<div class="col-md-4">
 															<h5 class="mt-0 mb-1">
 																{if str_contains($type, '_')}
