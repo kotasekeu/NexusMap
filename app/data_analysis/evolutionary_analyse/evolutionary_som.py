@@ -197,7 +197,7 @@ def run_evolution(param_space: dict) -> None:
             # Selekce a reprodukce
             scored_f.sort(key=lambda x: x[0], reverse=True)
             best = scored_f[0]
-            print(f" Nejlepší QE: {best[1]:.6f} | Čas: {best[3]:.2f}s | Fitness: {best[0]:.4f}")
+            print(f" Best QE: {best[1]:.6f} | Time: {best[3]:.2f}s | Fitness: {best[0]:.4f}")
 
             top = [entry[2] for entry in scored_f[:POPULATION_SIZE // 2]]
             next_gen = top[:]

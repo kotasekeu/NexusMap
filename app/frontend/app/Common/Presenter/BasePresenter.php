@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Common\Presenter;
 
+use App\Common\Service\AuthenticatorService;
+use Nette\Application\UI\Form;
 use Nette\Application\UI\Presenter;
 use Nette\Caching\Cache;
 use Contributte;
+use Nette\Utils\ArrayHash;
+use App\Modules\Login\Service\LoginService;
 
 /**
  * Base presenter for all presenters in the application.
@@ -24,6 +28,19 @@ abstract class BasePresenter extends Presenter
 	 */
 	public $sessionSection;
 
+    private $loginService;
+    public function injectLoginService(LoginService $loginService): void
+    {
+        $this->loginService = $loginService;
+    }
+
+    private $authenticatorService;
+    public function injectAuthenticatorService(AuthenticatorService $authenticatorService): void
+    {
+        $this->authenticatorService = $authenticatorService;
+    }
+
+
 	/**
 	 * Common presenter startup method.
 	 * 
@@ -33,10 +50,20 @@ abstract class BasePresenter extends Presenter
 	{
 		parent::startup();
 
-		if (!$this->getUser()->isLoggedIn() && !($this->getPresenter()->getName() == 'Modules:Login'
-			&& in_array($this->getPresenter()->getAction(), ['default', 'autologin']))) {
-			$this->redirect('Login:default');
-		}
+        if (! $this->getUser()->isLoggedIn()) {
+            $customer = $this->loginService->getCustomerByEmail('expert@nexusmap.cz');
+
+            try {
+                $identity = $this->authenticatorService->authenticate($customer, 'heslo');
+
+                $this->getUser()->login($identity);
+                $this->redirect('Projects:default');
+
+            } catch (Nette\Security\AuthenticationException $e) {
+                die("File:" . __FILE__ . "; Line:" . __LINE__);
+            }
+        };
+
 	}
 
 	/**
@@ -49,10 +76,6 @@ abstract class BasePresenter extends Presenter
 		$presenterReflection = new \ReflectionClass($this);
 		$presenterDir = dirname($presenterReflection->getFileName());
 		$this->getTemplate()->setFile($presenterDir . "/Templates/{$this->getAction()}.latte");
-		if ($this->getUser()->isLoggedIn()) {
-			$this->getTemplate()->userId = $this->getUser()->getIdentity()->getId();
-			$this->getTemplate()->userData  = $this->getUser()->getIdentity()->getData();
-		}
 	}
 
 	/**

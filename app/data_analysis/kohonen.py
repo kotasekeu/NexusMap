@@ -289,7 +289,7 @@ class KohonenSOM:
             if should_compute_mqe:
                 # Výpočet MQE
                 codebook_vectors = self.weights.reshape(-1, self.dim)
-                bmu_indexes = np.array([self.find_bmu(x)[0] * self.n + self.find_bmu(x)[1] for x in data])
+                bmu_indexes = np.array([r * self.n + c for r, c in (self.find_bmu(x) for x in data)])
                 _, total_qe = self.compute_quantization_error(data, codebook_vectors, bmu_indexes, (self.m, self.n), compute_neuron_map=False)
 
                 # Ukládání historie MQE a parametrů
@@ -315,7 +315,7 @@ class KohonenSOM:
                         break
 
             # Logování průběhu
-            if epoch % 100 == 0:
+            if epoch % 500 == 0:
                 elapsed_time = datetime.now() - start_time
                 if total_qe is not None:
                     log_message(f"{epoch}|{total_samples}|{samples_per_batch}|{current_radius:.4f}|{current_lr:.6f}|{total_qe:.6f} (čas: {str(elapsed_time).split('.')[0]})")
