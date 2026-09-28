@@ -38,7 +38,7 @@ def get_decay_value(t, N, start, end, decay_type, growth_g=1.0):
     else:
         raise ValueError(f"Unknown decay_type: {decay_type}")
 
-# Nastavení
+# Settings
 N = 10_000
 t_vals = np.arange(N)
 growth_g = 5.0
@@ -58,8 +58,8 @@ def plot_decay(title, start, end, direction='both', filename='krivka.png'):
         vals = [get_decay_value(t, N, start, end, decay_type, growth_g) for t in t_vals]
         plt.plot(t_vals, vals, label=decay_type)
     plt.title(title)
-    plt.xlabel("Počet průchodů datovým souborem")
-    plt.ylabel("Hodnota parametr")
+    plt.xlabel("Number of passes through the dataset")
+    plt.ylabel("Parameter value")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
     plt.tight_layout()
@@ -67,31 +67,31 @@ def plot_decay(title, start, end, direction='both', filename='krivka.png'):
     plt.close()
 
 
-plot_decay("Parametr učení (0.9 → 0.1) - poklesové křivky", 0.9, 0.1, direction='drop', filename="krivka_lr.png")
-plot_decay("Poloměr okolí (20 → 1) - poklesové křivky", 20, 1, direction='drop', filename="krivka_radius.png")
-plot_decay("Počet zpracovaných vstupních vektorů při jednom průchodu [%] (0.01 → 100)", 0.01, 100, direction='growth', filename="krivka_batch.png")
+plot_decay("Learning rate (0.9 → 0.1) - decay curves", 0.9, 0.1, direction='drop', filename="krivka_lr.png")
+plot_decay("Neighborhood radius (20 → 1) - decay curves", 20, 1, direction='drop', filename="krivka_radius.png")
+plot_decay("Input vectors processed per pass [%] (0.01 → 100)", 0.01, 100, direction='growth', filename="krivka_batch.png")
 
 
-# Nová funkce pro vykreslení variant decay s různými hodnotami g
+# Plot decay variants with different g values
 def plot_decay_with_g_variants(title, start, end, decay_type, direction, filename):
     plt.figure(figsize=(10, 6))
     for g in [0.1, 1, 5, 15, 25, 50]:
         vals = [get_decay_value(t, N, start, end, decay_type, growth_g=g) for t in t_vals]
         plt.plot(t_vals, vals, label=f"{decay_type} (g={g})")
     plt.title(f"{title}")
-    plt.xlabel("Počet průchodů datovým souborem")
-    plt.ylabel("Hodnota parametru")
+    plt.xlabel("Number of passes through the dataset")
+    plt.ylabel("Parameter value")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.legend()
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
     plt.close()
 
-# Vykreslení variant decay s různým g
-plot_decay_with_g_variants("Parametr učení / Poloměr okolí", 0.9, 0.1, "exp-drop", "drop", "krivka_exp_drop_g.png")
-plot_decay_with_g_variants("Parametr učení / Poloměr okolí", 0.9, 0.1, "log-drop", "drop", "krivka_log_drop_g.png")
-plot_decay_with_g_variants("Růstové křivky vývoje počtu aktualizovaných vstupních vektorů při jednom průchodu datovým souborem.", 0.01, 100, "exp-growth", "growth", "krivka_exp_growth_g.png")
-plot_decay_with_g_variants("Růstové křivky vývoje počtu aktualizovaných vstupních vektorů při jednom průchodu datovým souborem.", 0.01, 100, "log-growth", "growth", "krivka_log_growth_g.png")
+# Plot decay variants with different g
+plot_decay_with_g_variants("Learning rate / Neighborhood radius", 0.9, 0.1, "exp-drop", "drop", "krivka_exp_drop_g.png")
+plot_decay_with_g_variants("Learning rate / Neighborhood radius", 0.9, 0.1, "log-drop", "drop", "krivka_log_drop_g.png")
+plot_decay_with_g_variants("Growth curves of the number of updated input vectors per pass through the dataset.", 0.01, 100, "exp-growth", "growth", "krivka_exp_growth_g.png")
+plot_decay_with_g_variants("Growth curves of the number of updated input vectors per pass through the dataset.", 0.01, 100, "log-growth", "growth", "krivka_log_growth_g.png")
 
 def plot_combined_growth_with_g(title, start, end, filename):
     plt.figure(figsize=(10, 6))
@@ -100,12 +100,12 @@ def plot_combined_growth_with_g(title, start, end, filename):
             vals = [get_decay_value(t, N, start, end, decay_type, growth_g=g) for t in t_vals]
             plt.plot(t_vals, vals, label=f"{decay_type} (g={g})")
     plt.title(f"{title}")
-    plt.xlabel("Počet průchodů datovým souborem")
-    plt.ylabel("Počet zpracovaných vstupních vektorů [%] v jednom průchodu")
+    plt.xlabel("Number of passes through the dataset")
+    plt.ylabel("Input vectors processed per pass [%]")
     plt.grid(True, linestyle='--', alpha=0.5)
     plt.tight_layout()
     plt.savefig(filename, dpi=300)
-    # Oddělená legenda
+    # Separate legend
     handles, labels = plt.gca().get_legend_handles_labels()
     fig_legend = plt.figure(figsize=(8, 2))
     fig_legend.legend(handles, labels, loc='center', ncol=3)
@@ -114,4 +114,4 @@ def plot_combined_growth_with_g(title, start, end, filename):
     plt.close(fig_legend)
     plt.close()
 
-plot_combined_growth_with_g("Růstové křivky vývoje počtu aktualizovaných vstupních vektorů při jednom průchodu datovým souborem.", 0.01, 100, "krivka_growth_combined.png")
+plot_combined_growth_with_g("Growth curves of the number of updated input vectors per pass through the dataset.", 0.01, 100, "krivka_growth_combined.png")

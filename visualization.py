@@ -15,7 +15,7 @@ from sklearn.decomposition import PCA
 
 def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
     """
-    Vygeneruje souřadnice center neuronů pro čtvercovou nebo hexa mřížku.
+    Generates neuron center coordinates for a square or hex grid.
     Returns arrays X, Y of length m*n.
     """
     X, Y = [], []
@@ -39,7 +39,7 @@ def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
 def _set_axes_limits(ax, m, n, map_type):
     X, Y = _grid_coordinates(m, n, map_type)
     if map_type == 'hex':
-        # pro hexagon: šířka = 1, výška = √3/2*2 = √3 ≈1.732
+        # for a hexagon: width = 1, height = √3/2*2 = √3 ≈1.732
         dx = 0.5
         dy = np.sqrt(3) / 2
     else:
@@ -51,12 +51,12 @@ def _set_axes_limits(ax, m, n, map_type):
 
 
 def save_quantization_error_to_json(original_neuron_error_map: np.ndarray, total_quantization_error: float, output_path: str):
-    """Uloží kvantizační chyby do JSON souboru.
+    """Saves quantization errors to a JSON file.
 
     Args:
-        original_neuron_error_map (np.ndarray): Mapa kvantizačních chyb pro každý neuron (nenormalizovaná).
-        total_quantization_error (float): Celková kvantizační chyba.
-        output_path (str): Kořenová cesta pro výstupní soubory.
+        original_neuron_error_map (np.ndarray): Quantization error map for each neuron (not normalized).
+        total_quantization_error (float): Total quantization error.
+        output_path (str): Root path for output files.
     """
     json_dir = os.path.join(output_path, 'json')
     os.makedirs(json_dir, exist_ok=True)
@@ -77,45 +77,45 @@ def save_quantization_error_to_json(original_neuron_error_map: np.ndarray, total
 
 def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str = 'viridis', save_legend: bool = True):
     """
-    Unified Distance Matrix: vykreslí průměrné vzdálenosti mezi sousedy neuronů.
+    Unified Distance Matrix: plots the average distances between neighboring neurons.
 
     Args:
-        som: Instance SOM s vlastnostmi m,n a weights
-        output_file: Cesta k výstupnímu souboru
-        map_type: Typ mřížky ('square' nebo 'hex')
-        cmap: Název colormapy
-        save_legend: Zda generovat samostatnou legendu
+        som: SOM instance with m, n and weights attributes
+        output_file: Path to the output file
+        map_type: Grid type ('square' or 'hex')
+        cmap: Colormap name
+        save_legend: Whether to generate a separate legend
     """
-    # Kontroluje, zda existuje složka pro výstupní soubor
+    # Ensure the output folder exists
     check_folder(output_file)
-    # Získá rozměry mřížky SOM
-    m, n = som.m, som.n    
-    # Přetváří váhy SOM do 3D pole pro snadnější přístup
+    # Get the SOM grid dimensions
+    m, n = som.m, som.n
+    # Reshape the SOM weights into a 3D array for easier access
     weights = som.weights.reshape(m, n, -1)
-    # Inicializuje pole pro uložení průměrných vzdáleností
+    # Initialize the array for the average distances
     u = np.zeros((m, n))
-    # Iteruje přes všechny neurony v mřížce
+    # Iterate over all neurons in the grid
     for i in range(m):
         for j in range(n):
-            # Inicializuje seznam sousedních neuronů
+            # Initialize the list of neighboring neurons
             neigh = []
-            # Iteruje přes všechny čtyři sousedy (nahoru, dolů, doleva, doprava)
+            # Iterate over all four neighbors (up, down, left, right)
             for di, dj in ((1,0),(-1,0),(0,1),(0,-1)):
-                # Vypočítává pozice sousedního neuronu
+                # Compute the neighbor's position
                 ni, nj = i+di, j+dj
-                # Kontroluje, zda sousední neuron leží uvnitř mřížky
+                # Check that the neighbor lies inside the grid
                 if 0 <= ni < m and 0 <= nj < n:
-                    # Vypočítává vzdálenost mezi dvěma sousedními neurony
+                    # Compute the distance between the two neighboring neurons
                     neigh.append(np.linalg.norm(weights[i,j] - weights[ni,nj]))
-            # Vypočítává průměrnou vzdálenost od sousedních neuronů
+            # Compute the average distance to the neighbors
             u[i,j] = np.mean(neigh) if neigh else 0
 
-    # Získání rozsahu hodnot pro colorbar
+    # Get the value range for the colorbar
     vmin, vmax = u.min(), u.max()
 
-    # Generuje souřadnice center neuronů podle typu mřížky
+    # Generate neuron center coordinates for the grid type
     X, Y = _grid_coordinates(m, n, map_type)
-    # Vytváří novou figuru a osy pro vykreslení
+    # Create a new figure and axes for plotting
     fig, ax = plt.subplots(figsize=(20,12))
 
     element_size = get_size_of_point(m,n,map_type)
@@ -129,7 +129,7 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    # Generování samostatné legendy
+    # Generate a separate legend
     if save_legend:
         generate_legend(
             vmin=vmin,
@@ -144,16 +144,16 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
                     map_type: str = 'square', cmap: str = 'Blues',
                     show_numbers: bool = False, save_legend: bool = True):
     """
-    Heatmap návštěvnosti neuronů: velikost/barva bodu podle četnosti vzorků.
+    Neuron hit heatmap: point size/color by sample frequency.
 
     Args:
-        som: Instance SOM s vlastnostmi m,n
-        data: Vstupní data
-        output_file: Cesta k výstupnímu souboru
-        map_type: Typ mřížky ('square' nebo 'hex')
-        cmap: Název colormapy
-        show_numbers: Zda zobrazit počty vzorků v buňkách
-        save_legend: Zda generovat samostatnou legendu
+        som: SOM instance with m, n attributes
+        data: Input data
+        output_file: Path to the output file
+        map_type: Grid type ('square' or 'hex')
+        cmap: Colormap name
+        show_numbers: Whether to show sample counts in the cells
+        save_legend: Whether to generate a separate legend
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -162,7 +162,7 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
         i, j = som.find_bmu(sample)
         counts[(i,j)] += 1
 
-    # hodnoty counts v pořadí i=0..m-1, j=0..n-1
+    # counts values in order i=0..m-1, j=0..n-1
     vals = np.array([counts[(i,j)] for i in range(m) for j in range(n)])
     vmin, vmax = vals.min(), vals.max()
 
@@ -186,7 +186,7 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    # Generování samostatné legendy
+    # Generate a separate legend
     if save_legend:
         generate_legend(
             vmin=vmin,
@@ -205,42 +205,42 @@ def generate_component_plane(
     cmap: str = 'coolwarm',
     column_name: str = None,
     save_legend: bool = True,
-    data_mean: float = None,
-    data_std: float = None
+    data_min: float = None,
+    data_range: float = None
 ):
     """
-    Vykreslí komponentovou rovinu (váhový rozměr) do output_file (bez legendy) a
-    pokud save_legend, vytvoří samostatný soubor legendy v téže složce.
+    Plots a component plane (weight dimension) to output_file (without legend) and,
+    if save_legend, creates a separate legend file in the same folder.
 
     Args:
-        som: Instance SOM s vlastnostmi m,n,dim a .weights
-        component: Index dimenze váhového vektoru
-        output_file: Cesta k výstupnímu obrázku komponentové mapy
-        map_type: 'square' nebo 'hex'
-        cmap: Název matplotlib colormap
-        column_name: Popisek legendy (název atributu)
-        save_legend: Zda generovat samostatný obrázek legendy
-        data_mean: Střední hodnota pro denormalizaci
-        data_std: Směrodatná odchylka pro denormalizaci
+        som: SOM instance with m, n, dim and .weights attributes
+        component: Index of the weight vector dimension
+        output_file: Path to the output component map image
+        map_type: 'square' or 'hex'
+        cmap: Matplotlib colormap name
+        column_name: Legend label (attribute name)
+        save_legend: Whether to generate a separate legend image
+        data_min: Original column minimum for denormalization
+        data_range: Original column range (max - min) for denormalization
     """
-    # Vytvoření cílové složky
+    # Create the target folder
     os.makedirs(os.path.dirname(output_file), exist_ok=True)
 
-    # Načtení hodnot komponenty
+    # Load the component values
     m, n, dim = som.m, som.n, som.dim
     vals = som.weights.reshape(-1, dim)[:, component]
-    # nejprve vezmeme normalizované váhy
+    # first take the normalized weights
     vals_norm = som.weights.reshape(-1, dim)[:, component]
-    if data_mean is not None and data_std is not None:
-        vals = vals_norm * data_std + data_mean
+    if data_min is not None and data_range is not None:
+        vals = vals_norm * data_range + data_min
     else:
         vals = vals_norm
 
-    # Škálování barev podle reálných rozsahů
+    # Scale colors to the real value ranges
     vmin, vmax = vals.min(), vals.max()
     norm = Normalize(vmin=vmin, vmax=vmax)
 
-    # 1) Vykreslení mapy bez legendy
+    # 1) Plot the map without a legend
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20, 12))
     sc = ax.scatter(
@@ -257,11 +257,11 @@ def generate_component_plane(
     ax.axis('off')
     ax.margins(0)
     plt.tight_layout()
-    # uložíme mapu…
+    # save the map…
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close(fig)
 
-    # 2) Vykreslení samostatné legendy
+    # 2) Plot a separate legend
     if save_legend:
         generate_legend(
             vmin=vmin,
@@ -274,7 +274,7 @@ def generate_component_plane(
 def generate_cluster_map(som, clusters: dict, output_file: str,
                         map_type: str = 'square', palette: list = None):
     """
-    Přiřadí každé buňce barvu podle jejího clusteru a zobrazí pozici každého prvku.
+    Assigns each cell a color by its cluster and shows the position of each element.
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -296,7 +296,7 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
     element_size = get_size_of_point(m,n,map_type)
     sc = ax.scatter(X, Y, c=labels.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
 
-    # Přidání popisků pozic neuronů
+    # Add neuron position labels
     for i in range(m):
         for j in range(n):
             ax.text(X[i*n+j], Y[i*n+j], f'({i},{j})', ha='center', va='center', size=6)
@@ -319,35 +319,35 @@ def generate_legend(
     figsize: tuple = (2, 12),
     legend_type: str = 'colorbar'
 ) -> None:
-    """Generuje samostatnou legendu pro vizualizace.
-    
+    """Generates a separate legend for visualizations.
+
     Args:
-        categories (dict, optional): Slovník kategorií pro kategorickou legendu {id: label}
-        vmin (float, optional): Minimální hodnota pro colorbar
-        vmax (float, optional): Maximální hodnota pro colorbar
-        output_file (str): Cesta k výstupnímu souboru mapy
-        cmap (str): Název colormapy
-        label (str, optional): Popisek legendy
-        figsize (tuple): Velikost figury (šířka, výška)
-        legend_type (str): Typ legendy ('colorbar' nebo 'categorical')
+        categories (dict, optional): Category dictionary for a categorical legend {id: label}
+        vmin (float, optional): Minimum value for the colorbar
+        vmax (float, optional): Maximum value for the colorbar
+        output_file (str): Path to the map's output file
+        cmap (str): Colormap name
+        label (str, optional): Legend label
+        figsize (tuple): Figure size (width, height)
+        legend_type (str): Legend type ('colorbar' or 'categorical')
     """
-    # Nastavení fontu pro matplotlib
+    # Set the matplotlib font
     plt.rcParams['font.family'] = 'DejaVu Sans'
-    
-    # Vytvoření cesty pro legendu
+
+    # Build the legend path
     output_dir = os.path.dirname(output_file)
     legends_dir = os.path.join(output_dir, 'legends')
     os.makedirs(legends_dir, exist_ok=True)
     
-    # Vytvoření názvu souboru pro legendu
+    # Build the legend file name
     base_name = os.path.basename(output_file)
     legend_file = os.path.join(legends_dir, base_name)
 
-    # Vytvoření figury
+    # Create the figure
     fig = plt.figure(figsize=figsize)
 
     if legend_type == 'colorbar':
-        # Vytvoření colorbar legendy
+        # Create a colorbar legend
         cax = fig.add_axes([0.35, 0.02, 0.3, 0.96])
         norm = Normalize(vmin=vmin, vmax=vmax)
         cbar = fig.colorbar(
@@ -359,19 +359,19 @@ def generate_legend(
             label=label
         )
 
-        # Nastavení tiků
+        # Set ticks
         orig_ticks = cbar.get_ticks()
         middle_ticks = [t for t in orig_ticks if vmin < t < vmax]
         new_ticks = [vmin] + middle_ticks + [vmax]
         cbar.set_ticks(new_ticks)
         cbar.set_ticklabels([f"{t:.2f}" for t in new_ticks])
 
-        # Nastavení rozsahu a pozice
+        # Set range and position
         cbar.ax.set_ylim(vmin, vmax)
         cbar.ax.yaxis.set_label_position('right')
         cbar.ax.yaxis.tick_right()
 
-        # Úprava vzhledu
+        # Adjust appearance
         for spine in ['top', 'bottom', 'left', 'right']:
             cax.spines[spine].set_visible(False)
         cax.tick_params(axis='y', which='both', length=5, labelsize=10)
@@ -379,11 +379,11 @@ def generate_legend(
     else:  # categorical
         ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
         
-        # Vytvoření barevné palety
+        # Create the color palette
         cmap = plt.get_cmap(cmap)
         n_categories = len(categories)
-        
-        # Vytvoření patches pro každou kategorii
+
+        # Create patches for each category
         handles = [
             Patch(
                 facecolor=cmap(i/n_categories),
@@ -393,7 +393,7 @@ def generate_legend(
             for i in range(n_categories)
         ]
         
-        # Vytvoření legendy
+        # Create the legend
         ax.legend(
             handles=handles,
             loc='center',
@@ -403,7 +403,7 @@ def generate_legend(
         )
         ax.axis('off')
 
-    # Uložení a zavření
+    # Save and close
     plt.savefig(legend_file, bbox_inches='tight', pad_inches=0.02)
     plt.close(fig)
 
@@ -426,7 +426,7 @@ def plot_pie_map_from_json(
 
     fig, ax = plt.subplots(figsize=(20, 12))
     
-    # Přidání základního rastru světle šedou barvou
+    # Add the base grid in light gray
     element_size = get_size_of_point(m,n,map_type)
     ax.scatter(X, Y, c='#FBFBFB', s=element_size, marker='h' if map_type == 'hex' else 's')
     
@@ -438,12 +438,12 @@ def plot_pie_map_from_json(
         if total == 0:
             continue
 
-        # spočítat podíly
+        # compute fractions
         fracs = [cnts[k] / total for k in cat_keys]
         nonzero = [f for f in fracs if f > 0]
 
         if len(nonzero) == 1:
-            # jediná kategorie → plný kruh
+            # single category → full circle
             k0 = fracs.index(1.0)
             circ = Circle(
                 (x, y), radius,
@@ -452,7 +452,7 @@ def plot_pie_map_from_json(
             )
             ax.add_patch(circ)
         else:
-            # více segmentů
+            # multiple segments
             angle = 90
             for k0, f in enumerate(fracs):
                 if f <= 0:
@@ -475,7 +475,7 @@ def plot_pie_map_from_json(
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    # Generování samostatné legendy pro koláčový graf
+    # Generate a separate legend for the pie chart
     generate_legend(
         categories=data['categories'],
         output_file=output_file,
@@ -499,7 +499,7 @@ def get_size_of_point(m,n,map_type):
         elif m == 30:
             point_size = 900
         else:
-            point_size = 2300  # výchozí hodnota pro hex
+            point_size = 2300  # default for hex
     else:
         if m == 10:
             point_size = 5500
@@ -508,26 +508,26 @@ def get_size_of_point(m,n,map_type):
         elif m == 30:
             point_size = 450
         else:
-            point_size = 1100  # výchozí hodnota pro square
+            point_size = 1100  # default for square
     return point_size
 
 def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, output_file: str,
                                     map_type: str = 'square', cmap: str = 'magma', save_legend: bool = True):
     """
-    Zobrazení průměrné kvantizační chyby na neuron z předpočítané mapy chyb.
+    Displays the mean quantization error per neuron from a precomputed error map.
 
     Args:
-        som: Instance SOM s vlastnostmi m,n
-        neuron_error_map: Předpočítaná mapa chyb
-        output_file: Cesta k výstupnímu souboru
-        map_type: Typ mřížky ('square' nebo 'hex')
-        cmap: Název colormapy
-        save_legend: Zda generovat samostatnou legendu
+        som: SOM instance with m, n attributes
+        neuron_error_map: Precomputed error map
+        output_file: Path to the output file
+        map_type: Grid type ('square' or 'hex')
+        cmap: Colormap name
+        save_legend: Whether to generate a separate legend
     """
     check_folder(output_file)
     m, n = som.m, som.n
-    
-    # Normalizace hodnot do rozsahu [0,1]
+
+    # Normalize values to the [0,1] range
     max_dist = np.max(neuron_error_map)
     if max_dist > 0:
         neuron_error_map = neuron_error_map / max_dist
@@ -548,77 +548,77 @@ def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, outp
     plt.savefig(output_file, bbox_inches='tight', pad_inches=0)
     plt.close()
 
-    # Generování samostatné legendy
+    # Generate a separate legend
     if save_legend:
         generate_legend(
             vmin=vmin,
             vmax=vmax,
             output_file=output_file,
             cmap=cmap,
-            label='Průměrná kvantizační chyba'
+            label='Mean quantization error'
         )
 
 def sanitize_filename(filename: str) -> str:
-    """Převede název sloupce na bezpečný název souboru.
-    
+    """Converts a column name into a safe file name.
+
     Args:
-        filename (str): Původní název
-        
+        filename (str): Original name
+
     Returns:
-        str: Bezpečný název souboru
+        str: Safe file name
     """
-    # Nahrazení nebezpečných znaků
+    # Replace unsafe characters
     filename = filename.lower()
     filename = filename.replace(' ', '_')
-    # Odstranění diakritiky
+    # Remove diacritics
     filename = ''.join(c for c in filename if c.isalnum() or c in '_-')
     return filename
 
 def generate_mqe_history_plot(som, output_file: str):
-    """Vykreslí graf vývoje kvantizační chyby během trénování.
-    
+    """Plots the quantization error evolution during training.
+
     Args:
-        som: Instance SOM s vlastnostmi mqe_history a epochs_history
-        output_file: Cesta k výstupnímu souboru
+        som: SOM instance with mqe_history and epochs_history attributes
+        output_file: Path to the output file
     """
     check_folder(output_file)
-    
+
     fig, ax = plt.subplots(figsize=(12, 6))
-    
-    # Vykreslení křivky MQE
+
+    # Plot the MQE curve
     ax.plot(som.epochs_history, som.mqe_history, 'b-', linewidth=2)
-    
-    # Zvýraznění nejlepší dosažené hodnoty
+
+    # Highlight the best value reached
     best_mqe_idx = np.argmin(som.mqe_history)
     best_mqe = som.mqe_history[best_mqe_idx]
     best_epoch = som.epochs_history[best_mqe_idx]
     ax.plot(best_epoch, best_mqe, 'ro', markersize=10, label=f'Best MQE: {best_mqe:.6f}')
     
-    # Nastavení popisků
+    # Set labels
     ax.set_xlabel('Training Steps', fontsize=12)
     ax.set_ylabel('MQE', fontsize=12)
     ax.set_title('Quantization Error Convergence', fontsize=14, pad=20)
     ax.grid(True, linestyle='--', alpha=0.7)
     ax.legend(fontsize=10)
-    
-    # Nastavení formátu os
+
+    # Set axis format
     ax.tick_params(axis='both', which='major', labelsize=10)
-    
-    # Uložení grafu
+
+    # Save the plot
     plt.tight_layout()
     plt.savefig(output_file, dpi=300, bbox_inches='tight')
     plt.close()
 
 def generate_parameters_history_plot(som, output_file: str):
-    """Vykreslí grafy vývoje parametrů učení během trénování.
-    
+    """Plots the evolution of learning parameters during training.
+
     Args:
-        som: Instance SOM s vlastnostmi learning_rate_history, radius_history a epochs_history
-        output_file: Cesta k výstupnímu souboru
+        som: SOM instance with learning_rate_history, radius_history and epochs_history attributes
+        output_file: Path to the output file
     """
     check_folder(output_file)
-    
-    # Vytvoření grafu s 2 nebo 3 subploty podle dostupnosti batch_size_history
+
+    # Create a figure with 2 or 3 subplots depending on batch_size_history availability
     if hasattr(som, 'batch_size_history') and len(som.batch_size_history) > 0:
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(12, 15))
     else:
@@ -653,18 +653,18 @@ def generate_parameters_history_plot(som, output_file: str):
     plt.close()
 
 def generate_maps(som, data, preprocess_file, output_path, som_settings, settings):
-    # parametr mřížky
-    map_type = som_settings.get("map_type", "square")
+    # grid parameter — take it from the trained SOM so the plots match the training grid
+    map_type = som.map_type
 
-    # vytažení těch sloupců, co jste normalizovali
+    # pull out the columns that were normalized
     df_all = pd.read_csv(f"{output_path}/csv/input.csv", delimiter=',')
-    # vezmi jen numerické sloupce
+    # take only numerical columns
     numeric_cols = settings['numerical_column']
     df_num = df_all[numeric_cols]
 
-    # spočti průměry a odchylky jen těchto sloupců
-    means = df_num.mean().values
-    stds = df_num.std().values
+    # the data were scaled with MinMaxScaler, so min and range are needed to scale weights back
+    mins = df_num.min().values
+    ranges = (df_num.max() - df_num.min()).values
 
     # 1) U‑Matrix
     generate_u_matrix(
@@ -673,7 +673,7 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
         map_type=map_type
     )
 
-    # 2) Hit‑mapa
+    # 2) Hit map
     generate_hit_map(
         som,
         data,
@@ -684,31 +684,31 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
         True
     )
 
-    # 3) Component‑plane pro každou dimenzi
-    # Načteme hlavičku CSV souboru pro názvy sloupců
+    # 3) Component plane for each dimension
+    # Load the CSV header for column names
     df = pd.read_csv(preprocess_file, delimiter=';', nrows=0)
     column_names = df.columns.tolist()
-    
-    # Rozdělení názvů sloupců podle čárek před cyklem
+
+    # Split column names by commas before the loop
     column_names_list = column_names[0].split(',') if column_names else []
-    
+
     for dim in range(som.dim):
-        # Přeskočíme generování mapy pro primary_id sloupec
+        # Skip map generation for the primary_id column
         if dim < len(column_names_list) and column_names_list[dim] == settings['primary_id']:
             continue
 
         col_name = column_names_list[dim] if dim < len(column_names_list) else None
         
-        # Pokud nemáme název sloupce, použijeme číslo dimenze
+        # If there is no column name, use the dimension number
         safe_name = sanitize_filename(col_name) if col_name else f"dimension_{dim}"
 
-        # jestli je tento sloupec numerický, najdi jeho index v numeric_cols
+        # if this column is numerical, find its index in numeric_cols
         if col_name in numeric_cols:
             idx = numeric_cols.index(col_name)
-            data_mean = means[idx]
-            data_std = stds[idx]
+            data_min = mins[idx]
+            data_range = ranges[idx]
         else:
-            data_mean = data_std = None
+            data_min = data_range = None
 
         generate_component_plane(
             som,
@@ -718,11 +718,11 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
             cmap='coolwarm',
             column_name=col_name,
             save_legend=True,
-            data_mean=data_mean,
-            data_std=data_std
+            data_min=data_min,
+            data_range=data_range
         )
 
-    # 4) Cluster‑map
+    # 4) Cluster map
     clusters = json.load(open(f"{output_path}/json/clusters.json", encoding="utf-8"))
     generate_cluster_map(
         som,
@@ -731,11 +731,11 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
         map_type=map_type
     )
 
-    # 5) Distance‑map (prům. kvantizační chyba) a uložení chyb do JSON
+    # 5) Distance map (mean quantization error) and saving errors to JSON
     codebook_vectors = som.weights.reshape(-1, som.dim)
     bmu_indexes = np.array([som.find_bmu(x)[0] * som.n + som.find_bmu(x)[1] for x in data])
     original_neuron_error_map, total_quantization_error = som.compute_quantization_error(data, codebook_vectors, bmu_indexes, (som.m, som.n), compute_neuron_map=True)    
-    # Uložení chyb do JSON
+    # Save errors to JSON
     save_quantization_error_to_json(original_neuron_error_map, total_quantization_error, output_path)
 
     generate_distance_map_from_error_map(
@@ -745,14 +745,14 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
         map_type=map_type
     )
 
-    # 6) Graf vývoje kvantizační chyby
+    # 6) Quantization error evolution plot
     if hasattr(som, 'mqe_history') and len(som.mqe_history) > 0:
         generate_mqe_history_plot(
             som,
             f"{output_path}/visualization/mqe-history.png"
         )
 
-    # 7) Graf vývoje parametrů učení
+    # 7) Learning parameters evolution plot
     if (hasattr(som, 'learning_rate_history') and len(som.learning_rate_history) > 0 and
         hasattr(som, 'radius_history') and len(som.radius_history) > 0):
         
@@ -761,12 +761,12 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
             f"{output_path}/visualization/parameters-history.png"
         )
     else:
-        print("Debug - Chybí historie parametrů:")
-        print(f"Learning rate history existuje: {hasattr(som, 'learning_rate_history')}, délka: {len(som.learning_rate_history) if hasattr(som, 'learning_rate_history') else 0}")
-        print(f"Radius history existuje: {hasattr(som, 'radius_history')}, délka: {len(som.radius_history) if hasattr(som, 'radius_history') else 0}")
-        print(f"Batch size history existuje: {hasattr(som, 'batch_size_history')}, délka: {len(som.batch_size_history) if hasattr(som, 'batch_size_history') else 0}")
+        print("Debug - Missing parameter history:")
+        print(f"Learning rate history exists: {hasattr(som, 'learning_rate_history')}, length: {len(som.learning_rate_history) if hasattr(som, 'learning_rate_history') else 0}")
+        print(f"Radius history exists: {hasattr(som, 'radius_history')}, length: {len(som.radius_history) if hasattr(som, 'radius_history') else 0}")
+        print(f"Batch size history exists: {hasattr(som, 'batch_size_history')}, length: {len(som.batch_size_history) if hasattr(som, 'batch_size_history') else 0}")
 
-    # Vykreslení jednotlivých kategoriálních sloupců
+    # Plot individual categorical columns
     for column_name in settings['categorical_column']:
         if not any(column_name in group for group in settings.get('categorical_groups', {}).values()):
             plot_pie_map_from_json(
@@ -776,7 +776,7 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
                 map_type
             )
     
-    # Vykreslení skupin kategoriálních sloupců
+    # Plot groups of categorical columns
     for group_name, columns in settings.get('categorical_groups', {}).items():
         json_files = [f"{output_path}/json/pie_data_{col}.json" for col in columns]
         combined_data = {
@@ -784,48 +784,48 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
             'counts': defaultdict(lambda: defaultdict(int))
         }
         
-        # Spojení dat ze všech JSON souborů ve skupině
+        # Merge data from all JSON files in the group
         for json_file in json_files:
             with open(json_file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                # Přidání kategorií s prefixem názvu sloupce
+                # Add categories prefixed with the column name
                 column_name = os.path.basename(json_file).replace('pie_data_', '').replace('.json', '')
                 for k, v in data['categories'].items():
-                    # Zachováme původní číselné klíče, ale přidáme prefix pro rozlišení
+                    # Keep the original numeric keys, but add a prefix to distinguish them
                     combined_data['categories'][f"{column_name}_{k}"] = f"{column_name}: {v}"
-                
-                # Spojení počtů
+
+                # Merge counts
                 for pos, counts in data['counts'].items():
                     for k, v in counts.items():
                         combined_data['counts'][pos][f"{column_name}_{k}"] = v
         
-        # Převedení dat do formátu, který očekává plot_pie_map_from_json
+        # Convert data to the format expected by plot_pie_map_from_json
         formatted_data = {
             'categories': {},
             'counts': {}
         }
         
-        # Seřazení kategorií podle číselné části klíče
+        # Sort categories by the numeric part of the key
         sorted_keys = sorted(combined_data['categories'].keys(), 
                            key=lambda x: int(x.split('_')[-1]))
         
-        # Přečíslování kategorií od 1
+        # Renumber categories starting from 1
         for new_key, old_key in enumerate(sorted_keys, 1):
             formatted_data['categories'][str(new_key)] = combined_data['categories'][old_key]
             
-            # Přepočítání počtů pro nové klíče
+            # Recompute counts for the new keys
             for pos in combined_data['counts']:
                 if pos not in formatted_data['counts']:
                     formatted_data['counts'][pos] = {}
                 if old_key in combined_data['counts'][pos]:
                     formatted_data['counts'][pos][str(new_key)] = combined_data['counts'][pos][old_key]
         
-        # Uložení přeformátovaných dat do dočasného JSON souboru
+        # Save the reformatted data to a temporary JSON file
         temp_json = f"{output_path}/json/temp_pie_data_{group_name}.json"
         with open(temp_json, 'w', encoding='utf-8') as f:
             json.dump(formatted_data, f, ensure_ascii=False)
         
-        # Vykreslení pomocí existující metody
+        # Plot using the existing function
         plot_pie_map_from_json(
             som,
             temp_json,
@@ -833,7 +833,7 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
             map_type
         )
 
-    # 8) Topografická mapa: kontrola zachování topografie (původní data vs. organizovaná SOM mřížka)
+    # 8) Topographic map: check topology preservation (original data vs. organized SOM grid)
     topology_projection = compute_topology_projection(som, data, map_type=map_type)
     if topology_projection is not None:
         generate_topology_map(
@@ -851,7 +851,7 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
             map_type=map_type
         )
 
-    # 9) Topografická mapa 3D (rotovatelná) — vyžaduje alespoň 3 dimenze vstupního prostoru
+    # 9) 3D topographic map (rotatable) — requires at least 3 input space dimensions
     topology_projection_3d = compute_topology_projection(som, data, map_type=map_type, n_components=3)
     if topology_projection_3d is not None:
         generate_topology_map_html3d(
@@ -865,18 +865,18 @@ def generate_maps(som, data, preprocess_file, output_path, som_settings, setting
 
 def _topology_grid_edges(m: int, n: int, map_type: str = 'square') -> list:
     """
-    Vrátí seznam hran (dvojic sousedních neuronů) mřížky SOM. Používá stejnou
-    konvenci sousedství jako `_grid_coordinates` (offsetové řádky pro hex),
-    aby si topografická mapa a ostatní mapy v tomto souboru vizuálně
-    odpovídaly.
+    Returns the list of edges (pairs of neighboring neurons) of the SOM grid.
+    Uses the same neighborhood convention as `_grid_coordinates` (offset rows
+    for hex) so that the topographic map visually matches the other maps
+    in this file.
 
     Args:
-        m: Počet řádků mřížky
-        n: Počet sloupců mřížky
-        map_type: Typ mřížky ('square' nebo 'hex')
+        m: Number of grid rows
+        n: Number of grid columns
+        map_type: Grid type ('square' or 'hex')
 
     Returns:
-        list: Seznam hran ve tvaru [((i1,j1),(i2,j2)), ...]
+        list: List of edges in the form [((i1,j1),(i2,j2)), ...]
     """
     edges = []
     for i in range(m):
@@ -885,7 +885,7 @@ def _topology_grid_edges(m: int, n: int, map_type: str = 'square') -> list:
                 edges.append(((i, j), (i, j + 1)))
             if i + 1 < m:
                 if map_type == 'hex':
-                    # Sudé/liché řádky jsou v `_grid_coordinates` posunuty o půl buňky
+                    # Even/odd rows are shifted by half a cell in `_grid_coordinates`
                     neighbours = (j - 1, j) if i % 2 == 0 else (j, j + 1)
                     for nj in neighbours:
                         if 0 <= nj < n:
@@ -897,16 +897,16 @@ def _topology_grid_edges(m: int, n: int, map_type: str = 'square') -> list:
 
 def _topology_edge_lengths(weights_proj_grid: np.ndarray, edges: list, threshold_pct: float = 85):
     """
-    Spočítá délku každé hrany mřížky v promítnutém (2D) prostoru a označí
-    hrany, které jsou neobvykle protažené (nad `threshold_pct` percentilem).
+    Computes the length of each grid edge in the projected (2D) space and flags
+    edges that are unusually stretched (above the `threshold_pct` percentile).
 
-    Protažená/zkřížená hrana znamená, že dva sousední neurony v mřížce SOM
-    reprezentují ve skutečnosti velmi odlišná data — tedy že síť na daném
-    místě neuchovala topografii vstupního prostoru (nebo jde o artefakt
-    projekce do 2D).
+    A stretched/crossed edge means that two neighboring neurons in the SOM grid
+    actually represent very different data — i.e. the network did not preserve
+    the topology of the input space at that spot (or it is an artifact of the
+    2D projection).
 
     Returns:
-        tuple: (délky hran, boolean maska protažených hran)
+        tuple: (edge lengths, boolean mask of stretched edges)
     """
     if not edges:
         return np.array([]), np.array([], dtype=bool)
@@ -923,36 +923,36 @@ def compute_topology_projection(som, data: np.ndarray, map_type: str = 'square',
                                 n_components: int = 2, sample_limit: int = 3000,
                                 random_seed: int = 42) -> dict | None:
     """
-    Připraví společnou 2D/3D projekci (PCA) původních vstupních dat a
-    naučených vah neuronů SOM a dopočítá geometrii mřížky nad touto projekcí.
+    Prepares a joint 2D/3D projection (PCA) of the original input data and
+    the trained SOM neuron weights, and computes the grid geometry on top of it.
 
-    Data i váhy jsou promítnuty pomocí jedné a téže PCA (natrénované na obou
-    dohromady), takže výsledek jde přímo vizuálně porovnat: shluk bodů jsou
-    původní data, mřížka spojená hranami je „organizovaná" reprezentace SOM.
-    Pokud síť zachovala topografii, mřížka kopíruje tvar shluku beze
-    zkřížení; protažené/zkřížené hrany ukazují na topologickou chybu.
+    Data and weights are projected with one and the same PCA (fitted on both
+    together), so the result can be compared visually: the point cloud is the
+    original data, the edge-connected grid is the "organized" SOM representation.
+    If the network preserved the topology, the grid follows the shape of the
+    cloud without crossings; stretched/crossed edges indicate a topological error.
 
     Args:
-        som: Natrénovaná instance SOM s vlastnostmi m, n, dim a weights
-        data: Vstupní (normalizovaná) trénovací data, tvar (n_samples, dim)
-        map_type: Typ mřížky ('square' nebo 'hex')
-        n_components: Počet dimenzí projekce (2 pro 2D mapu, 3 pro rotovatelnou 3D mapu)
-        sample_limit: Maximální počet vykreslovaných vzorků dat (výkon/velikost souboru)
-        random_seed: Seed pro náhodný výběr vzorků při omezení jejich počtu
+        som: Trained SOM instance with m, n, dim and weights attributes
+        data: Input (normalized) training data, shape (n_samples, dim)
+        map_type: Grid type ('square' or 'hex')
+        n_components: Number of projection dimensions (2 for a 2D map, 3 for a rotatable 3D map)
+        sample_limit: Maximum number of data samples to plot (performance/file size)
+        random_seed: Seed for random sample selection when limiting their number
 
     Returns:
-        dict | None: Slovník s klíči 'data_proj', 'weights_proj' (tvar m,n,n_components),
-            'edges', 'lengths', 'stretched' a 'var_exp', nebo None pokud má
-            vstupní prostor méně dimenzí, než požaduje `n_components`
+        dict | None: Dictionary with keys 'data_proj', 'weights_proj' (shape m,n,n_components),
+            'edges', 'lengths', 'stretched' and 'var_exp', or None if the input
+            space has fewer dimensions than `n_components` requires
     """
     m, n, dim = som.m, som.n, som.dim
     weights_flat = som.weights.reshape(-1, dim)
 
     if dim < n_components:
-        print(f"Topografická mapa: vynechána, vstupní prostor má méně než {n_components} dimenze.")
+        print(f"Topographic map: skipped, the input space has fewer than {n_components} dimensions.")
         return None
 
-    # Omezení počtu vykreslovaných vzorků kvůli výkonu a velikosti výstupních souborů
+    # Limit the number of plotted samples for performance and output file size
     if len(data) > sample_limit:
         rng = np.random.default_rng(random_seed)
         sample_idx = rng.choice(len(data), size=sample_limit, replace=False)
@@ -960,7 +960,7 @@ def compute_topology_projection(som, data: np.ndarray, map_type: str = 'square',
     else:
         data_sample = data
 
-    # Společná PCA nad daty i vahami, aby obě strany sdílely stejný souřadný systém
+    # Joint PCA over data and weights so both share the same coordinate system
     n_components = min(n_components, weights_flat.shape[1])
     pca = PCA(n_components=n_components)
     combined = np.vstack([data_sample, weights_flat])
@@ -985,17 +985,17 @@ def compute_topology_projection(som, data: np.ndarray, map_type: str = 'square',
 def generate_topology_map(som, projection: dict, neuron_error_map: np.ndarray,
                          output_file: str, map_type: str = 'square'):
     """
-    Vykreslí statickou topografickou mapu: shluk původních dat promítnutý do
-    2D (PCA) s přeloženou mřížkou neuronů SOM. Slouží ke kontrole zachování
-    topografie — protažené hrany (oranžově) značí místa, kde síť topografii
-    vstupních dat neuchovala (nebo jde o artefakt projekce do 2D).
+    Plots a static topographic map: the original data cloud projected to
+    2D (PCA) with the SOM neuron grid overlaid. Used to check topology
+    preservation — stretched edges (orange) mark places where the network did
+    not preserve the input data topology (or it is a 2D projection artifact).
 
     Args:
-        som: Natrénovaná instance SOM s vlastnostmi m, n
-        projection: Výstup funkce `compute_topology_projection`
-        neuron_error_map: Mapa kvantizační chyby na neuron (pro obarvení neuronů)
-        output_file: Cesta k výstupnímu souboru PNG
-        map_type: Typ mřížky ('square' nebo 'hex'), jen pro popisek grafu
+        som: Trained SOM instance with m, n attributes
+        projection: Output of `compute_topology_projection`
+        neuron_error_map: Per-neuron quantization error map (for coloring neurons)
+        output_file: Path to the output PNG file
+        map_type: Grid type ('square' or 'hex'), used only for the plot title
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -1013,11 +1013,11 @@ def generate_topology_map(som, projection: dict, neuron_error_map: np.ndarray,
     fig, ax = plt.subplots(figsize=(14, 10))
     ax.set_facecolor('#f8f8f8')
 
-    # Vrstva 1: původní data (mírně průhledná, na pozadí)
+    # Layer 1: original data (slightly transparent, in the background)
     ax.scatter(data_proj[:, 0], data_proj[:, 1], color='#2980b9', alpha=0.15,
               s=4, zorder=1, linewidths=0)
 
-    # Vrstva 2: hrany mřížky, barevně odlišené podle protažení
+    # Layer 2: grid edges, colored by stretch
     for e_idx, ((i1, j1), (i2, j2)) in enumerate(edges):
         ax.plot(
             [weights_proj[i1, j1, 0], weights_proj[i2, j2, 0]],
@@ -1026,33 +1026,33 @@ def generate_topology_map(som, projection: dict, neuron_error_map: np.ndarray,
             lw=lw, alpha=0.6 if stretched[e_idx] else 0.8, zorder=3,
         )
 
-    # Vrstva 3: neurony obarvené podle průměrné kvantizační chyby
+    # Layer 3: neurons colored by mean quantization error
     nqe_flat = neuron_error_map.ravel()
     sc = ax.scatter(
         weights_proj[:, :, 0].ravel(), weights_proj[:, :, 1].ravel(),
         c=nqe_flat, cmap='plasma', s=dot_size, zorder=5,
         edgecolors='white', linewidths=0.4,
     )
-    plt.colorbar(sc, ax=ax, label='Průměrná kvantizační chyba neuronu', shrink=0.75)
+    plt.colorbar(sc, ax=ax, label='Mean quantization error per neuron', shrink=0.75)
 
     var_str = f'PC1 {var_exp[0]:.1%} / PC2 {var_exp[1]:.1%}' if len(var_exp) >= 2 else f'PC1 {var_exp[0]:.1%}'
     n_stretched = int(stretched.sum())
     ax.set_title(
-        f'Topografická mapa — původní data vs. organizovaná SOM mřížka\n'
+        f'Topographic map — original data vs. organized SOM grid\n'
         f'{m}×{n}, {"hex" if map_type == "hex" else "square"}  |  {var_str}  |  '
-        f'protažené hrany: {n_stretched} (možná topologická chyba)',
+        f'stretched edges: {n_stretched} (possible topological error)',
         fontsize=11,
     )
-    ax.set_xlabel('Komponenta 1', fontsize=10)
-    ax.set_ylabel('Komponenta 2', fontsize=10)
+    ax.set_xlabel('Component 1', fontsize=10)
+    ax.set_ylabel('Component 2', fontsize=10)
 
     legend = [
         Line2D([0], [0], marker='o', color='w', markerfacecolor='#2980b9',
-              markersize=8, alpha=0.7, label='Původní data'),
+              markersize=8, alpha=0.7, label='Original data'),
         Line2D([0], [0], marker='o', color='w', markerfacecolor='crimson',
-              markersize=8, label='Neuron (barva = kvantizační chyba)'),
-        Line2D([0], [0], color='#2c3e50', lw=1.2, label='Hrana mřížky (v pořádku)'),
-        Line2D([0], [0], color='#e67e22', lw=1.2, label='Protažená hrana (možná topologická chyba)'),
+              markersize=8, label='Neuron (color = quantization error)'),
+        Line2D([0], [0], color='#2c3e50', lw=1.2, label='Grid edge (OK)'),
+        Line2D([0], [0], color='#e67e22', lw=1.2, label='Stretched edge (possible topological error)'),
     ]
     ax.legend(handles=legend, fontsize=8, loc='best')
 
@@ -1064,17 +1064,17 @@ def generate_topology_map(som, projection: dict, neuron_error_map: np.ndarray,
 def generate_topology_map_html(som, projection: dict, neuron_error_map: np.ndarray,
                               output_file: str, map_type: str = 'square'):
     """
-    Vykreslí interaktivní HTML verzi topografické mapy (Plotly.js přes CDN,
-    bez nutnosti mít v backendu nainstalovaný balíček plotly). Umožňuje
-    přiblížení a najetí myší na neuron pro zobrazení jeho souřadnic a
-    průměrné kvantizační chyby.
+    Plots an interactive HTML version of the topographic map (Plotly.js via CDN,
+    without requiring the plotly package on the backend). Supports zooming
+    and hovering over a neuron to show its coordinates and mean
+    quantization error.
 
     Args:
-        som: Natrénovaná instance SOM s vlastnostmi m, n
-        projection: Výstup funkce `compute_topology_projection`
-        neuron_error_map: Mapa kvantizační chyby na neuron
-        output_file: Cesta k výstupnímu HTML souboru
-        map_type: Typ mřížky ('square' nebo 'hex'), jen pro popisek grafu
+        som: Trained SOM instance with m, n attributes
+        projection: Output of `compute_topology_projection`
+        neuron_error_map: Per-neuron quantization error map
+        output_file: Path to the output HTML file
+        map_type: Grid type ('square' or 'hex'), used only for the plot title
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -1094,13 +1094,13 @@ def generate_topology_map_html(som, projection: dict, neuron_error_map: np.ndarr
             'x': data_proj[:, 0].tolist(),
             'y': data_proj[:, 1].tolist(),
             'marker': {'color': '#2980b9', 'size': 3, 'opacity': 0.30},
-            'name': 'Původní data',
+            'name': 'Original data',
             'hoverinfo': 'skip',
         },
     ]
 
-    # Hrany mřížky jako dvě samostatné stopy (normální / protažené), aby šly
-    # v legendě zapínat a vypínat zvlášť
+    # Grid edges as two separate traces (normal / stretched) so they can be
+    # toggled independently in the legend
     edge_x = {'normal': [], 'stretched': []}
     edge_y = {'normal': [], 'stretched': []}
     for e_idx, ((i1, j1), (i2, j2)) in enumerate(edges):
@@ -1112,19 +1112,19 @@ def generate_topology_map_html(som, projection: dict, neuron_error_map: np.ndarr
         'type': 'scatter', 'mode': 'lines',
         'x': edge_x['normal'], 'y': edge_y['normal'],
         'line': {'color': '#2c3e50', 'width': 1},
-        'name': 'Hrana mřížky (v pořádku)', 'hoverinfo': 'skip', 'opacity': 0.75,
+        'name': 'Grid edge (OK)', 'hoverinfo': 'skip', 'opacity': 0.75,
     })
     if edge_x['stretched']:
         traces.append({
             'type': 'scatter', 'mode': 'lines',
             'x': edge_x['stretched'], 'y': edge_y['stretched'],
             'line': {'color': '#e67e22', 'width': 1, 'dash': 'dot'},
-            'name': 'Protažená hrana (možná topologická chyba)',
+            'name': 'Stretched edge (possible topological error)',
             'hoverinfo': 'skip', 'opacity': 0.6,
         })
 
     hover_text = [
-        f'Neuron [{i},{j}]<br>Průměrná kvantizační chyba: {neuron_error_map[i, j]:.4f}'
+        f'Neuron [{i},{j}]<br>Mean quantization error: {neuron_error_map[i, j]:.4f}'
         for i in range(m) for j in range(n)
     ]
     traces.append({
@@ -1133,24 +1133,24 @@ def generate_topology_map_html(som, projection: dict, neuron_error_map: np.ndarr
         'y': weights_proj[:, :, 1].ravel().tolist(),
         'marker': {
             'color': nqe_flat.tolist(), 'colorscale': 'Plasma', 'size': 8,
-            'colorbar': {'title': 'Průměrná QE', 'thickness': 14},
+            'colorbar': {'title': 'Mean QE', 'thickness': 14},
             'line': {'color': 'white', 'width': 0.5},
         },
         'text': hover_text, 'hovertemplate': '%{text}<extra></extra>',
-        'name': 'Neurony SOM',
+        'name': 'SOM neurons',
     })
 
     var_str = f'PC1 {var_exp[0]:.1%} / PC2 {var_exp[1]:.1%}' if len(var_exp) >= 2 else f'PC1 {var_exp[0]:.1%}'
     n_stretched = int(stretched.sum())
     layout = {
         'title': {
-            'text': (f'Topografická mapa — původní data vs. organizovaná SOM mřížka<br>'
+            'text': (f'Topographic map — original data vs. organized SOM grid<br>'
                      f'<sub>{m}×{n}, {"hex" if map_type == "hex" else "square"} | {var_str} | '
-                     f'protažené hrany: {n_stretched}</sub>'),
+                     f'stretched edges: {n_stretched}</sub>'),
             'font': {'size': 14},
         },
-        'xaxis': {'title': 'Komponenta 1'},
-        'yaxis': {'title': 'Komponenta 2', 'scaleanchor': 'x'},
+        'xaxis': {'title': 'Component 1'},
+        'yaxis': {'title': 'Component 2', 'scaleanchor': 'x'},
         'plot_bgcolor': '#f8f8f8',
         'hovermode': 'closest',
         'autosize': True,
@@ -1158,10 +1158,10 @@ def generate_topology_map_html(som, projection: dict, neuron_error_map: np.ndarr
     }
 
     html = f"""<!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Topografická mapa SOM</title>
+<title>SOM Topographic Map</title>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
   html, body {{ margin: 0; padding: 0; height: 100%; }}
@@ -1186,17 +1186,17 @@ def generate_topology_map_html(som, projection: dict, neuron_error_map: np.ndarr
 def generate_topology_map_html3d(som, projection: dict, neuron_error_map: np.ndarray,
                                 output_file: str, map_type: str = 'square'):
     """
-    Vykreslí interaktivní ROTOVATELNOU 3D verzi topografické mapy (Plotly.js
-    Scatter3d přes CDN, bez nutnosti mít v backendu nainstalovaný balíček
-    plotly). Tažením myší lze kamerou otáčet — jeden pevný pohled často
-    skryje, jestli je mřížka souvislá plocha, nebo někde přeložená/zkřížená.
+    Plots an interactive ROTATABLE 3D version of the topographic map (Plotly.js
+    Scatter3d via CDN, without requiring the plotly package on the backend).
+    Dragging with the mouse rotates the camera — a single fixed view often
+    hides whether the grid is a continuous sheet or folded/crossed somewhere.
 
     Args:
-        som: Natrénovaná instance SOM s vlastnostmi m, n
-        projection: Výstup funkce `compute_topology_projection(..., n_components=3)`
-        neuron_error_map: Mapa kvantizační chyby na neuron
-        output_file: Cesta k výstupnímu HTML souboru
-        map_type: Typ mřížky ('square' nebo 'hex'), jen pro popisek grafu
+        som: Trained SOM instance with m, n attributes
+        projection: Output of `compute_topology_projection(..., n_components=3)`
+        neuron_error_map: Per-neuron quantization error map
+        output_file: Path to the output HTML file
+        map_type: Grid type ('square' or 'hex'), used only for the plot title
     """
     check_folder(output_file)
     m, n = som.m, som.n
@@ -1217,12 +1217,12 @@ def generate_topology_map_html3d(som, projection: dict, neuron_error_map: np.nda
             'y': data_proj[:, 1].tolist(),
             'z': data_proj[:, 2].tolist(),
             'marker': {'color': '#2980b9', 'size': 1.5, 'opacity': 0.25},
-            'name': 'Původní data',
+            'name': 'Original data',
             'hoverinfo': 'skip',
         },
     ]
 
-    # Hrany mřížky jako dvě samostatné stopy (normální / protažené)
+    # Grid edges as two separate traces (normal / stretched)
     edge_x = {'normal': [], 'stretched': []}
     edge_y = {'normal': [], 'stretched': []}
     edge_z = {'normal': [], 'stretched': []}
@@ -1236,19 +1236,19 @@ def generate_topology_map_html3d(som, projection: dict, neuron_error_map: np.nda
         'type': 'scatter3d', 'mode': 'lines',
         'x': edge_x['normal'], 'y': edge_y['normal'], 'z': edge_z['normal'],
         'line': {'color': '#2c3e50', 'width': 2},
-        'name': 'Hrana mřížky (v pořádku)', 'hoverinfo': 'skip', 'opacity': 0.75,
+        'name': 'Grid edge (OK)', 'hoverinfo': 'skip', 'opacity': 0.75,
     })
     if edge_x['stretched']:
         traces.append({
             'type': 'scatter3d', 'mode': 'lines',
             'x': edge_x['stretched'], 'y': edge_y['stretched'], 'z': edge_z['stretched'],
             'line': {'color': '#e67e22', 'width': 2},
-            'name': 'Protažená hrana (možná topologická chyba)',
+            'name': 'Stretched edge (possible topological error)',
             'hoverinfo': 'skip', 'opacity': 0.6,
         })
 
     hover_text = [
-        f'Neuron [{i},{j}]<br>Průměrná kvantizační chyba: {neuron_error_map[i, j]:.4f}'
+        f'Neuron [{i},{j}]<br>Mean quantization error: {neuron_error_map[i, j]:.4f}'
         for i in range(m) for j in range(n)
     ]
     traces.append({
@@ -1258,26 +1258,26 @@ def generate_topology_map_html3d(som, projection: dict, neuron_error_map: np.nda
         'z': weights_proj[:, :, 2].ravel().tolist(),
         'marker': {
             'color': nqe_flat.tolist(), 'colorscale': 'Plasma', 'size': 4,
-            'colorbar': {'title': 'Průměrná QE', 'thickness': 14},
+            'colorbar': {'title': 'Mean QE', 'thickness': 14},
             'line': {'color': 'white', 'width': 0.5},
         },
         'text': hover_text, 'hovertemplate': '%{text}<extra></extra>',
-        'name': 'Neurony SOM',
+        'name': 'SOM neurons',
     })
 
     var_str = f'PC1 {var_exp[0]:.1%} / PC2 {var_exp[1]:.1%} / PC3 {var_exp[2]:.1%}'
     n_stretched = int(stretched.sum())
     layout = {
         'title': {
-            'text': (f'Topografická mapa 3D — původní data vs. organizovaná SOM mřížka<br>'
+            'text': (f'Topographic map 3D — original data vs. organized SOM grid<br>'
                      f'<sub>{m}×{n}, {"hex" if map_type == "hex" else "square"} | {var_str} | '
-                     f'protažené hrany: {n_stretched} | tažením myší otočíte pohled</sub>'),
+                     f'stretched edges: {n_stretched} | drag to rotate the view</sub>'),
             'font': {'size': 14},
         },
         'scene': {
-            'xaxis': {'title': 'Komponenta 1'},
-            'yaxis': {'title': 'Komponenta 2'},
-            'zaxis': {'title': 'Komponenta 3'},
+            'xaxis': {'title': 'Component 1'},
+            'yaxis': {'title': 'Component 2'},
+            'zaxis': {'title': 'Component 3'},
             'aspectmode': 'data',
         },
         'hovermode': 'closest',
@@ -1286,10 +1286,10 @@ def generate_topology_map_html3d(som, projection: dict, neuron_error_map: np.nda
     }
 
     html = f"""<!DOCTYPE html>
-<html lang="cs">
+<html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Topografická mapa SOM 3D</title>
+<title>SOM Topographic Map 3D</title>
 <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
 <style>
   html, body {{ margin: 0; padding: 0; height: 100%; }}

@@ -1,14 +1,11 @@
-uvicorn[standard]
-fastapi
 mysql-connector-python
-passlib
-pydantic
-pytest
-httpx
-pandas
 numpy
+pandas
 matplotlib
 scikit-learn
-scipy
 psutil
 tqdm
+
+# Optional – only for plot_som_topology.py
+# plotly
+# umap-learn

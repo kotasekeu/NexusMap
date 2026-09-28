@@ -1,13 +1,13 @@
 """
-Modul pro předzpracování vstupních dat.
+Module for preprocessing input data.
 
-Tento modul zajišťuje:
-- Validaci vstupního CSV souboru
-- Normalizaci dat
-- Detekci a zpracování chybějících hodnot
-- Rozdělení sloupců na kategorické, numerické a textové
-- Seskupení kategoriálních sloupců podle prefixu
-- Škálování hodnot do rozsahu [0,1]
+This module handles:
+- Validation of the input CSV file
+- Data normalization
+- Detection and handling of missing values
+- Splitting columns into categorical, numerical and text columns
+- Grouping categorical columns by prefix
+- Scaling values to the [0,1] range
 """
 
 import pandas as pd
@@ -15,67 +15,67 @@ from sklearn.preprocessing import MinMaxScaler
 from utils import log_message
 import os
 import sys
-from database import update_project_settings
 import json
 
 def validate_input_file(input_path: str, settings: dict) -> bool:
-    """Ověří správnost vstupního CSV souboru.
-    
+    """Validates the input CSV file.
+
     Args:
-        input_path (str): Cesta k vstupnímu CSV souboru
-        settings (dict): Slovník s nastavením projektu obsahující seznam požadovaných sloupců
-        
+        input_path (str): Path to the input CSV file
+        settings (dict): Project settings dictionary containing the list of required columns
+
     Returns:
-        bool: True pokud je soubor validní, False v případě chyby
-        
+        bool: True if the file is valid, False on error
+
     Note:
-        Kontroluje existenci souboru a přítomnost všech požadovaných sloupců.
+        Checks that the file exists and that all required columns are present.
     """
     try:
-        # Načtení souboru bez datových typů
+        # Load the file without data types
         df = pd.read_csv(input_path, delimiter=',', nrows=1)
     except Exception as e:
-        print(f"Chyba při načítání souboru: {e}")
+        print(f"Error loading file: {e}")
         return False
 
-    # Ověření, zda všechny požadované sloupce existují
+    # Check that all required columns exist
     missing_columns = [col for col in settings["selected_columns"] if col not in df.columns]
     if missing_columns:
-        print(f"Chybí požadované sloupce: {', '.join(missing_columns)}")
+        print(f"Missing required columns: {', '.join(missing_columns)}")
         return False
 
     return True
 
 
-def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
-    """Normalizuje vstupní data a připraví je pro analýzu.
-    
+def normalize_data(input_path: str, settings: dict) -> str:
+    """Normalizes the input data and prepares it for analysis.
+
     Args:
-        input_path (str): Cesta k vstupnímu CSV souboru
-        uid_hash (str): Unikátní identifikátor projektu
-        settings (dict): Slovník s nastavením projektu
-        
+        input_path (str): Path to the input CSV file
+        settings (dict): Project settings dictionary, updated in place with the detected column types
+
     Returns:
-        str: Cesta k normalizovanému výstupnímu souboru
-        
+        str: Path to the normalized output file
+
     Note:
-        Proces normalizace zahrnuje:
-        1. Náhrada chybějících hodnot
-        2. Rozdělení sloupců na typy (kategorické, numerické, textové)
-        3. Seskupení kategoriálních sloupců podle prefixu
-        4. Škálování hodnot do rozsahu [0,1]
+        The normalization process includes:
+        1. Replacing missing values
+        2. Splitting columns into types (categorical, numerical, text)
+        3. Grouping categorical columns by prefix
+        4. Scaling values to the [0,1] range
     """
     df = pd.read_csv(input_path, delimiter=',')
-    cols = settings.get("selected_columns", df.columns.tolist())
+    # The primary ID only identifies records, so it is not used as a training feature
+    primary_id = settings.get('primary_id')
+    cols = [col for col in settings.get("selected_columns", df.columns.tolist()) if col != primary_id]
     data = df[cols].copy()
 
-    # 1) Náhrada chybějících hodnot (NaN)
+    # 1) Replace missing values (NaN)
     nan_replacement = settings.get("nan_replacement", {})
     for col, repl in nan_replacement.items():
         if col in data:
             data[col] = data[col].fillna(repl)
 
-    # 2) Rozdělení sloupců na typy
+    # 2) Split columns into types
     processed = pd.DataFrame()
     categorical_column = []
     numerical_column = []
@@ -85,37 +85,37 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
     for col in cols:
         series = data[col]
         
-        # Speciální případ pro ID sloupec
+        # Special case for an ID column
         if col.startswith('id_') or col.endswith('_id'):
             processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
             categorical_column.append(col)
-            log_message(f"Sloupec '{col}': typ kategoriální (ID sloupec)")
+            log_message(f"Column '{col}': type categorical (ID column)")
             continue
             
-        # Kontrola počtu unikátních hodnot pro všechny sloupce
+        # Check the number of unique values for all columns
         n_uniques = series.nunique(dropna=True)
         
         if pd.api.types.is_numeric_dtype(series):
-            if n_uniques <= 30:  # Číselné sloupce s malým počtem unikátních hodnot jsou kategorické
+            if n_uniques <= 30:  # Numeric columns with few unique values are categorical
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 categorical_column.append(col)
-                log_message(f"Sloupec '{col}': typ kategoriální (číselný s {n_uniques} unikáty)")
+                log_message(f"Column '{col}': type categorical (numeric with {n_uniques} unique values)")
             else:
-                # Číselné sloupce s více unikáty jsou numerické
+                # Numeric columns with more unique values are numerical
                 num = pd.to_numeric(series, errors="coerce")
                 num = num.fillna(nan_replacement.get(col, 0))
                 processed[col] = num
                 numerical_column.append(col)
-                log_message(f"Sloupec '{col}': typ číselný ({n_uniques} unikátů)")
+                log_message(f"Column '{col}': type numeric ({n_uniques} unique values)")
         else:
-            # Textové sloupce
+            # Text columns
             if n_uniques <= 30:
-                # Kategorické sloupce: label-encoding
+                # Categorical columns: label encoding
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 categorical_column.append(col)
-                log_message(f"Sloupec '{col}': typ kategoriální (textový s {n_uniques} unikáty)")
+                log_message(f"Column '{col}': type categorical (text with {n_uniques} unique values)")
                 
-                # Seskupení podle prefixu
+                # Group by prefix
                 parts = col.split('_')
                 if len(parts) > 1:
                     prefix = parts[0]
@@ -123,34 +123,24 @@ def normalize_data(input_path: str, uid_hash: str, settings: dict) -> str:
                         categorical_groups[prefix] = []
                     categorical_groups[prefix].append(col)
             else:
-                # Textové sloupce s mnoha unikáty
+                # Text columns with many unique values
                 processed[col] = pd.factorize(series.fillna(""), sort=True)[0]
                 string_column.append(col)
-                log_message(f"Sloupec '{col}': typ textový ({n_uniques} unikátů)")
+                log_message(f"Column '{col}': type text ({n_uniques} unique values)")
 
-    # Odstranění primary_id z numerických a kategorických sloupců
-    primary_id = settings.get('primary_id')
-    if primary_id in numerical_column:
-        numerical_column = [col for col in numerical_column if col != primary_id]
-    if primary_id in categorical_column:
-        categorical_column = [col for col in categorical_column if col != primary_id]
-
-    # 3) Škálování všech sloupců do rozsahu [0,1]
+    # 3) Scale all columns to the [0,1] range
     scaler = MinMaxScaler()
     scaled = scaler.fit_transform(processed.values)
     normalized_df = pd.DataFrame(scaled, columns=cols)
 
-    # Uložení normalizovaných dat
+    # Save the normalized data
     output_path = os.path.join(os.path.dirname(input_path), "preprocess-" + os.path.basename(input_path))
     normalized_df.to_csv(output_path, index=False, sep=',')
 
-    # Aktualizace nastavení projektu
+    # Update project settings
     settings['categorical_column'] = categorical_column
     settings['numerical_column'] = numerical_column
     settings['string_column'] = string_column
     settings['categorical_groups'] = {k: v for k, v in categorical_groups.items() if len(v) > 1}
-
-    if uid_hash:
-        update_project_settings(uid_hash, settings)
 
     return output_path

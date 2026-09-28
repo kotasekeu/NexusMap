@@ -1,246 +1,246 @@
-# NexusMap - Analýza a vizualizace dat pomocí Kohonenovy mapy
+# NexusMap – Data analysis and visualization with Kohonen maps
 
-Tento modul implementuje zpracování dat, trénování Kohonenovy samo-organizační mapy (SOM) a vizualizaci výsledků. Modul je součástí většího systému pro analýzu a vizualizaci dat.
+NexusMap trains a Kohonen self-organizing map (SOM) on a CSV file, detects extremes, and generates JSON results and visualizations. Everything runs locally from the command line.
 
-## 📁 Struktura projektu
+## 📁 Project structure
 
-- `main.py` - Hlavní vstupní bod aplikace, zpracování argumentů příkazové řádky
-- `project_processor.py` - Zpracování projektů a dat, hlavní logika analýzy
-- `visualization.py` - Vizualizace výsledků SOM (U-matrix, komponentní plány, koláčové grafy)
-- `kohonen.py` - Implementace Kohonenovy SOM sítě a trénovací algoritmy
-- `preprocess.py` - Předzpracování vstupních dat (normalizace, kódování)
-- `utils.py` - Pomocné funkce pro logování a práci se soubory
-- `database.py` - Práce s databází, správa projektů a jejich stavů
-- `requirements.txt` - Seznam závislostí pro Python
-- `Dockerfile` - Konfigurace Docker kontejneru
-- `docker-compose.yml` - Konfigurace Docker služeb
+| File | Description |
+|------|-------------|
+| `main.py` | Command-line entry point |
+| `project_processor.py` | Processing pipeline: configuration, preprocessing, SOM training, clusters, extremes, outputs |
+| `kohonen.py` | Kohonen SOM implementation (square/hex grid, decay schedules, batch modes, early stopping) |
+| `preprocess.py` | Input validation, column type detection, encoding, scaling to [0,1] |
+| `visualization.py` | Map generation (U-matrix, hit map, component planes, pie maps, topology maps, …) |
+| `utils.py` | Logging to the output directory |
+| `config/requirements.txt` | Python dependencies |
+| `plot_som_topology.py` | Standalone CLI for plotting the SOM grid in a projected space (PCA/UMAP/t-SNE/ISOMAP) |
+| `krivky.py` | Standalone script plotting the decay/growth curves used for training parameters |
+| `evolutionary_analyse/` | Evolutionary optimization of SOM parameters – see [its README](evolutionary_analyse/README.md) |
 
-## 🐳 Instalace a nasazení
+## 🛠️ Installation
 
-Projekt je kontejnerizován pomocí Dockeru. Pro nasazení:
-
-1. Ujistěte se, že máte nainstalovaný Docker a Docker Compose
-2. Sestavte a spusťte kontejnery:
-```bash
-docker-compose up -d
-```
-
-## 🚀 Použití
-
-### Automatické spouštění
-
-Projekt je nastaven pro automatické spouštění pomocí cronu, který kontroluje projekty ve stavu:
-- `status = 0` (nový projekt)
-- `ready_to_analyze = 1` (připraven k analýze)
-
-Cron job by měl být nastaven na pravidelnou kontrolu nových projektů, například každých 5 minut:
-```bash
-*/5 * * * * cd /cesta/k/projektu && python3 project_processor.py
-```
-
-### Manuální spuštění
-
-Pro manuální spuštění analýzy konkrétního projektu:
+Requires Python 3.10+.
 
 ```bash
-python3 project_processor.py <uid_hash>
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r config/requirements.txt
 ```
 
-Například:
+Optional packages for `plot_som_topology.py`: `plotly` (HTML output) and `umap-learn` (UMAP projection).
+
+## 🚀 Usage
+
 ```bash
-python3 project_processor.py nxmpp68236ed7373696.56328909
+python3 main.py --input data.csv --config config.json --output results/
 ```
 
-## 📊 Výstupy
+| Argument | Description |
+|----------|-------------|
+| `-i`, `--input` | Input CSV file (comma-separated) |
+| `-c`, `--config` | JSON configuration with `project_settings` and `som_settings` (see below) |
+| `-o`, `--output` | Output directory, created if missing |
 
-Výstupy jsou ukládány do složky projektu ve struktuře:
+### Processing pipeline
 
-| Složka/Soubor | Popis |
-|---------------|-------|
-| `csv/` | Původní a zpracovaná CSV data |
-| `json/` | Výsledky analýzy ve formátu JSON |
-| `visualization/` | Generované vizualizace |
-| `pie_data_*.json` | Data pro koláčové grafy jednotlivých kategorií |
-| `weights.npy` | Naučené váhy SOM sítě |
-| `kohonen-log.txt` | Log trénování SOM |
+1. Load the configuration and validate the input – all `selected_columns` must be present
+2. Copy the input to `{output}/csv/input.csv`
+3. Preprocess the data (`preprocess.py`) and save `csv/preprocess-input.csv`
+4. Train the SOM and save the metrics to `json/results.json`
+5. Assign samples to neurons (clusters) and generate pie chart data for categorical columns
+6. Compute per-group statistics and detect extremes
+7. Generate the visualizations
 
-### Struktura složek
+## 🔧 Configuration
 
-```
-project_folder/
-├── csv/              # Vstupní a zpracovaná data
-├── json/             # Výsledky analýzy
-├── visualization/    # Generované vizualizace
-├── pie_data_*.json   # Data pro koláčové grafy
-├── weights.npy       # Naučené váhy
-└── kohonen-log.txt   # Log trénování
-```
-
-## 📝 Logování
-
-Modul `utils.py` zajišťuje logování do souboru `kohonen-log.txt`. Log obsahuje:
-- Časové razítko
-- Zprávu
-- ID projektu (uid_hash)
-
-Logy jsou ukládány do složky projektu a obsahují informace o:
-- Průběhu trénování
-- Chybách a varováních
-- Stavu zpracování dat
-- Výsledcích analýzy
-
-Příklad logu:
-```
-2024-03-20 10:15:30.123456 Začátek trénování SOM nxmpp68236ed7373696.56328909
-2024-03-20 10:15:35.234567 Epocha 1/100, MQE: 0.723 nxmpp68236ed7373696.56328909
-```
-
-## 🔧 Konfigurace
-
-Konfigurace se načítá z databáze z atributů `project_settings` a `som_settings`. Pokud nejsou nastaveny SOM parametry, použijí se výchozí hodnoty z `kohonen.py`.
-
-### Nastavení projektu (`project_settings`)
+The configuration file has two sections:
 
 ```json
 {
-    "selected_columns": ["Id", "SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm", "Species"],
-    "primary_id": "Id",
-    "analysis_columns": ["Id", "SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm", "Species"],
-    "legend_column": "Species",
-    "legend_title": "Druhy",
-    "categorical_column": ["Species"],
-    "numerical_column": ["SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm"],
-    "string_column": [],
-    "categorical_groups": {}
+    "project_settings": {
+        "selected_columns": ["Id", "SepalLengthCm", "SepalWidthCm", "PetalLengthCm", "PetalWidthCm", "Species"],
+        "primary_id": "Id",
+        "segmentation_column": "Species",
+        "std_threshold": 2,
+        "nan_replacement": {"SepalLengthCm": 0}
+    },
+    "som_settings": {
+        "m": 20,
+        "n": 20,
+        "map_type": "hex",
+        "learning_rate": 0.9,
+        "min_learning_rate": 0.1,
+        "radius": 10.0,
+        "min_radius": 1.0,
+        "processing_type": "hybrid",
+        "num_batches": 10,
+        "min_batch_percent": 0.2,
+        "max_batch_percent": 5.0,
+        "lr_decay_type": "exp-drop",
+        "radius_decay_type": "exp-drop",
+        "batch_growth_type": "exp-growth",
+        "growth_g": 15.0,
+        "epoch_multiplier": 1.0,
+        "random_seed": 42,
+        "normalize_weights_flag": false,
+        "min_q_error": null,
+        "max_epochs_without_improvement": null
+    }
 }
 ```
 
-#### Popis parametrů projektu
+### Project settings (`project_settings`)
 
-| Parametr | Popis | Nastavení |
-|----------|-------|-----------|
-| `selected_columns` | Sloupce vybrané uživatelem | Uživatel |
-| `primary_id` | Identifikátor záznamu | Uživatel |
-| `analysis_columns` | Sloupce pro analýzu | Uživatel |
-| `legend_column` | Sloupec pro legendu | Uživatel |
-| `legend_title` | Název legendy | Uživatel |
-| `categorical_column` | Kategorické sloupce | Automaticky |
-| `numerical_column` | Numerické sloupce | Automaticky |
-| `string_column` | Textové sloupce | Automaticky |
-| `categorical_groups` | Skupiny kategoriálních sloupců podle prefixu | Automaticky |
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| `selected_columns` | Columns used for the analysis | yes |
+| `primary_id` | Record identifier column | yes |
+| `segmentation_column` | Column used to group data for statistics and extreme detection; if empty, the first categorical column is used | yes (may be `""`) |
+| `std_threshold` | Extreme detection threshold as a multiple of the standard deviation (default `2`) | no |
+| `nan_replacement` | Replacement values for missing data per column | no |
 
-### Nastavení SOM (`som_settings`)
+Preprocessing adds the detected column types (`categorical_column`, `numerical_column`, `string_column`, `categorical_groups`). The complete settings are saved to `json/project_settings.json`.
 
-Parametry pro Kohonenovu SOM síť. Pokud nejsou nastaveny, použijí se výchozí hodnoty z `kohonen.py`.
+### SOM settings (`som_settings`)
+
+The section is passed directly to `KohonenSOM`. `m` and `n` are required; every other parameter falls back to the default from `kohonen.py`.
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `m`, `n` | Grid height and width | required |
+| `learning_rate` | Initial learning rate | `0.9` |
+| `min_learning_rate` | Final learning rate | `0.1` |
+| `radius` | Initial neighborhood radius | `max(m, n) / 2` |
+| `min_radius` | Final neighborhood radius | `0.1` |
+| `processing_type` | `"deterministic"` (all samples per epoch), `"stochastic"` (one random sample per epoch), `"hybrid"` (growing batch) | `"hybrid"` |
+| `num_batches` | Number of batches per epoch (hybrid mode) | `10` |
+| `min_batch_percent` | Initial batch size in % of samples (hybrid mode) | `0.1` |
+| `max_batch_percent` | Final batch size in % of samples (hybrid mode) | `5` |
+| `lr_decay_type` | Learning rate schedule | `"exp-drop"` |
+| `radius_decay_type` | Radius schedule | `"exp-drop"` |
+| `batch_growth_type` | Batch size schedule | `"exp-growth"` |
+| `growth_g` | Steepness of the exp/log schedules | `15.0` |
+| `epoch_multiplier` | Number of epochs = number of samples × multiplier | `1.0` |
+| `map_type` | Grid type: `"square"` or `"hex"` | `"hex"` |
+| `random_seed` | Seed for reproducible results | `null` |
+| `normalize_weights_flag` | Normalize weights to unit length after each epoch | `false` |
+| `min_q_error` | Stop training once MQE reaches this value | `null` |
+| `max_epochs_without_improvement` | Stop after this many MQE evaluations without improvement | `null` |
+
+Available schedule types (`kohonen.py`, `get_decay_value`):
+
+- Drop: `static`, `linear-drop`, `exp-drop`, `log-drop`, `step-down`
+- Growth: `linear-growth`, `exp-growth`, `log-growth`
+
+`krivky.py` plots these curves for different `growth_g` values.
+
+## 🔄 Preprocessing
+
+Column types are detected automatically:
+
+| Condition | Type | Encoding |
+|-----------|------|----------|
+| Name starts with `id_` or ends with `_id` | categorical | label encoding |
+| Numeric, ≤ 30 unique values | categorical | label encoding |
+| Numeric, > 30 unique values | numerical | value (NaN → `nan_replacement` or 0) |
+| Text, ≤ 30 unique values | categorical | label encoding, grouped by name prefix (`prefix_*`) |
+| Text, > 30 unique values | text | label encoding |
+
+The `primary_id` column only identifies records and is not used for training. Missing values are first replaced according to `nan_replacement`. All remaining selected columns are then scaled to [0,1] with `MinMaxScaler`.
+
+## 📊 Outputs
+
+```
+{output}/
+├── csv/
+│   ├── input.csv                     # copy of the input data
+│   ├── preprocess-input.csv          # normalized data with header
+│   └── data.csv                      # normalized data used for training
+├── json/
+│   ├── results.json                  # training metrics
+│   ├── project_settings.json         # settings including detected column types
+│   ├── clusters.json                 # {"i_j": [primary IDs of samples in neuron i,j]}
+│   ├── extremes.json                 # extremes by group and by cluster
+│   ├── quantization_error.json       # total and per-neuron quantization error
+│   ├── pie_data_{column}.json        # category counts per cluster
+│   └── temp_pie_data_{group}.json    # merged data for categorical column groups
+├── visualization/
+│   ├── u-matrix.png
+│   ├── hit.png
+│   ├── component_{column}.png        # one per dimension (except primary_id)
+│   ├── cluster.png
+│   ├── distance.png                  # mean quantization error per neuron
+│   ├── mqe-history.png
+│   ├── parameters-history.png
+│   ├── pie-map_{column}.png
+│   ├── pie_map_group_{group}.png
+│   ├── topology.png                  # PCA projection of data + SOM grid
+│   ├── topology_interactive.html     # interactive 2D version (Plotly via CDN)
+│   ├── topology_interactive_3d.html  # rotatable 3D version (needs ≥ 3 dimensions)
+│   └── legends/                      # separate legend for each map
+├── pie_data_{column}.json            # category counts per neuron
+├── weights.npy                       # trained SOM weights (m × n × dim)
+└── kohonen-log.txt                   # processing log
+```
+
+`json/results.json`:
 
 ```json
 {
-    "learning_rate": 0.9,
-    "min_learning_rate": 0.025,
-    "radius": 10.0,
-    "min_radius": 1.0,
-    "num_batches": 10,
-    "max_batch_percent": 5.0,
-    "min_batch_percent": 0.2,
-    "lr_decay_type": "linear-drop",
-    "radius_decay_type": "linear-drop",
-    "batch_growth_type": "exp-growth",
-    "random_seed": 42,
-    "growth_g": 15.0,
-    "m": 20,
-    "n": 20,
-    "epoch_multiplier": 1.0,
-    "min_q_error": null,
-    "map_type": "square",
-    "normalize_weights_flag": false,
-    "max_epochs_without_improvement": null
+    "duration": 12.3,
+    "total_weight_updates": 150000,
+    "best_mqe": 0.0421,
+    "epochs": 150,
+    "map_size": [20, 20],
+    "map_type": "hex",
+    "max_memory_mb": 5120
 }
 ```
 
-#### Popis parametrů SOM
+## 📝 Logging
 
-| Parametr | Popis | Výchozí hodnota |
-|----------|-------|-----------------|
-| `learning_rate` | Počáteční rychlost učení | 0.9 |
-| `min_learning_rate` | Minimální rychlost učení | 0.025 |
-| `radius` | Počáteční poloměr sousedství | 10.0 |
-| `min_radius` | Minimální poloměr sousedství | 1.0 |
-| `num_batches` | Počet dávkových iterací | 10 |
-| `max_batch_percent` | Maximální velikost dávky (% dat) | 5.0 |
-| `min_batch_percent` | Minimální velikost dávky (% dat) | 0.2 |
-| `lr_decay_type` | Typ poklesu rychlosti učení | "linear-drop" |
-| `radius_decay_type` | Typ poklesu poloměru | "linear-drop" |
-| `batch_growth_type` | Typ růstu velikosti dávky | "exp-growth" |
-| `random_seed` | Semeno pro náhodný generátor | 42 |
-| `growth_g` | Parametr růstu dávky | 15.0 |
-| `m`, `n` | Rozměry mapy | 20, 20 |
-| `epoch_multiplier` | Násobitel počtu epoch | 1.0 |
-| `min_q_error` | Minimální kvantizační chyba pro early stopping | null |
-| `map_type` | Typ mřížky ("square" nebo "hex") | "square" |
-| `normalize_weights_flag` | Normalizace vah | false |
-| `max_epochs_without_improvement` | Maximální počet epoch bez zlepšení | null |
+`utils.log_message` appends messages with a timestamp to `{output}/kohonen-log.txt`. During training the log gets a progress line every 500 epochs:
 
-#### Typy poklesu a růstu
+```
+epoch|samples|batch_size|radius|learning_rate|MQE (time: h:mm:ss)
+```
 
-- `lr_decay_type` a `radius_decay_type`:
-  - `"linear-drop"`: Lineární pokles
-  - `"exp-drop"`: Exponenciální pokles
-  - `"inv-drop"`: Inverzní pokles
+## 🧰 Standalone tools
 
-- `batch_growth_type`:
-  - `"exp-growth"`: Exponenciální růst
-  - `"linear-growth"`: Lineární růst
+### `plot_som_topology.py`
 
-## 📈 Vizualizace
+Plots the SOM weight grid together with the training data in a projected space and highlights stretched edges (possible topological errors). It reads a NexusMap output directory directly (`weights.npy`, `csv/data.csv`, `json/results.json`); sample-to-neuron assignments are computed from the weights.
 
-Modul `visualization.py` poskytuje následující typy vizualizací:
+```bash
+python3 plot_som_topology.py results/
+python3 plot_som_topology.py results/ --projection isomap
+python3 plot_som_topology.py results/ --compare
+python3 plot_som_topology.py results/ --all
+```
 
-- U-matrix (topografická mapa)
-- Komponentní plány
-- Koláčové grafy pro kategorické proměnné
-- Heatmapy pro numerické proměnné
+Plots are saved to the results directory. Run `python3 plot_som_topology.py --help` for all options.
 
-## 🗄️ Databáze
+### `krivky.py`
 
-Modul `database.py` zajišťuje:
+```bash
+python3 krivky.py
+```
 
-- Ukládání a načítání projektů
-- Aktualizaci stavu analýzy
-- Správu nastavení projektů
+Writes `krivka_*.png` plots of the training schedules to the current directory.
 
-## 🔄 Předzpracování dat
+### Evolutionary optimization
 
-Modul `preprocess.py` provádí:
+`evolutionary_analyse/evolutionary_som.py` searches for SOM parameters that minimize quantization error and computation time:
 
-- Normalizaci numerických proměnných
-- Kódování kategoriálních proměnných
-- Detekci a zpracování chybějících hodnot
-- Filtrování prázdných řádků
+```bash
+python3 evolutionary_analyse/evolutionary_som.py --input data.csv --config evolutionary_analyse/evolution-config.json
+```
 
-## ⚡ Vlastnosti
+See [evolutionary_analyse/README.md](evolutionary_analyse/README.md) for details.
 
-- ✅ Paralelní zpracování
-- ✅ Automatické zálohování výsledků
-- ✅ Podpora vlastních vstupních dat
-- ✅ Flexibilní konfigurace
-- ✅ Interaktivní vizualizace
-- ✅ Detekce extrémů a odlehlých hodnot
-- ✅ Podpora hexagonální a čtvercové mřížky
-- ✅ Early stopping pro optimalizaci trénování
+## 🚧 TODO
 
-## 🚧 TODO / Chybějící funkce
-
-- [ ] Implementace dalších typů mřížky
-- [ ] Podpora pro více typů fitness funkcí
-- [ ] Vizualizace průběhu trénování
-- [ ] Možnost pokračování v trénování z předchozího stavu
-- [ ] Vylepšení dokumentace API
-- [ ] Přidání unit testů
-- [ ] Optimalizace výkonu pro velké datové sady
-
-## 📝 Poznámky
-
-- Pro replikovatelnost výsledků lze nastavit `random_seed`
-- Hexagonální mřížka může poskytnout lepší výsledky pro některé typy dat
-- Early stopping může výrazně zrychlit trénování při zachování kvality
-- Pro velké datové sady doporučujeme použít paralelní zpracování
+- [ ] Ablation study – measure the effect of individual SOM settings (decay schedules, `growth_g`, processing type, grid type, …) on quantization error and topology preservation
+- [ ] Continue training from a saved state
+- [ ] Unit tests
+- [ ] Performance optimization for large datasets (weight updates and BMU search are partly non-vectorized)

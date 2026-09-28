@@ -18,11 +18,16 @@ Output formats:
   --html          topology_interactive_{method}.html (Plotly, zoomable, hover info)
   --compare       2×2 grid: (data | weights) × (PCA | ISOMAP) — ablation / Swiss Roll
 
+Input:
+  <results_dir> is a NexusMap output directory (weights.npy, csv/data.csv,
+  json/results.json). Legacy layout with csv/weights.npy, csv/training_data.npy
+  and csv/sample_assignments.csv is still supported.
+
 Usage:
-  python app/tools/plot_som_topology.py <results_dir>
-  python app/tools/plot_som_topology.py <results_dir> --projection isomap
-  python app/tools/plot_som_topology.py <results_dir> --compare
-  python app/tools/plot_som_topology.py <results_dir> --projection umap --3d --html
+  python3 plot_som_topology.py <results_dir>
+  python3 plot_som_topology.py <results_dir> --projection isomap
+  python3 plot_som_topology.py <results_dir> --compare
+  python3 plot_som_topology.py <results_dir> --projection umap --3d --html
 """
 
 import argparse
@@ -58,6 +63,22 @@ def _load(results_dir: str):
 
     csv_dir = os.path.join(results_dir, 'csv')
 
+    # NexusMap output layout (written by project_processor.py):
+    #   weights.npy, csv/data.csv, json/results.json
+    nexus_weights = os.path.join(results_dir, 'weights.npy')
+    if os.path.isfile(nexus_weights):
+        weights = np.load(nexus_weights)
+        data_path = os.path.join(csv_dir, 'data.csv')
+        training_data = (np.loadtxt(data_path, delimiter=',', ndmin=2)
+                         if os.path.isfile(data_path) else None)
+        results = _j(os.path.join(results_dir, 'json', 'results.json')) or {}
+        meta = {
+            'hex_topology': results.get('map_type') == 'hex',
+            '_always_masked_cols': [],
+            '_ignore_mask': None,
+        }
+        return weights, training_data, _compute_assignments(weights, training_data), meta
+
     run_metrics = _j(os.path.join(results_dir, 'run_metrics.json')) or {}
     meta        = _j(os.path.join(results_dir, 'dataset_meta.json')) or {}
     if 'hex_topology' not in meta:
@@ -81,6 +102,29 @@ def _load(results_dir: str):
         _csv(os.path.join(csv_dir, 'sample_assignments.csv')),
         meta,
     )
+
+
+def _compute_assignments(weights: np.ndarray, training_data: np.ndarray | None) -> pd.DataFrame | None:
+    """Computes the BMU (bmu_i, bmu_j) and quantization error (qe) of every
+    sample — same columns as sample_assignments.csv (sample_id is 1-based)."""
+    if training_data is None:
+        return None
+    m, n, dim = weights.shape
+    flat_w = weights.reshape(m * n, dim)
+    bmu_idx = np.empty(len(training_data), dtype=int)
+    qe = np.empty(len(training_data))
+    for start in range(0, len(training_data), 1000):
+        chunk = training_data[start:start + 1000]
+        dists = np.linalg.norm(chunk[:, None, :] - flat_w[None, :, :], axis=2)
+        bmu_idx[start:start + len(chunk)] = dists.argmin(axis=1)
+        qe[start:start + len(chunk)] = dists.min(axis=1)
+    bmu_i, bmu_j = np.divmod(bmu_idx, n)
+    return pd.DataFrame({
+        'sample_id': np.arange(1, len(training_data) + 1),
+        'bmu_i': bmu_i,
+        'bmu_j': bmu_j,
+        'qe': qe,
+    })
 
 
 def _find_groundtruth(results_dir: str) -> str | None:
@@ -249,7 +293,8 @@ def _grid_edges(m: int, n: int, hex_topology: bool = False):
                     edges.append(((i, j), (i + 1, j)))
         return edges
 
-    # Hex: cube coordinates — same convention as KohonenSOM.__init__:
+    # Hex: "odd-r" offset rows (odd rows shifted right by half a cell) — same
+    # layout as visualization._grid_coordinates. Converted to cube coordinates:
     #   x = j - i//2,  z = i,  y = -x - z
     # Two neurons are true hex neighbors iff cube distance == 1.
     # Enumerate all 6 cube directions; convert back to offset to check bounds.
@@ -923,9 +968,9 @@ def main():
     weights, training_data, assignments, meta = _load(args.results_dir)
 
     if weights is None:
-        sys.exit('ERROR: csv/weights.npy not found')
+        sys.exit('ERROR: weights.npy not found')
     if training_data is None:
-        print('INFO: csv/training_data.npy not found — weights-only mode (grid rendered without data scatter)')
+        print('INFO: training data not found — weights-only mode (grid rendered without data scatter)')
 
     m, n, dim = weights.shape
     n_neurons = m * n

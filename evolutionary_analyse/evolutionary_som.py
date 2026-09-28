@@ -1,21 +1,20 @@
 """
-Evoluční optimalizace parametrů Kohonenovy samo-organizační mapy (SOM).
+Evolutionary optimization of Kohonen self-organizing map (SOM) parameters.
 
-Tento modul implementuje evoluční algoritmus pro optimalizaci parametrů SOM.
-Cílem je najít takovou konfiguraci parametrů, která minimalizuje kvantizační chybu
-při zachování rozumné doby výpočtu.
+This module implements an evolutionary algorithm for optimizing SOM parameters.
+The goal is to find a parameter configuration that minimizes the quantization error
+while keeping the computation time reasonable.
 
-Hlavní funkce:
-- Paralelní vyhodnocování konfigurací
-- Automatické zálohování výsledků
-- Podpora vlastních vstupních dat
-- Export výsledků do CSV a TXT
+Main features:
+- Parallel evaluation of configurations
+- Automatic result backups
+- Support for custom input data
+- Export of results to CSV and TXT
 """
 
 import random
 import copy
 from os.path import exists
-from evolutionary_som_config import CONFIG
 import os
 import csv
 import hashlib
@@ -24,35 +23,39 @@ import shutil
 from datetime import datetime
 import numpy as np
 from sklearn.datasets import make_blobs
-from kohonen import KohonenSOM
 from sklearn.metrics import pairwise_distances_argmin_min
 from multiprocessing import Pool, cpu_count
 import sys
-from project_processor import normalize_data
 import pandas as pd
 import argparse
-from utils import set_uid_hash
 import json
 import psutil
 
-# Váhy pro multi-kriteriální fitness funkci
-W_ERROR = 0.7  # váha pro kvantizační chybu
-W_TIME = 0.3   # váha pro dobu výpočtu
+# Make the project root importable when the script is run directly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Globální proměnné
+from evolutionary_som_config import CONFIG
+from kohonen import KohonenSOM
+from preprocess import normalize_data
+
+# Weights for the multi-criteria fitness function
+W_ERROR = 0.7  # weight of the quantization error
+W_TIME = 0.3   # weight of the computation time
+
+# Global variables
 INPUT_FILE = None
 NORMALIZED_DATA = None
 WORKING_DIR = None
 
 def get_working_directory(input_file: str = None) -> str:
     """
-    Určí pracovní adresář pro ukládání výsledků.
-    
+    Determines the working directory for storing results.
+
     Args:
-        input_file: Cesta k vstupnímu souboru (volitelné)
-        
+        input_file: Path to the input file (optional)
+
     Returns:
-        str: Cesta k pracovnímu adresáři s vytvořenou složkou reports
+        str: Path to the working directory with the created reports folder
     """
     if input_file:
         base_dir = os.path.dirname(os.path.abspath(input_file))
@@ -66,27 +69,27 @@ def get_working_directory(input_file: str = None) -> str:
 
 def load_config(config_path: str = None) -> dict:
     """
-    Načte konfiguraci z JSON souboru nebo použije výchozí CONFIG.
-    
+    Loads the configuration from a JSON file or uses the default CONFIG.
+
     Args:
-        config_path: Cesta k JSON konfiguračnímu souboru
-        
+        config_path: Path to the JSON configuration file
+
     Returns:
-        dict: Načtená konfigurace
-        
+        dict: Loaded configuration
+
     Raises:
-        SystemExit: Pokud soubor neexistuje nebo není validní JSON
+        SystemExit: If the file does not exist or is not valid JSON
     """
     if config_path:
         if not os.path.exists(config_path):
-            print(f"Chyba: Konfigurační soubor {config_path} neexistuje.")
+            print(f"Error: Configuration file {config_path} does not exist.")
             sys.exit(1)
             
         try:
             with open(config_path, 'r') as f:
                 config = json.load(f)
         except json.JSONDecodeError as e:
-            print(f"Chyba: Konfigurační soubor {config_path} není validní JSON: {e}")
+            print(f"Error: Configuration file {config_path} is not valid JSON: {e}")
             sys.exit(1)
             
         return config
@@ -94,15 +97,15 @@ def load_config(config_path: str = None) -> dict:
 
 def crossover(parent1: dict, parent2: dict, param_space: dict) -> dict:
     """
-    Uniformní křížení dvou rodičovských konfigurací.
-    
+    Uniform crossover of two parent configurations.
+
     Args:
-        parent1: První rodičovská konfigurace
-        parent2: Druhá rodičovská konfigurace
-        param_space: Prostor parametrů s možnými hodnotami
-        
+        parent1: First parent configuration
+        parent2: Second parent configuration
+        param_space: Parameter space with possible values
+
     Returns:
-        dict: Nová konfigurace vytvořená křížením
+        dict: New configuration created by crossover
     """
     child = {}
     for key in param_space:
@@ -114,13 +117,13 @@ def crossover(parent1: dict, parent2: dict, param_space: dict) -> dict:
 
 def random_config(param_space: dict) -> dict:
     """
-    Vytvoří náhodnou konfiguraci z parametrového prostoru.
-    
+    Creates a random configuration from the parameter space.
+
     Args:
-        param_space: Slovník s možnými hodnotami pro každý parametr
-        
+        param_space: Dictionary with possible values for each parameter
+
     Returns:
-        dict: Náhodně vygenerovaná konfigurace
+        dict: Randomly generated configuration
     """
     config = {}
     for key, value in param_space.items():
@@ -132,14 +135,14 @@ def random_config(param_space: dict) -> dict:
 
 def mutate(config: dict, param_space: dict) -> dict:
     """
-    Provede mutaci jedné náhodné hodnoty v konfiguraci.
-    
+    Mutates one random value in the configuration.
+
     Args:
-        config: Konfigurace k mutaci
-        param_space: Prostor parametrů s možnými hodnotami
-        
+        config: Configuration to mutate
+        param_space: Parameter space with possible values
+
     Returns:
-        dict: Mutovaná konfigurace
+        dict: Mutated configuration
     """
     key = random.choice(list(param_space.keys()))
     if isinstance(param_space[key], list):
@@ -148,15 +151,15 @@ def mutate(config: dict, param_space: dict) -> dict:
 
 def run_evolution(param_space: dict) -> None:
     """
-    Hlavní smyčka evolučního algoritmu.
-    
+    Main loop of the evolutionary algorithm.
+
     Args:
-        param_space: Prostor parametrů pro optimalizaci
+        param_space: Parameter space to optimize
     """
     try:
         population = [random_config(param_space) for _ in range(POPULATION_SIZE)]
         for gen in range(GENERATIONS):
-            print(f"Generace {gen + 1}/{GENERATIONS}")
+            print(f"Generation {gen + 1}/{GENERATIONS}")
 
             with Pool(processes=min(12, cpu_count(), POPULATION_SIZE)) as pool:
                 try:
@@ -167,21 +170,21 @@ def run_evolution(param_space: dict) -> None:
                             result = pool.apply_async(evaluate_individual, arg)
                             results.append(result)
                         except Exception as e:
-                            print(f"Chyba při inicializaci procesu {i}: {e}")
+                            print(f"Error initializing process {i}: {e}")
 
                     scored = []
                     for i, r in enumerate(results):
                         try:
                             scored.append(r.get(timeout=3600))
                         except Exception as e:
-                            print(f"[CHYBA] Jedinec {i} selhal: {e}")
+                            print(f"[ERROR] Individual {i} failed: {e}")
                 except Exception as e:
-                    print(f"Chyba při vyhodnocování populace: {str(e)}")
+                    print(f"Error evaluating population: {str(e)}")
                     pool.terminate()
                     pool.join()
                     raise e
 
-            # Normalizace a výpočet fitness
+            # Normalization and fitness computation
             qes = [s[0] for s in scored]
             times = [s[2] for s in scored]
             qe_min, qe_max = min(qes), max(qes)
@@ -194,7 +197,7 @@ def run_evolution(param_space: dict) -> None:
                 fit = W_ERROR*(1 - ne) + W_TIME*(1 - nt)
                 scored_f.append((fit, qe, cfg, dur, upd))
 
-            # Selekce a reprodukce
+            # Selection and reproduction
             scored_f.sort(key=lambda x: x[0], reverse=True)
             best = scored_f[0]
             print(f" Best QE: {best[1]:.6f} | Time: {best[3]:.2f}s | Fitness: {best[0]:.4f}")
@@ -212,34 +215,34 @@ def run_evolution(param_space: dict) -> None:
             log_final_best(get_uid(best[2]), best[2], best[1], duration=best[3])
             
     except KeyboardInterrupt:
-        print("\nUkončuji evoluční algoritmus...")
+        print("\nStopping the evolutionary algorithm...")
         return
     except Exception as e:
-        print(f"\nChyba při běhu evolučního algoritmu: {str(e)}")
+        print(f"\nError running the evolutionary algorithm: {str(e)}")
         return
 
-    print(f"Generace {gen + 1} – úspěšných: {len(scored)}/{POPULATION_SIZE}")
+    print(f"Generation {gen + 1} – successful: {len(scored)}/{POPULATION_SIZE}")
 
 def get_uid(config: dict) -> str:
     """
-    Vytvoří unikátní identifikátor pro konfiguraci.
-    
+    Creates a unique identifier for the configuration.
+
     Args:
-        config: Konfigurace k identifikaci
-        
+        config: Configuration to identify
+
     Returns:
-        str: MD5 hash konfigurace (8 znaků)
+        str: MD5 hash of the configuration (8 characters)
     """    
     config_str = str(sorted(config.items()))
     return hashlib.md5(config_str.encode()).hexdigest()
 
 def log_message(uid: str, message: str) -> None:
     """
-    Zapíše zprávu do logu.
-    
+    Writes a message to the log.
+
     Args:
-        uid: Identifikátor konfigurace nebo "SYSTEM"
-        message: Text zprávy
+        uid: Configuration identifier or "SYSTEM"
+        message: Message text
     """    
     log_path = os.path.join(WORKING_DIR, "log.txt")
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -248,14 +251,14 @@ def log_message(uid: str, message: str) -> None:
 
 def log_result_to_csv(uid: str, config: dict, score: float, duration: float, total_weight_updates: int) -> None:
     """
-    Zapíše výsledky konfigurace do CSV.
-    
+    Writes configuration results to CSV.
+
     Args:
-        uid: Identifikátor konfigurace
-        config: Parametry konfigurace
-        score: Kvantizační chyba
-        duration: Doba výpočtu v sekundách
-        total_weight_updates: Celkový počet aktualizací vah
+        uid: Configuration identifier
+        config: Configuration parameters
+        score: Quantization error
+        duration: Computation time in seconds
+        total_weight_updates: Total number of weight updates
     """    
     csv_path = os.path.join(WORKING_DIR, "results.csv")
 
@@ -270,26 +273,26 @@ def log_result_to_csv(uid: str, config: dict, score: float, duration: float, tot
 
 def log_progress(current: int, total: int) -> None:
     """
-    Loguje průběh vyhodnocování.
-    
+    Logs evaluation progress.
+
     Args:
-        current: Počet dokončených konfigurací
-        total: Celkový počet konfigurací
+        current: Number of completed configurations
+        total: Total number of configurations
     """    
     progress_path = os.path.join(WORKING_DIR, "progress.log")
     with open(progress_path, "a") as f:
-        f.write(f"{current}/{total} dokončeno\n")
+        f.write(f"{current}/{total} completed\n")
 
 def get_or_generate_data(sample_size: int, input_dim: int) -> np.ndarray:
     """
-    Vrací datovou sadu požadovaného rozměru.
-    
+    Returns a dataset of the requested size.
+
     Args:
-        sample_size: Počet vzorků
-        input_dim: Počet dimenzí
-        
+        sample_size: Number of samples
+        input_dim: Number of dimensions
+
     Returns:
-        np.ndarray: Data ve tvaru (sample_size, input_dim)
+        np.ndarray: Data of shape (sample_size, input_dim)
     """
     file_name = f"data_{sample_size}x{input_dim}.npy"
     file_path = os.path.join(WORKING_DIR, file_name)
@@ -299,21 +302,21 @@ def get_or_generate_data(sample_size: int, input_dim: int) -> np.ndarray:
 
     data, _ = make_blobs(n_samples=sample_size, n_features=input_dim, centers=5, random_state=CONFIG["random_seed"])
     np.save(file_path, data)
-    log_message("SYSTEM", f"Vygenerována nová data: {file_name}")
+    log_message("SYSTEM", f"Generated new data: {file_name}")
     return data
 
 def log_status_to_csv(uid: str, population_id: int, generation: int, status: str, 
                      start_time: str = None, end_time: str = None) -> None:
     """
-    Loguje stav konfigurace do CSV.
-    
+    Logs the configuration status to CSV.
+
     Args:
-        uid: Identifikátor konfigurace
-        population_id: ID populace
-        generation: Číslo generace
-        status: Stav (started/completed/failed)
-        start_time: Čas spuštění
-        end_time: Čas dokončení
+        uid: Configuration identifier
+        population_id: Population ID
+        generation: Generation number
+        status: Status (started/completed/failed)
+        start_time: Start time
+        end_time: End time
     """
     csv_path = os.path.join(WORKING_DIR, "status.csv")
     write_header = not os.path.exists(csv_path) or os.path.getsize(csv_path) == 0
@@ -336,13 +339,13 @@ def log_status_to_csv(uid: str, population_id: int, generation: int, status: str
 
 def log_final_best(uid: str, config: dict, score: float, duration: float) -> None:
     """
-    Uloží nejlepší konfiguraci generace.
-    
+    Saves the best configuration of the generation.
+
     Args:
-        uid: Identifikátor konfigurace
-        config: Parametry konfigurace
-        score: Kvantizační chyba
-        duration: Doba výpočtu
+        uid: Configuration identifier
+        config: Configuration parameters
+        score: Quantization error
+        duration: Computation time
     """
     best_path = os.path.join(WORKING_DIR, "final_best.txt")
     with open(best_path, "a") as f:
@@ -355,35 +358,35 @@ def log_final_best(uid: str, config: dict, score: float, duration: float) -> Non
 
 def load_input_data(input_file: str) -> np.ndarray:
     """
-    Načte a normalizuje data z CSV.
-    
+    Loads and normalizes data from CSV.
+
     Args:
-        input_file: Cesta k CSV souboru
-        
+        input_file: Path to the CSV file
+
     Returns:
-        np.ndarray: Normalizovaná data
+        np.ndarray: Normalized data
     """
     global NORMALIZED_DATA
     
     if NORMALIZED_DATA is not None:
         return NORMALIZED_DATA
 
-    preprocess_file = os.path.join(os.path.dirname(input_file), "preprocess-input.csv")
+    preprocess_file = os.path.join(os.path.dirname(input_file), "preprocess-" + os.path.basename(input_file))
     if not os.path.exists(preprocess_file):
-        preprocess_file = normalize_data(input_file, {}, {})
+        preprocess_file = normalize_data(input_file, {})
     NORMALIZED_DATA = pd.read_csv(preprocess_file, delimiter=',').values
-    log_message("SYSTEM", f"Načtena a normalizována data z externího souboru: {input_file}")
+    log_message("SYSTEM", f"Loaded and normalized data from external file: {input_file}")
     return NORMALIZED_DATA
 
 def extract_uid_from_path(file_path: str) -> str:
     """
-    Extrahuje UID z cesty k souboru.
-    
+    Extracts the UID from a file path.
+
     Args:
-        file_path: Cesta k souboru
-        
+        file_path: File path
+
     Returns:
-        str: Extrahovaný UID nebo None
+        str: Extracted UID or None
     """
     parts = file_path.split('/')
     for part in parts:
@@ -393,18 +396,18 @@ def extract_uid_from_path(file_path: str) -> str:
 
 def evaluate_individual(ind: dict, population_id: int, generation: int) -> tuple:
     """
-    Vyhodnotí jednu konfiguraci SOM.
-    
+    Evaluates a single SOM configuration.
+
     Args:
-        ind: Konfigurace k vyhodnocení
-        population_id: ID populace
-        generation: Číslo generace
-        
+        ind: Configuration to evaluate
+        population_id: Population ID
+        generation: Generation number
+
     Returns:
-        tuple: (kvantizační chyba, konfigurace, doba výpočtu, počet aktualizací)
-        
+        tuple: (quantization error, configuration, computation time, number of updates)
+
     Raises:
-        Exception: Při chybě vyhodnocování
+        Exception: On evaluation error
     """
     start_time = time.time()
     uid = get_uid(ind)
@@ -433,7 +436,7 @@ def evaluate_individual(ind: dict, population_id: int, generation: int) -> tuple
         som.train(data)
         
         duration = time.time() - start_time
-        log_message(uid, f"Konfigurace vyhodnocena – kvantizační chyba: {som.best_mqe:.8f}, čas: {duration:.2f}s")
+        log_message(uid, f"Configuration evaluated – quantization error: {som.best_mqe:.8f}, time: {duration:.2f}s")
         log_result_to_csv(uid, ind, som.best_mqe, duration, som.total_weight_updates)
         
         log_status_to_csv(uid, population_id, generation, "completed", 
@@ -446,12 +449,12 @@ def evaluate_individual(ind: dict, population_id: int, generation: int) -> tuple
         log_status_to_csv(uid, population_id, generation, "failed", 
                          datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S"),
                          datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        log_message(uid, f"Chyba při vyhodnocování: {str(e)}")
+        log_message(uid, f"Evaluation error: {str(e)}")
         raise e
 
 def analyze_results() -> None:
     """
-    Analyzuje výsledky evolučního algoritmu a vytvoří soubory s nejlepšími konfiguracemi.
+    Analyzes the evolutionary algorithm results and creates files with the best configurations.
     """
     df = pd.read_csv(os.path.join(WORKING_DIR, "results.csv"))
     df["score_combined"] = df["score"] * df["duration"] * df["total_weight_updates"]
@@ -481,19 +484,19 @@ def analyze_results() -> None:
         for col in static_cols:
             f.write(f"{col} = {df[col].iloc[0]}\n")
     
-    log_message("SYSTEM", "Analýza výsledků dokončena - vytvořeny soubory best_configurations_full.csv a summary.txt")
+    log_message("SYSTEM", "Results analysis completed - created best_configurations_full.csv and summary.txt")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Evoluční optimalizace Kohonenovy sítě')
-    parser.add_argument('-i', '--input', help='Cesta k vstupnímu CSV souboru')
-    parser.add_argument('-c', '--config', help='Cesta k vlastnímu konfiguračnímu souboru')
+    parser = argparse.ArgumentParser(description='Evolutionary optimization of the Kohonen network')
+    parser.add_argument('-i', '--input', help='Path to the input CSV file')
+    parser.add_argument('-c', '--config', help='Path to a custom configuration file')
     args = parser.parse_args()
 
     config = load_config(args.config)
 
     if args.input:
         if not os.path.exists(args.input):
-            print(f"Chyba: Vstupní soubor {args.input} neexistuje.")
+            print(f"Error: Input file {args.input} does not exist.")
             sys.exit(1)
         INPUT_FILE = args.input
 

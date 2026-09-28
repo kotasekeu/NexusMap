@@ -1,61 +1,31 @@
-import time
+"""
+Command-line entry point for running a NexusMap analysis.
+
+Usage:
+    python3 main.py --input data.csv --config config.json --output results/
+"""
+
+import argparse
+import os
 import sys
-from database import get_next_project
 from project_processor import process_project
-import logging
-import subprocess
 
-# Nastavení logování
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
-)
-
-def process_next_project():
-    """
-    Zpracuje nejstarší připravený projekt.
-    """
-    project = get_next_project()
-    if not project:
-        logging.info("Žádný projekt není připraven ke zpracování")
-        return
-
-    uid_hash = project['uid_hash']
-    
-    try:
-        logging.info(f"Spouštím zpracování projektu {uid_hash}")
-        
-        # Spuštění procesu
-        process = subprocess.Popen(
-            ['python3', 'project_processor.py', uid_hash],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True
-        )
-        
-        # Nespouštíme process.communicate(), aby se proces spustil na pozadí
-        logging.info(f"Projekt {uid_hash} byl spuštěn na pozadí")
-            
-    except Exception as e:
-        logging.error(f"Neočekávaná chyba při spouštění projektu {uid_hash}: {str(e)}")
 
 def main():
-    """
-    Hlavní smyčka programu, která každou minutu kontroluje a spouští projekty.
-    """
-    logging.info("Spouštím službu pro zpracování projektů...")
-    
-    while True:
-        try:
-            process_next_project()
-        except Exception as e:
-            logging.error(f"Neočekávaná chyba v hlavní smyčce: {str(e)}")
-        
-        # Počkáme 60 sekund před další kontrolou
-        time.sleep(10)
+    parser = argparse.ArgumentParser(description='Train a Kohonen SOM on a CSV file and generate the analysis outputs.')
+    parser.add_argument('-i', '--input', required=True, help='Path to the input CSV file')
+    parser.add_argument('-c', '--config', required=True,
+                        help='Path to a JSON file with "project_settings" and "som_settings"')
+    parser.add_argument('-o', '--output', required=True, help='Output directory (created if missing)')
+    args = parser.parse_args()
+
+    if not os.path.isfile(args.input):
+        sys.exit(f"Error: input file {args.input} does not exist.")
+    if not os.path.isfile(args.config):
+        sys.exit(f"Error: configuration file {args.config} does not exist.")
+
+    process_project(args.input, args.config, args.output)
+
 
 if __name__ == "__main__":
     main()

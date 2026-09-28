@@ -6,12 +6,6 @@ __pycache__/
 *.pdb
 .venv/
 .env
-admr.php
-
-# Docker
-docker-compose.override.yml
-*.pid
-*.log
 
 # Logs and runtime data
 var/
@@ -26,27 +20,3 @@ var/
 # OS generated files
 .DS_Store
 Thumbs.db
-
-# Config sensitive files
-config/mysql.env
-app/config/settings.py
-
-#Nette
-local.neon
-app/frontend/temp/cache
-app/frontend/temp/sessions
-app/frontend/public/userFiles
-app/frontend/public/userFiles_back
-app/frontend/log
-
-#vendor
-app/frontend/vendor
-
-*.key
-
-phpstan_output.txt
-phpcs_output.txt
-
-.phpdoc
-
-docs/frontend

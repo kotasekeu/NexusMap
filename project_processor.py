@@ -1,24 +1,23 @@
 """
-Hlavní modul pro zpracování projektů analýzy dat.
+Main module for processing a data analysis run.
 
-Tento modul zajišťuje:
-- Načítání a validaci projektových dat z databáze
-- Předzpracování vstupních dat
-- Trénování Kohonenovy SOM sítě
-- Analýzu a detekci extrémů v datech
-- Generování výstupních souborů a vizualizací
-- Správu stavu projektu v databázi
+This module handles:
+- Loading the run configuration (project and SOM settings) from a JSON file
+- Validating and preprocessing input data
+- Training the Kohonen SOM network
+- Analysis and detection of extremes in the data
+- Generating output files and visualizations
 """
 
 import sys
-from database import fetch_project, update_project_status, update_project_results
 from preprocess import validate_input_file, normalize_data
-from utils import log_message, set_uid_hash
+from utils import log_message, set_log_dir
 from kohonen import KohonenSOM
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import json
+import shutil
 from matplotlib.lines import Line2D
 from visualization import generate_maps
 import os
@@ -26,122 +25,88 @@ from collections import defaultdict, Counter, OrderedDict
 import time
 import psutil
 
-def get_project_detail(uid_hash: str) -> dict:
-    """Načte detail projektu z databáze podle UID.
-    
-    Args:
-        uid_hash (str): Unikátní identifikátor projektu
-        
-    Returns:
-        dict: Slovník s detaily projektu
-        
-    Raises:
-        SystemExit: Pokud projekt není nalezen nebo analýza již byla dokončena
-    """
-    project = fetch_project(uid_hash)
-    if not project:
-        log_message(f"Projekt s UID {uid_hash} nenalezen nebo analýza již byla dokončena.")
-        print(f"Projekt s UID {uid_hash} nenalezen nebo analýza již byla dokončena.")
-        sys.exit(1)
-    return project
+def load_config(config_file: str) -> tuple[dict, dict]:
+    """Loads project and SOM settings from a JSON configuration file.
 
-def load_project_settings(project: dict) -> dict:
-    """Načte nastavení projektu z JSON řetězce.
-    
     Args:
-        project (dict): Slovník s detaily projektu
-        
+        config_file (str): Path to a JSON file with "project_settings" and "som_settings" keys
+
     Returns:
-        dict: Nastavení projektu
-        
+        tuple[dict, dict]: Project settings and SOM settings
+
     Raises:
-        SystemExit: Pokud nastavení nelze načíst nebo je neplatné
+        SystemExit: If the file cannot be loaded or is missing a required key
     """
     try:
-        settings = json.loads(project["project_settings"])
-        return settings
-    except (KeyError, ValueError) as e:
-        log_message(f"Chyba při načítání nastavení projektu: {e}")
+        with open(config_file, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        return config["project_settings"], config["som_settings"]
+    except (OSError, KeyError, ValueError) as e:
+        log_message(f"Error loading configuration {config_file}: {e}")
+        print(f"Error loading configuration {config_file}: {e}")
         sys.exit(1)
 
-def load_som_settings(project: dict) -> dict:
-    """Načte nastavení SOM sítě z JSON řetězce.
-    
-    Args:
-        project (dict): Slovník s detaily projektu
-        
-    Returns:
-        dict: Nastavení SOM sítě
-        
-    Raises:
-        SystemExit: Pokud nastavení nelze načíst nebo je neplatné
-    """
-    try:
-        settings = json.loads(project["som_settings"])
-        return settings
-    except (KeyError, ValueError) as e:
-        log_message(f"Chyba při načítání nastavení SOM: {e}")
-        sys.exit(1)
+def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_settings: dict, output_path: str) -> None:
+    """Trains the SOM network and generates the analysis outputs.
 
-def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_settings: dict, output_path: str, uid_hash: str) -> None:
-    """Trénuje SOM síť a generuje výstupy analýzy.
-    
     Args:
-        preprocess_file (str): Cesta k předzpracovanému souboru
-        som_settings (dict): Nastavení SOM sítě
-        project_settings (dict): Nastavení projektu
-        output_path (str): Cesta pro výstupní soubory
-        uid_hash (str): Unikátní identifikátor projektu
-        
+        preprocess_file (str): Path to the preprocessed file
+        som_settings (dict): SOM network settings
+        project_settings (dict): Project settings
+        output_path (str): Path for output files (with a trailing separator)
+
     Note:
-        Funkce provádí:
-        1. Trénování SOM sítě
-        2. Uložení vstupních dat a naučených vah
-        3. Extrakci a uložení shluků
-        4. Generování dat pro koláčové grafy
-        5. Výpočet statistik a detekci extrémů
-        6. Generování vizualizací
+        The function performs:
+        1. SOM network training
+        2. Saving input data and trained weights
+        3. Extracting and saving clusters
+        4. Generating data for pie charts
+        5. Computing statistics and detecting extremes
+        6. Generating visualizations
     """
-    # Načtení předzpracovaných dat
+    # Load the preprocessed data
     data = pd.read_csv(preprocess_file, delimiter=',').values
 
-    # Inicializace a trénování SOM
-    max_memory = psutil.virtual_memory().used // (1024 ** 2)  # v MB před trénováním
+    # Initialize and train the SOM
+    max_memory = psutil.virtual_memory().used // (1024 ** 2)  # in MB before training
     start_time = time.time()
     som = KohonenSOM(dim=data.shape[1], **som_settings)
     som.train(data)
     duration = time.time() - start_time
-    # Změříme paměť po trénování
+    # Measure memory after training
     max_memory = max(max_memory, psutil.virtual_memory().used // (1024 ** 2))
-    # Uložení metrik do databáze
+    # Save training metrics
     metrics = {
         "duration": duration,
         "total_weight_updates": som.total_weight_updates,
         "best_mqe": som.best_mqe,
         "epochs": getattr(som, 'epochs_run', None),
         "map_size": [som.m, som.n],
+        "map_type": som.map_type,
         "max_memory_mb": max_memory
     }
-    update_project_results(uid_hash, metrics)
+    os.makedirs(f"{output_path}json", exist_ok=True)
+    with open(f"{output_path}json/results.json", 'w', encoding='utf-8') as f:
+        json.dump(metrics, f, indent=4)
 
-    # Uložení vstupních dat a vah
+    # Save input data and weights
     np.savetxt(f"{output_path}csv/data.csv", data, delimiter=",")
     np.save(f"{output_path}weights.npy", som.weights)
 
-    # Načtení původních dat
+    # Load the original data
     df_orig = pd.read_csv(f"{output_path}csv/input.csv", delimiter=',')
 
-    # Extrakce a uložení shluků
+    # Extract and save clusters
     cluster_file = f"{output_path}json/clusters.json"
     extract_and_save_clusters(som, data, df_orig, cluster_file, project_settings["primary_id"])
 
-    # Generování dat pro koláčové grafy
+    # Generate data for pie charts
     extract_and_save_pie_data(som, data, df_orig, project_settings["categorical_column"], output_path)
 
-    # Načtení dat pro analýzu
+    # Load data for analysis
     clusters = json.load(open(cluster_file))
 
-    # Výpočet statistik a detekce extrémů
+    # Compute statistics and detect extremes
     stats = compute_group_statistics(df_orig,
                                    project_settings["segmentation_column"],
                                    project_settings["selected_columns"],
@@ -157,7 +122,7 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
                    primary_id=project_settings["primary_id"],
                    project_settings=project_settings)
 
-    # Generování koláčových grafů pro shluky
+    # Generate pie charts for clusters
     extract_and_save_pie_data_from_clusters(
         df_orig,
         f"{output_path}json/clusters.json",
@@ -166,22 +131,22 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
         project_settings['primary_id']
     )
 
-    # Generování vizualizací
+    # Generate visualizations
     generate_maps(som, data, preprocess_file, output_path, som_settings, project_settings)
 
 def extract_and_save_clusters(som, data: np.ndarray, df_orig: pd.DataFrame, cluster_filename: str, primary_id: str) -> None:
-    """Extrahuje a ukládá shluky dat do JSON souboru.
-    
+    """Extracts data clusters and saves them to a JSON file.
+
     Args:
-        som: Trénovaná SOM síť
-        data (np.ndarray): Předzpracovaná data
-        df_orig (pd.DataFrame): Původní data
-        cluster_filename (str): Cesta k výstupnímu JSON souboru
-        primary_id (str): Název sloupce s primárním klíčem
-        
+        som: Trained SOM network
+        data (np.ndarray): Preprocessed data
+        df_orig (pd.DataFrame): Original data
+        cluster_filename (str): Path to the output JSON file
+        primary_id (str): Name of the primary key column
+
     Note:
-        Vytváří JSON ve formátu: {"i_j": [pid1, pid2, ...], ...}
-        kde i_j jsou souřadnice neuronu a pid jsou primární ID vzorků
+        Creates JSON in the format: {"i_j": [pid1, pid2, ...], ...}
+        where i_j are the neuron coordinates and pid are the samples' primary IDs
     """
     clusters = {}
     for idx, sample in enumerate(data):
@@ -197,82 +162,89 @@ def extract_and_save_clusters(som, data: np.ndarray, df_orig: pd.DataFrame, clus
     with open(cluster_filename, 'w', encoding='utf-8') as f:
         json.dump(clusters, f, indent=4)
 
-def process_project(uid_hash: str) -> None:
-    """Hlavní funkce pro zpracování projektu.
-    
+def process_project(input_file: str, config_file: str, output_dir: str) -> None:
+    """Main function for processing a run.
+
     Args:
-        uid_hash (str): Unikátní identifikátor projektu
-        
+        input_file (str): Path to the input CSV file
+        config_file (str): Path to the JSON configuration file
+        output_dir (str): Directory for all outputs (created if missing)
+
     Note:
-        Proces zpracování:
-        1. Načtení a validace dat
-        2. Předzpracování dat
-        3. Trénování a analýza SOM
-        4. Aktualizace stavu projektu
+        Processing steps:
+        1. Load the configuration and validate the input data
+        2. Copy the input to {output_dir}/csv/input.csv
+        3. Preprocess data
+        4. Train and analyze the SOM
     """
-    set_uid_hash(uid_hash)
-    output_path = f"/userfiles/{uid_hash}/"
-    
-    log_message(f"Spouštím zpracování projektu s UID {uid_hash}...")
+    output_path = os.path.join(os.path.abspath(output_dir), "")
+    os.makedirs(f"{output_path}csv", exist_ok=True)
+    set_log_dir(output_path)
 
-    # Načtení a validace dat
-    project = get_project_detail(uid_hash)
-    update_project_status(uid_hash, 2)  # Stav: běžící
+    log_message(f"Starting processing of {input_file} into {output_path}...")
 
-    project_settings = load_project_settings(project)
-    som_settings = load_som_settings(project)
+    # Load the configuration and validate data
+    project_settings, som_settings = load_config(config_file)
 
-    # Kontrola vstupního souboru
-    input_file = f"{output_path}csv/input.csv"
     if not validate_input_file(input_file, project_settings):
-        log_message(f"Neplatný vstupní soubor pro projekt {uid_hash}.")
+        log_message(f"Invalid input file {input_file}.")
         sys.exit(1)
 
-    # Předzpracování a analýza
-    preprocess_file = normalize_data(input_file, uid_hash, project_settings)
-    train_and_analyze_som(preprocess_file, som_settings, project_settings, output_path, uid_hash)
+    # The rest of the pipeline reads the input from the output directory
+    local_input = f"{output_path}csv/input.csv"
+    if os.path.abspath(input_file) != local_input:
+        shutil.copyfile(input_file, local_input)
 
-    # Dokončení
-    update_project_status(uid_hash, 1)  # Stav: dokončeno
-    log_message(f"Zpracování projektu {uid_hash} bylo dokončeno.")
+    # Preprocessing and analysis
+    preprocess_file = normalize_data(local_input, project_settings)
+
+    # Save project settings including the detected column types
+    os.makedirs(f"{output_path}json", exist_ok=True)
+    with open(f"{output_path}json/project_settings.json", 'w', encoding='utf-8') as f:
+        json.dump(project_settings, f, indent=4, ensure_ascii=False)
+
+    train_and_analyze_som(preprocess_file, som_settings, project_settings, output_path)
+
+    log_message(f"Processing completed, outputs are in {output_path}")
+    print(f"Done. Outputs are in {output_path}")
 
 def compute_group_statistics(df_orig: pd.DataFrame,
                            segmentation_column: str,
                            selected_columns: list[str],
                            project_settings: dict) -> dict[str, dict[str, tuple[float, float]]]:
-    """Vypočítá statistiky pro skupiny dat.
-    
+    """Computes statistics for data groups.
+
     Args:
-        df_orig (pd.DataFrame): Původní data
-        segmentation_column (str): Sloupec pro segmentaci
-        selected_columns (list[str]): Seznam vybraných sloupců pro analýzu
-        project_settings (dict): Nastavení projektu
-        
+        df_orig (pd.DataFrame): Original data
+        segmentation_column (str): Column used for segmentation
+        selected_columns (list[str]): List of columns selected for analysis
+        project_settings (dict): Project settings
+
     Returns:
-        dict: Statistiky ve formátu {skupina: {sloupec: (průměr, směrodatná odchylka)}}
+        dict: Statistics in the format {group: {column: (mean, standard deviation)}}
     """
     stats = {}
-    
-    # Výběr numerických sloupců
+
+    # Select numerical columns
     if 'numerical_column' in project_settings:
         numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
     else:
         numeric_columns = df_orig[selected_columns].select_dtypes(include=[np.number]).columns.tolist()
     
     if not numeric_columns:
-        log_message("Varování: Žádné numerické sloupce pro analýzu.")
+        log_message("Warning: No numerical columns for analysis.")
         return stats
 
-    # Pokud je segmentation_column prázdná, použij první kategorický sloupec
+    # If segmentation_column is empty, use the first categorical column
     if not segmentation_column or segmentation_column not in df_orig.columns:
         if 'categorical_column' in project_settings and project_settings['categorical_column']:
             segmentation_column = project_settings['categorical_column'][0]
-            log_message(f"Používám první kategorický sloupec '{segmentation_column}' pro segmentaci.")
+            log_message(f"Using the first categorical column '{segmentation_column}' for segmentation.")
         else:
-            log_message("Varování: Žádný sloupec pro segmentaci není k dispozici.")
+            log_message("Warning: No column available for segmentation.")
             return stats
 
-    # Výpočet statistik
+    # Compute statistics
     grouped = df_orig.groupby(segmentation_column)[numeric_columns]
     agg = grouped.agg(['mean', 'std'])
 
@@ -289,41 +261,41 @@ def detect_extremes(df_orig: pd.DataFrame,
                    selected_columns: list[str],
                    primary_id: str,
                    project_settings: dict) -> dict:
-    """Detekuje extrémní hodnoty v datech.
-    
+    """Detects extreme values in the data.
+
     Args:
-        df_orig (pd.DataFrame): Původní data
-        output_path (str): Cesta pro výstupní soubory
-        clusters (dict): Slovník shluků
-        stats_by_group (dict): Statistiky pro skupiny
-        threshold (float): Prahová hodnota pro detekci extrémů
-        segmentation_column (str): Sloupec pro segmentaci
-        selected_columns (list[str]): Seznam vybraných sloupců pro analýzu
-        primary_id (str): Název sloupce s primárním klíčem
-        project_settings (dict): Nastavení projektu
-        
+        df_orig (pd.DataFrame): Original data
+        output_path (str): Path for output files
+        clusters (dict): Cluster dictionary
+        stats_by_group (dict): Per-group statistics
+        threshold (float): Threshold for extreme detection
+        segmentation_column (str): Column used for segmentation
+        selected_columns (list[str]): List of columns selected for analysis
+        primary_id (str): Name of the primary key column
+        project_settings (dict): Project settings
+
     Returns:
-        dict: Extrémní hodnoty ve formátu {'by_group': {...}, 'by_cluster': {...}}
+        dict: Extreme values in the format {'by_group': {...}, 'by_cluster': {...}}
     """
     extremes = {'by_group': {}, 'by_cluster': {}}
 
-    # Výběr numerických sloupců
+    # Select numerical columns
     if 'numerical_column' in project_settings:
         numeric_columns = [col for col in project_settings['numerical_column'] if col in df_orig.columns]
     else:
         numeric_columns = df_orig[selected_columns].select_dtypes(include=[np.number]).columns.tolist()
     
     if not numeric_columns:
-        log_message("Varování: Žádné numerické sloupce pro detekci extrémů.")
+        log_message("Warning: No numerical columns for extreme detection.")
         return extremes
 
-    # Detekce extrémů podle skupin
+    # Detect extremes by group
     if segmentation_column and segmentation_column in df_orig.columns:
         unique_groups = df_orig[segmentation_column].unique()
         for group_val in unique_groups:
             mask = (df_orig[segmentation_column] == group_val)
             df_group = df_orig[mask]
-            # Přeskočíme, pokud je skupina prázdná nebo obsahuje pouze NaN hodnoty v numerických sloupcích
+            # Skip if the group is empty or contains only NaN values in numerical columns
             if df_group.shape[0] == 0 or df_group[numeric_columns].isnull().all().all():
                 continue
             for col in numeric_columns:
@@ -333,11 +305,11 @@ def detect_extremes(df_orig: pd.DataFrame,
                         vals = df_group[col]
                         outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
                         if not outliers.empty:
-                            # Převedení numpy.int64 na standardní Python int
+                            # Convert numpy.int64 to a standard Python int
                             group_key = str(group_val) if isinstance(group_val, (np.integer, np.floating)) else group_val
                             extremes['by_group'][group_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in outliers.tolist()]
 
-    # Detekce extrémů podle shluků
+    # Detect extremes by cluster
     for cl_key, pid_list in clusters.items():
         if not pid_list:
             continue
@@ -350,24 +322,24 @@ def detect_extremes(df_orig: pd.DataFrame,
                 if not outliers.empty:
                     extremes['by_cluster'][cl_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in outliers.tolist()]
 
-    # Uložení výsledků
+    # Save results
     os.makedirs(f"{output_path}json", exist_ok=True)
     with open(f"{output_path}json/extremes.json", "w", encoding="utf-8") as f:
         json.dump(extremes, f, indent=4)
 
 def extract_and_save_pie_data(som, data: np.ndarray, df_orig: pd.DataFrame, categorical_columns: list, output_dir: str) -> None:
-    """Generuje data pro koláčové grafy podle neuronů SOM.
-    
+    """Generates pie chart data per SOM neuron.
+
     Args:
-        som: Trénovaná SOM síť
-        data (np.ndarray): Předzpracovaná data
-        df_orig (pd.DataFrame): Původní data
-        categorical_columns (list): Seznam kategoriálních sloupců
-        output_dir (str): Cesta pro výstupní soubory
-        
+        som: Trained SOM network
+        data (np.ndarray): Preprocessed data
+        df_orig (pd.DataFrame): Original data
+        categorical_columns (list): List of categorical columns
+        output_dir (str): Path for output files
+
     Note:
-        Pro každý kategoriální sloupec vytváří JSON s počty kategorií pro každý neuron.
-        Formát: {"categories": {1: "kategorie1", ...}, "counts": {"i_j": {1: počet, ...}}}
+        For each categorical column, creates a JSON with category counts for each neuron.
+        Format: {"categories": {1: "category1", ...}, "counts": {"i_j": {1: count, ...}}}
     """
     os.makedirs(output_dir, exist_ok=True)
     m, n = som.m, som.n
@@ -403,34 +375,34 @@ def extract_and_save_pie_data_from_clusters(df_orig: pd.DataFrame,
                                           categorical_columns: list,
                                           output_dir: str,
                                           primary_id: str) -> None:
-    """Generuje data pro koláčové grafy podle shluků.
-    
+    """Generates pie chart data per cluster.
+
     Args:
-        df_orig (pd.DataFrame): Původní data
-        cluster_file (str): Cesta k souboru se shluky
-        categorical_columns (list): Seznam kategoriálních sloupců
-        output_dir (str): Cesta pro výstupní soubory
-        primary_id (str): Název sloupce s primárním klíčem
-        
+        df_orig (pd.DataFrame): Original data
+        cluster_file (str): Path to the clusters file
+        categorical_columns (list): List of categorical columns
+        output_dir (str): Path for output files
+        primary_id (str): Name of the primary key column
+
     Note:
-        Pro každý kategoriální sloupec vytváří JSON s počty kategorií pro každý shluk.
-        Formát: {"categories": {"1": "kategorie1", ...}, "counts": {"i_j": {"1": počet, ...}}}
+        For each categorical column, creates a JSON with category counts for each cluster.
+        Format: {"categories": {"1": "category1", ...}, "counts": {"i_j": {"1": count, ...}}}
     """
     os.makedirs(output_dir, exist_ok=True)
-    
-    # Načtení shluků
+
+    # Load clusters
     with open(cluster_file, 'r', encoding='utf-8') as f:
         clusters = json.load(f)
 
-    # Mapování primárních ID na řádky
+    # Map primary IDs to rows
     pid_to_row = {row[primary_id]: row for _, row in df_orig.iterrows()}
 
     for col in categorical_columns:
-        # Vytvoření mapy kategorií
+        # Build the category map
         cats = sorted(df_orig[col].dropna().unique().tolist())
         cat_map = OrderedDict((str(i+1), cats[i]) for i in range(len(cats)))
 
-        # Počítání kategorií pro každý shluk
+        # Count categories for each cluster
         counts_out = {}
         for pos, pid_list in clusters.items():
             ctr = Counter()
@@ -451,11 +423,3 @@ def extract_and_save_pie_data_from_clusters(df_orig: pd.DataFrame,
         fn = os.path.join(output_dir, f"json/pie_data_{col}.json")
         with open(fn, 'w', encoding='utf-8') as f:
             json.dump(out, f, indent=2, ensure_ascii=False)
-
-if __name__ == "__main__":
-    if len(sys.argv) != 2:
-        print("Použití: python3 project_processor.py <uid_hash>")
-        sys.exit(1)    
-
-    uid_hash = sys.argv[1]
-    process_project(uid_hash)

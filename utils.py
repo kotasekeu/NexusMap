@@ -1,44 +1,40 @@
 """
-Pomocný modul pro logování a práci se soubory.
+Helper module for logging.
 
-Tento modul poskytuje funkce pro:
-- Nastavení a správu ID projektu (uid_hash)
-- Logování zpráv do souboru s časovým razítkem
+This module provides functions for:
+- Setting the directory the log is written to
+- Logging messages to a file with a timestamp
 """
 
+import os
 from datetime import datetime
 
-# Globální proměnná pro ukládání ID projektu
-_uid_hash = None
+# Global variable holding the log directory
+_log_dir = None
 
-def set_uid_hash(uid_hash: str) -> None:
-    """Nastaví globální ID projektu pro logování.
-    
+def set_log_dir(log_dir: str) -> None:
+    """Sets the directory used for logging.
+
     Args:
-        uid_hash (str): Unikátní identifikátor projektu
-        
+        log_dir (str): Directory where kohonen-log.txt is written
+
     Note:
-        Tato funkce musí být volána před jakýmkoliv logováním,
-        aby se zprávy ukládaly do správné složky projektu.
+        This function must be called before any logging
+        so that messages are written to the correct output folder.
     """
-    global _uid_hash
-    _uid_hash = uid_hash
+    global _log_dir
+    _log_dir = log_dir
 
 def log_message(message: str) -> None:
-    """Zapíše zprávu do logovacího souboru včetně časového razítka.
-    
+    """Writes a message to the log file, including a timestamp.
+
     Args:
-        message (str): Zpráva k zalogování
-        
+        message (str): Message to log
+
     Note:
-        Pokud není nastaveno uid_hash, loguje se do aktuálního adresáře.
-        Jinak se loguje do složky projektu v /userfiles/{uid_hash}/.
+        If no log directory is set, logs go to the current directory.
     """
-    if _uid_hash:
-        log_file = f"/userfiles/{_uid_hash}/kohonen-log.txt"
-    else:
-        log_file = "./kohonen-log.txt"
-        
+    log_file = os.path.join(_log_dir or ".", "kohonen-log.txt")
     current_time = datetime.now()
     with open(log_file, "a") as log:
-        log.write(f"{current_time} {message} {_uid_hash}\n")
+        log.write(f"{current_time} {message}\n")

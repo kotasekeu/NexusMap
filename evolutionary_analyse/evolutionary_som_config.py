@@ -1,96 +1,97 @@
 # evolutionary_som_config.py
 
-# Tento soubor definuje výchozí a testovací parametry pro trénink Kohonenovy samo-organizační mapy (SOM).
-# U každého parametru lze zadat buď jednu hodnotu (statické nastavení), nebo pole variant (pro testování více konfigurací).
-# Evoluční algoritmus následně automaticky vybere nebo iteruje varianty.
+# This file defines default and test parameters for training the Kohonen self-organizing map (SOM).
+# Each parameter can be given either a single value (static setting) or a list of variants (to test multiple configurations).
+# The evolutionary algorithm then automatically selects or iterates over the variants.
 #
-# Příklady použití variant:
+# Examples of using variants:
 #
-# ČÍSELNÁ HODNOTA (jedna nebo více):
-# "learning_rate": 0.5                    → použije se pevná hodnota 0.5
-# "learning_rate": [0.1, 0.5, 0.9]        → testují se tři různé hodnoty
+# NUMERIC VALUE (one or more):
+# "learning_rate": 0.5                    → the fixed value 0.5 is used
+# "learning_rate": [0.1, 0.5, 0.9]        → three different values are tested
 #
-# TEXTOVÁ HODNOTA:
-# "lr_decay_type": "linear"              → použije se "linear"
-# "lr_decay_type": ["linear", "exp-drop"] → testují se oba typy útlumu
+# TEXT VALUE:
+# "lr_decay_type": "linear"              → "linear" is used
+# "lr_decay_type": ["linear", "exp-drop"] → both decay types are tested
 #
-# ROZMĚROVÉ HODNOTY (např. velikost mapy):
-# "map_size": (20, 20)                    → jedna velikost
-# "map_size": [(10, 10), (20, 20)]        → testují se dvě varianty
+# MAP SIZE:
+# "m": 20, "n": 20                        → a single size
+# "m": [10, 20], "n": [10, 20]            → the height and width variants are tested
 
-# --- Začátek konfigurace ---
+# --- Start of configuration ---
 
-# Základní nastavení parametrů pro Kohonenův SOM a evoluční testování
+# Basic parameter settings for the Kohonen SOM and evolutionary testing
 
 CONFIG = {
-    # Nastavení evolučního algoritmu
-    # Velikost populace v každé generaci
+    # Evolutionary algorithm settings
+    # Population size in each generation
     "population_size": 10,
 
-    # Počet generací
+    # Number of generations
     "generations": 5,
 
-    # Předpona pro identifikátor konfigurace
+    # Prefix for the configuration identifier
     "uid_prefix": "evolution",
 
-    # Parametry Kohonenova SOM
-    # Počáteční learning rate – určuje rychlost učení na začátku tréninku
+    # Kohonen SOM parameters
+    # Initial learning rate – determines the learning speed at the start of training
     "learning_rate": [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3],
 
-    # Minimální learning rate – dolní mez pro útlum learning rate
+    # Minimum learning rate – lower bound for learning rate decay
     "min_learning_rate": [0.3, 0.2, 0.1, 0.05],
 
-    # Počáteční poloměr sousedství – pokud není zadán, určuje se automaticky
+    # Initial neighborhood radius – determined automatically if not given
     "radius": [10.0, 5.0, 2.0],
 
-    # Minimální poloměr – dolní mez pro útlum radiusu během tréninku
+    # Minimum radius – lower bound for radius decay during training
     "min_radius": [1.0, 0.5, 0.2, 0.1],
 
-    # Počet batchů v rámci jedné epochy – jak často se aktualizují váhy
+    # Number of batches per epoch – how often the weights are updated
     "num_batches": 10,
 
-    # Minimální procento dat použitých v jednom kroku
+    # Minimum percentage of data used in one step
     "min_batch_percent": [1.0, 0.5, 0.2, 0.1],
 
-    # Maximální procento dat použitých v jednom kroku
+    # Maximum percentage of data used in one step
     "max_batch_percent": [10.0, 5.0, 2.0],
 
-    # Typ útlumu learning rate – zde exponenciální pokles
+    # Learning rate decay type – exponential drop here
     "lr_decay_type": ["linear-drop", "exp-drop"],
 
-    # Typ útlumu radiusu – zde také exponenciální pokles
+    # Radius decay type – also exponential drop here
     "radius_decay_type": ["linear-drop", "exp-drop"],
 
-    # Typ růstu počtu vzorků v čase – zde exponenciální růst
+    # Growth type for the number of samples over time – exponential growth here
     "batch_growth_type": ["exp-growth", "linear-growth"],
 
-    # Náhodné semínko pro replikovatelnost výsledků
+    # Random seed for reproducible results
     "random_seed": None,
 
-    # Parametr G pro růstovou funkci – ovlivňuje tvar exp-growth
+    # Parameter G for the growth function – affects the shape of exp-growth
     "growth_g": [5.0, 10.0, 15.0, 25.0, 50.0],
 
-    # Počet vstupníh vzorků pro generovaná data
+    # Number of input samples for generated data
     "sample_size": 500,
 
-    # Počet vstupních atributů (rozměrů) pro generovaná data
+    # Number of input attributes (dimensions) for generated data
     "input_dim": 4,
 
-    # Velikost výstupní mapy (šířka, výška)
-    "map_size": (20, 20),
+    # Output map size (height m, width n)
+    "m": 20,
+    "n": 20,
 
-    # Násobitel určující počet epoch (sample_size * epoch_multiplier)
+    # Multiplier determining the number of epochs (sample_size * epoch_multiplier)
     "epoch_multiplier": 1.0,
 
-    # Minimální kvalita mapy (Q-error)
+    # Minimum map quality (Q-error)
     "min_q_error": None,
 
-    # Typ mapy
+    # Map type
     "map_type": "square",
 
-    # Normalizace vah
+    # Weight normalization
     "normalize_weights_flag": [False, True],
 
-    # Počet epoch bez zlepšení před ukončením tréninku
+    # Number of epochs without improvement before training stops
     "max_epochs_without_improvement": None
 }
