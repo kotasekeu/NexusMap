@@ -1,9 +1,0 @@
--- Testovací data pro vývoj
-
--- Testovací projekty
-INSERT INTO `projects` (`row_id`, `project_id`, `uid_hash`, `customer_id`, `name`, `status`, `ready_to_analyze`, `results`, `som_settings`, `project_settings`, `notes`, `visible`, `added`) VALUES
-(1, 1, 'nxmpp68236e9b9475c3.91714110', 1, 'Iris - Kaggle', 1, 1, '{\"duration\": 28.210460424423218, \"total_weight_updates\": 37152, \"best_mqe\": 0.0848668202985841, \"epochs\": 15000, \"map_size\": [10, 10], \"max_memory_mb\": 879}', '{\"learning_rate\":0.8,\"min_learning_rate\":0.1,\"radius\":10,\"min_radius\":1,\"num_batches\":1,\"max_batch_percent\":5,\"min_batch_percent\":0.5,\"lr_decay_type\":\"linear-drop\",\"radius_decay_type\":\"linear-drop\",\"batch_growth_type\":\"exp-growth\",\"random_seed\":42,\"growth_g\":5,\"epoch_multiplier\":\"100\",\"map_type\":\"square\",\"m\":10,\"n\":10}', '{\"selected_columns\": [\"Id\", \"SepalLengthCm\", \"SepalWidthCm\", \"PetalLengthCm\", \"PetalWidthCm\", \"Species\"], \"primary_id\": \"Id\", \"analysis_columns\": [\"Id\", \"SepalLengthCm\", \"SepalWidthCm\", \"PetalLengthCm\", \"PetalWidthCm\", \"Species\"], \"legend_column\": \"Species\", \"legend_title\": \"Druhy\", \"categorical_column\": [\"Species\"], \"numerical_column\": [\"SepalLengthCm\", \"SepalWidthCm\", \"PetalLengthCm\", \"PetalWidthCm\"], \"string_column\": [], \"categorical_groups\": {}}', NULL, 0, '2025-05-15 15:49:32');
-
--- Testovací soubory
-INSERT INTO `source_files` (`source_file_id`, `project_id`, `row_count`, `column_count`, `column_names`, `file_size`, `added`) VALUES
-(1, 1, 150, 6, 'Id,SepalLengthCm,SepalWidthCm,PetalLengthCm,PetalWidthCm,Species', 0.01, '2025-05-13 18:08:59'); 
