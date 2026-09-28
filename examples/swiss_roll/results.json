@@ -1,0 +1,12 @@
+{
+    "duration": 334.5547378063202,
+    "total_weight_updates": 1029990,
+    "best_mqe": 0.05655081244504815,
+    "epochs": 2000,
+    "map_size": [
+        20,
+        20
+    ],
+    "map_type": "hex",
+    "max_memory_mb": 5892
+}

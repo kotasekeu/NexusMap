@@ -36,12 +36,48 @@ def _grid_coordinates(m: int, n: int, map_type: str = 'square'):
         raise ValueError("Unsupported map type: choose 'square' or 'hex'")
     return np.array(X), np.array(Y)
 
+def _draw_cells(ax, m: int, n: int, map_type: str, values=None, cmap=None, norm=None, facecolor=None):
+    """
+    Draws the grid cells as polygons in data coordinates, so they tile the
+    grid exactly for any m, n and figure size.
+
+    Args:
+        ax: Matplotlib axes
+        m, n: Grid dimensions
+        map_type: 'square' or 'hex'
+        values: Per-cell values (m*n, row-major) colored with cmap/norm
+        cmap: Colormap (name or object)
+        norm: Optional color normalization
+        facecolor: Fixed fill color used when values is None
+
+    Returns:
+        PatchCollection: The drawn cells
+    """
+    X, Y = _grid_coordinates(m, n, map_type)
+    if map_type == 'hex':
+        # Pointy-top hexagon with width 1 matches the row spacing √3/2
+        patches = [RegularPolygon((x, y), numVertices=6, radius=1 / np.sqrt(3), orientation=0)
+                   for x, y in zip(X, Y)]
+    else:
+        patches = [Rectangle((x - 0.5, y - 0.5), 1, 1) for x, y in zip(X, Y)]
+
+    cells = PatchCollection(patches, edgecolor='white', linewidth=1)
+    if values is not None:
+        cells.set_array(np.asarray(values).ravel())
+        cells.set_cmap(cmap)
+        if norm is not None:
+            cells.set_norm(norm)
+    else:
+        cells.set_facecolor(facecolor)
+    ax.add_collection(cells)
+    return cells
+
 def _set_axes_limits(ax, m, n, map_type):
     X, Y = _grid_coordinates(m, n, map_type)
     if map_type == 'hex':
-        # for a hexagon: width = 1, height = √3/2*2 = √3 ≈1.732
+        # pointy-top hexagon: half-width 0.5, half-height = circumradius 1/√3
         dx = 0.5
-        dy = np.sqrt(3) / 2
+        dy = 1 / np.sqrt(3)
     else:
         dx = dy = 0.5
 
@@ -99,8 +135,14 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
         for j in range(n):
             # Initialize the list of neighboring neurons
             neigh = []
-            # Iterate over all four neighbors (up, down, left, right)
-            for di, dj in ((1,0),(-1,0),(0,1),(0,-1)):
+            if map_type == 'hex':
+                # Six neighbors in the odd-r layout (odd rows shifted right by half a cell)
+                dj_row = (-1, 0) if i % 2 == 0 else (0, 1)
+                offsets = [(0, -1), (0, 1)] + [(di, dj) for di in (-1, 1) for dj in dj_row]
+            else:
+                # Four neighbors (up, down, left, right)
+                offsets = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+            for di, dj in offsets:
                 # Compute the neighbor's position
                 ni, nj = i+di, j+dj
                 # Check that the neighbor lies inside the grid
@@ -113,13 +155,10 @@ def generate_u_matrix(som, output_file: str, map_type: str = 'square', cmap: str
     # Get the value range for the colorbar
     vmin, vmax = u.min(), u.max()
 
-    # Generate neuron center coordinates for the grid type
-    X, Y = _grid_coordinates(m, n, map_type)
     # Create a new figure and axes for plotting
     fig, ax = plt.subplots(figsize=(20,12))
 
-    element_size = get_size_of_point(m,n,map_type)
-    sc = ax.scatter(X, Y, c=u.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')   
+    _draw_cells(ax, m, n, map_type, values=u, cmap=cmap)
 
     _set_axes_limits(ax, som.m, som.n, map_type)
     ax.set_aspect('equal')
@@ -169,8 +208,7 @@ def generate_hit_map(som, data: np.ndarray, output_file: str,
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
 
-    element_size = get_size_of_point(m,n,map_type)    
-    sc = ax.scatter(X, Y, c=vals, s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+    _draw_cells(ax, m, n, map_type, values=vals, cmap=cmap)
 
     if show_numbers:
         for i in range(m):
@@ -243,14 +281,7 @@ def generate_component_plane(
     # 1) Plot the map without a legend
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20, 12))
-    sc = ax.scatter(
-        X, Y,
-        c=vals,
-        s=get_size_of_point(m, n, map_type),
-        cmap=cmap,
-        norm=norm,
-        marker='h' if map_type == 'hex' else 's'
-    )
+    _draw_cells(ax, m, n, map_type, values=vals, cmap=cmap, norm=norm)
     _set_axes_limits(ax, som.m, som.n, map_type)
 
     ax.set_aspect('equal')
@@ -288,13 +319,12 @@ def generate_cluster_map(som, clusters: dict, output_file: str,
     if palette is None:
         cmap = plt.get_cmap('tab20', len(unique))
     else:
-        cmap = plt.colors.ListedColormap(palette)
+        cmap = ListedColormap(palette)
 
     X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
 
-    element_size = get_size_of_point(m,n,map_type)
-    sc = ax.scatter(X, Y, c=labels.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
+    _draw_cells(ax, m, n, map_type, values=labels, cmap=cmap)
 
     # Add neuron position labels
     for i in range(m):
@@ -427,8 +457,7 @@ def plot_pie_map_from_json(
     fig, ax = plt.subplots(figsize=(20, 12))
     
     # Add the base grid in light gray
-    element_size = get_size_of_point(m,n,map_type)
-    ax.scatter(X, Y, c='#FBFBFB', s=element_size, marker='h' if map_type == 'hex' else 's')
+    _draw_cells(ax, m, n, map_type, facecolor='#FBFBFB')
     
     for pos, cnts in data['counts'].items():
         i, j = map(int, pos.split('_'))
@@ -490,27 +519,6 @@ def check_folder(output_file: str):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-def get_size_of_point(m,n,map_type):
-    if map_type == 'hex':
-        if m == 10:
-            point_size = 9000
-        elif m == 20:
-            point_size = 2300
-        elif m == 30:
-            point_size = 900
-        else:
-            point_size = 2300  # default for hex
-    else:
-        if m == 10:
-            point_size = 5500
-        elif m == 20:
-            point_size = 1100
-        elif m == 30:
-            point_size = 450
-        else:
-            point_size = 1100  # default for square
-    return point_size
-
 def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, output_file: str,
                                     map_type: str = 'square', cmap: str = 'magma', save_legend: bool = True):
     """
@@ -534,12 +542,10 @@ def generate_distance_map_from_error_map(som, neuron_error_map: np.ndarray, outp
     
     vmin, vmax = neuron_error_map.min(), neuron_error_map.max()
     
-    X, Y = _grid_coordinates(m, n, map_type)
     fig, ax = plt.subplots(figsize=(20,12))
 
-    element_size = get_size_of_point(m,n,map_type)    
-    sc = ax.scatter(X, Y, c=neuron_error_map.flatten(), s=element_size, cmap=cmap, marker='h' if map_type == 'hex' else 's')
-    
+    _draw_cells(ax, m, n, map_type, values=neuron_error_map, cmap=cmap)
+
     _set_axes_limits(ax, som.m, som.n, map_type)
     ax.set_aspect('equal')
     ax.axis('off')

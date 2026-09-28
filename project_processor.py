@@ -21,7 +21,7 @@ import shutil
 from matplotlib.lines import Line2D
 from visualization import generate_maps
 import os
-from collections import defaultdict, Counter, OrderedDict
+from collections import Counter, OrderedDict
 import time
 import psutil
 
@@ -99,9 +99,6 @@ def train_and_analyze_som(preprocess_file: str, som_settings: dict, project_sett
     # Extract and save clusters
     cluster_file = f"{output_path}json/clusters.json"
     extract_and_save_clusters(som, data, df_orig, cluster_file, project_settings["primary_id"])
-
-    # Generate data for pie charts
-    extract_and_save_pie_data(som, data, df_orig, project_settings["categorical_column"], output_path)
 
     # Load data for analysis
     clusters = json.load(open(cluster_file))
@@ -298,77 +295,39 @@ def detect_extremes(df_orig: pd.DataFrame,
             # Skip if the group is empty or contains only NaN values in numerical columns
             if df_group.shape[0] == 0 or df_group[numeric_columns].isnull().all().all():
                 continue
+            # Collect outliers across all columns (dict keeps order and removes duplicates)
+            group_outliers = {}
             for col in numeric_columns:
                 if col in stats_by_group[group_val]:
                     mean, std = stats_by_group[group_val][col]
                     if std and not np.isnan(std):
                         vals = df_group[col]
                         outliers = df_group.loc[np.abs(vals - mean) > threshold * std, primary_id]
-                        if not outliers.empty:
-                            # Convert numpy.int64 to a standard Python int
-                            group_key = str(group_val) if isinstance(group_val, (np.integer, np.floating)) else group_val
-                            extremes['by_group'][group_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in outliers.tolist()]
+                        group_outliers.update(dict.fromkeys(outliers.tolist()))
+            if group_outliers:
+                # Convert numpy.int64 to a standard Python int
+                group_key = str(group_val) if isinstance(group_val, (np.integer, np.floating)) else group_val
+                extremes['by_group'][group_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in group_outliers]
 
     # Detect extremes by cluster
     for cl_key, pid_list in clusters.items():
         if not pid_list:
             continue
         df_cluster = df_orig[df_orig[primary_id].isin(pid_list)]
+        cluster_outliers = {}
         for col in numeric_columns:
             mean = df_cluster[col].mean()
             std = df_cluster[col].std()
             if std and not np.isnan(std):
                 outliers = df_cluster.loc[np.abs(df_cluster[col] - mean) > threshold * std, primary_id]
-                if not outliers.empty:
-                    extremes['by_cluster'][cl_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in outliers.tolist()]
+                cluster_outliers.update(dict.fromkeys(outliers.tolist()))
+        if cluster_outliers:
+            extremes['by_cluster'][cl_key] = [int(x) if isinstance(x, (np.integer, np.floating)) else x for x in cluster_outliers]
 
     # Save results
     os.makedirs(f"{output_path}json", exist_ok=True)
     with open(f"{output_path}json/extremes.json", "w", encoding="utf-8") as f:
         json.dump(extremes, f, indent=4)
-
-def extract_and_save_pie_data(som, data: np.ndarray, df_orig: pd.DataFrame, categorical_columns: list, output_dir: str) -> None:
-    """Generates pie chart data per SOM neuron.
-
-    Args:
-        som: Trained SOM network
-        data (np.ndarray): Preprocessed data
-        df_orig (pd.DataFrame): Original data
-        categorical_columns (list): List of categorical columns
-        output_dir (str): Path for output files
-
-    Note:
-        For each categorical column, creates a JSON with category counts for each neuron.
-        Format: {"categories": {1: "category1", ...}, "counts": {"i_j": {1: count, ...}}}
-    """
-    os.makedirs(output_dir, exist_ok=True)
-    m, n = som.m, som.n
-
-    for col in categorical_columns:
-        categories = df_orig[col].dropna().unique().tolist()
-        cat_map = {i+1: cat for i, cat in enumerate(categories)}
-
-        pie_counts = defaultdict(Counter)
-
-        numeric_counts = {}
-        for idx, x in enumerate(data):
-            i, j = som.find_bmu(x)
-            key = f"{i}_{j}"
-            label = df_orig.iloc[idx][col]
-            pie_counts[key][label] += 1
-
-        numeric_counts = {
-            key: {i+1: cnts.get(cat, 0) for i, cat in enumerate(categories)}
-            for key, cnts in pie_counts.items()
-        }
-
-        out = {
-            "categories": cat_map,
-            "counts": numeric_counts
-        }
-        fn = os.path.join(output_dir, f"pie_data_{col}.json")
-        with open(fn, 'w', encoding='utf-8') as f:
-            json.dump(out, f, indent=2, ensure_ascii=False)
 
 def extract_and_save_pie_data_from_clusters(df_orig: pd.DataFrame,
                                           cluster_file: str,

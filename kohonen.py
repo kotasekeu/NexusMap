@@ -262,11 +262,12 @@ class KohonenSOM:
                         sample = data[idx]
                         bmu_idx = self.find_bmu(sample)
                         self.update_weights(sample, bmu_idx, current_lr, current_radius)
+                    self.total_weight_updates += len(batch_indices)
 
-            # Update the weight update counter
+            # Update the weight update counter (hybrid mode counts per batch above)
             if self.processing_type == 'stochastic':
                 self.total_weight_updates += 1
-            else:
+            elif self.processing_type == 'deterministic':
                 self.total_weight_updates += total_samples
 
             # Normalize weights if requested

@@ -13,9 +13,11 @@ NexusMap trains a Kohonen self-organizing map (SOM) on a CSV file, detects extre
 | `visualization.py` | Map generation (U-matrix, hit map, component planes, pie maps, topology maps, …) |
 | `utils.py` | Logging to the output directory |
 | `config/requirements.txt` | Python dependencies |
+| `config/default-config.json` | Configuration template with default SOM settings |
 | `plot_som_topology.py` | Standalone CLI for plotting the SOM grid in a projected space (PCA/UMAP/t-SNE/ISOMAP) |
 | `krivky.py` | Standalone script plotting the decay/growth curves used for training parameters |
 | `evolutionary_analyse/` | Evolutionary optimization of SOM parameters – see [its README](evolutionary_analyse/README.md) |
+| `examples/` | Example runs with data, configuration and generated outputs – see [its README](examples/README.md) |
 
 ## 🛠️ Installation
 
@@ -51,9 +53,19 @@ python3 main.py --input data.csv --config config.json --output results/
 6. Compute per-group statistics and detect extremes
 7. Generate the visualizations
 
+## 🧪 Examples
+
+[`examples/`](examples/README.md) contains a complete run on a 3D Swiss roll – input data, configuration, metrics, the generated maps and a rotatable 3D topographic map.
+
+```bash
+python3 main.py -i examples/swiss_roll/swiss_roll.csv -c examples/swiss_roll/config.json -o results/swiss_roll/
+```
+
+![Swiss roll topographic map](examples/swiss_roll/images/topology.png)
+
 ## 🔧 Configuration
 
-The configuration file has two sections:
+The configuration file has two sections. Start from `config/default-config.json` – replace the placeholder columns in `project_settings` with your own; `som_settings` hold the defaults from `kohonen.py` (20×20 grid, fixed seed).
 
 ```json
 {
@@ -178,7 +190,6 @@ The `primary_id` column only identifies records and is not used for training. Mi
 │   ├── topology_interactive.html     # interactive 2D version (Plotly via CDN)
 │   ├── topology_interactive_3d.html  # rotatable 3D version (needs ≥ 3 dimensions)
 │   └── legends/                      # separate legend for each map
-├── pie_data_{column}.json            # category counts per neuron
 ├── weights.npy                       # trained SOM weights (m × n × dim)
 └── kohonen-log.txt                   # processing log
 ```
@@ -244,3 +255,6 @@ See [evolutionary_analyse/README.md](evolutionary_analyse/README.md) for details
 - [ ] Continue training from a saved state
 - [ ] Unit tests
 - [ ] Performance optimization for large datasets (weight updates and BMU search are partly non-vectorized)
+
+
+python3 main.py --input ./var/swiss_roll.csv  --output ./var/results/

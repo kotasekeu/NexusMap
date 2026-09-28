@@ -1,0 +1,31 @@
+{
+    "project_settings": {
+        "selected_columns": ["id", "x", "y", "z"],
+        "primary_id": "id",
+        "segmentation_column": "",
+        "std_threshold": 2,
+        "nan_replacement": {}
+    },
+    "som_settings": {
+        "m": 20,
+        "n": 20,
+        "map_type": "hex",
+        "learning_rate": 0.5,
+        "min_learning_rate": 0.01,
+        "radius": 15.0,
+        "min_radius": 1.0,
+        "processing_type": "hybrid",
+        "num_batches": 10,
+        "min_batch_percent": 0.1,
+        "max_batch_percent": 5.0,
+        "lr_decay_type": "linear-drop",
+        "radius_decay_type": "linear-drop",
+        "batch_growth_type": "linear-growth",
+        "growth_g": 25.0,
+        "epoch_multiplier": 1.0,
+        "random_seed": 42,
+        "normalize_weights_flag": false,
+        "min_q_error": null,
+        "max_epochs_without_improvement": null
+    }
+}
